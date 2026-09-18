@@ -1,0 +1,47 @@
+# PP-ChatOCRv4 Document Information Extraction Pipeline Configuration
+# Local Private Deployment with Thai Language Support
+
+Global:
+  pipeline_name: PP-ChatOCRv4-doc
+  device: "gpu:0"  # or cpu
+
+SubModules:
+  # 1. Text Detection Module
+  TextDetection:
+    module_name: text_detection
+    model_name: PP-OCRv4_server_det
+    limit_side_len: 2400
+    thresh: 0.3
+    box_thresh: 0.55
+    unclip_ratio: 2.35
+    use_doc_unwarping: false
+    use_doc_orientation_classify: false
+    use_textline_orientation: false
+
+  # 2. Text Recognition Module (Configured with Thai pre-trained weights)
+  TextRecognition:
+    module_name: text_recognition
+    model_name: th_PP-OCRv5_mobile_rec
+    score_thresh: 0.4
+    batch_size: 1
+
+  # 3. Document Layout Region Detection
+  LayoutDetection:
+    module_name: layout_detection
+    model_name: PP-DocLayout-L
+    threshold: 0.5
+
+  # 4. Table Structure Recognition
+  TableRecognition:
+    module_name: table_recognition
+    model_name: SLANet_plus
+    batch_size: 1
+
+  # 5. Local LLM Reasoning Module (Ollama OpenAI-compatible API)
+  LLM_Chat:
+    module_name: chat_bot
+    model_name: "qwen3:4b"  # or "scb10x/llama3.1-typhoon2-8b-instruct"
+    base_url: "http://localhost:11434/v1"
+    api_type: "openai"
+    api_key: "sk-local-dummy"
+    temperature: 0.1
