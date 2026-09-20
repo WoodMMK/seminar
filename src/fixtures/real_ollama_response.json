@@ -1,0 +1,112 @@
+{
+  "document_type": "general_receipt",
+  "document_type_name_th": "10. ใบเสร็จรับเงิน / ใบกำกับภาษีทั่วไป",
+  "fields": {
+    "vendor_name": "บริษัท สมใจนึก สเตชั่นเนอรี่ จำกัด (สำนักงานใหญ่)",
+    "vendor_tax_id": "0105558012345",
+    "vendor_branch": "ไม่มีระบุในเอกสาร",
+    "vendor_address": "ไม่มีระบุในเอกสาร",
+    "customer_name": "ไม่มีระบุในเอกสาร",
+    "customer_tax_id": "ไม่มีระบุในเอกสาร",
+    "invoice_no": "ไม่มีระบุในเอกสาร",
+    "doc_date": "18 กันยายน 2567",
+    "line_items": [
+      {
+        "item_no": 1,
+        "description": "กระดาษถ่ายเอกสาร A4 70 แกรม",
+        "quantity": 5.0,
+        "unit": "รีม",
+        "unit_price": 174.0,
+        "total_price": 870.0
+      },
+      {
+        "item_no": 2,
+        "description": "ปากกาหมึกเจล 0.5 มม.",
+        "quantity": 2.0,
+        "unit": "กล่อง",
+        "unit_price": 60.0,
+        "total_price": 120.0
+      },
+      {
+        "item_no": 3,
+        "description": "แฟ้มเอกสารตราช้าง",
+        "quantity": 4.0,
+        "unit": "เล่ม",
+        "unit_price": 50.0,
+        "total_price": 200.0
+      }
+    ],
+    "subtotal": 870.0,
+    "vat": null,
+    "total_amount": 930.9
+  },
+  "expense_items": [
+    {
+      "item_no": 1,
+      "description": "กระดาษถ่ายเอกสาร A4 70 แกรม",
+      "quantity": 5.0,
+      "unit": "รีม",
+      "unit_price": 174.0,
+      "total_price": 870.0
+    },
+    {
+      "item_no": 2,
+      "description": "ปากกาหมึกเจล 0.5 มม.",
+      "quantity": 2.0,
+      "unit": "กล่อง",
+      "unit_price": 60.0,
+      "total_price": 120.0
+    },
+    {
+      "item_no": 3,
+      "description": "แฟ้มเอกสารตราช้าง",
+      "quantity": 4.0,
+      "unit": "เล่ม",
+      "unit_price": 50.0,
+      "total_price": 200.0
+    }
+  ],
+  "line_items": [
+    {
+      "item_no": 1,
+      "description": "กระดาษถ่ายเอกสาร A4 70 แกรม",
+      "quantity": 5.0,
+      "unit": "รีม",
+      "unit_price": 174.0,
+      "total_price": 870.0
+    },
+    {
+      "item_no": 2,
+      "description": "ปากกาหมึกเจล 0.5 มม.",
+      "quantity": 2.0,
+      "unit": "กล่อง",
+      "unit_price": 60.0,
+      "total_price": 120.0
+    },
+    {
+      "item_no": 3,
+      "description": "แฟ้มเอกสารตราช้าง",
+      "quantity": 4.0,
+      "unit": "เล่ม",
+      "unit_price": 50.0,
+      "total_price": 200.0
+    }
+  ],
+  "total_amount": 930.9,
+  "subtotal": 870.0,
+  "vat": null,
+  "vendor_name": "บริษัท สมใจนึก สเตชั่นเนอรี่ จำกัด (สำนักงานใหญ่)",
+  "vendor_tax_id": "0105558012345",
+  "vendor_branch": "ไม่มีระบุในเอกสาร",
+  "vendor_address": "ไม่มีระบุในเอกสาร",
+  "customer_name": "ไม่มีระบุในเอกสาร",
+  "invoice_no": "ไม่มีระบุในเอกสาร",
+  "document_date": "18 กันยายน 2567",
+  "thinking_process": null,
+  "model_used": "qwen2.5:3b",
+  "latency_ms": 5287.23,
+  "is_mock": false,
+  "raw_llm_response": "```json\n{\n  \"vendor_name\": \"บริษัท สมใจนึก สเตชั่นเนอรี่ จำกัด (สำนักงานใหญ่)\",\n  \"vendor_tax_id\": \"0105558012345\",\n  \"vendor_branch\": \"ไม่มีระบุในเอกสาร\",\n  \"vendor_address\": \"ไม่มีระบุในเอกสาร\",\n  \"customer_name\": \"ไม่มีระบุในเอกสาร\",\n  \"customer_tax_id\": \"ไม่มีระบุในเอกสาร\",\n  \"invoice_no\": \"ไม่มีระบุในเอกสาร\",\n  \"doc_date\": \"18 กันยายน 2567\",\n  \"line_items\": [\n    {\n      \"item_no\": 1,\n      \"description\": \"กระดาษถ่ายเอกสาร A4 70 แกรม\",\n      \"quantity\": 5.0,\n      \"unit\": \"รีม\",\n      \"unit_price\": 174.00,\n      \"total_price\": 870.00\n    },\n    {\n      \"item_no\": 2,\n      \"description\": \"ปากกาหมึกเจล 0.5 มม.\",\n      \"quantity\": 2.0,\n      \"unit\": \"กล่อง\",\n      \"unit_price\": 60.00,\n      \"total_price\": 120.00\n    },\n    {\n      \"item_no\": 3,\n      \"description\": \"แฟ้มเอกสารตราช้าง\",\n      \"quantity\": 4.0,\n      \"unit\": \"เล่ม\",\n      \"unit_price\": 50.00,\n      \"total_price\": 200.00\n    }\n  ],\n  \"subtotal\": 870.00,\n  \"vat\": null,\n  \"total_amount\": 930.90\n}\n```",
+  "saved_at": "2026-09-19 17:52:01",
+  "saved_model": "qwen2.5:3b"
+}

@@ -259,6 +259,43 @@ class ThaiPerceptionEngine:
 
         return final_ordered
 
+    @staticmethod
+    def build_row_formatted_text(blocks: List[TextBlock]) -> str:
+        """
+        Group blocks into natural horizontal lines based on vertical alignment.
+        Items on the same line (e.g. 2-column headers or items and prices)
+        are placed on the same text line separated by spaces.
+        """
+        if not blocks:
+            return ""
+
+        sorted_by_y = sorted(blocks, key=lambda b: (b.box.y_min, b.box.x_min))
+        rows: List[List[TextBlock]] = []
+        for b in sorted_by_y:
+            b_yc = (b.box.y_min + b.box.y_max) / 2.0
+            b_h = b.box.y_max - b.box.y_min
+            placed = False
+
+            for row in rows:
+                row_yc = sum((item.box.y_min + item.box.y_max) / 2.0 for item in row) / len(row)
+                row_h = sum((item.box.y_max - item.box.y_min) for item in row) / len(row)
+                tolerance = max(14.0, min(row_h, b_h) * 0.55)
+
+                if abs(b_yc - row_yc) <= tolerance:
+                    row.append(b)
+                    placed = True
+                    break
+
+            if not placed:
+                rows.append([b])
+
+        lines: List[str] = []
+        for row in rows:
+            row_sorted = sorted(row, key=lambda b: b.box.x_min)
+            lines.append("   ".join(b.text for b in row_sorted))
+
+        return "\n".join(lines)
+
     def process_image(
         self,
         image_input: Union[Image.Image, np.ndarray, str, Path],
@@ -312,7 +349,7 @@ class ThaiPerceptionEngine:
         # Clean stray tone fragments and merge detached floating marks
         cleaned_blocks = self.clean_and_merge_thai_fragments(text_blocks)
         ordered_blocks = self.sort_reading_order(cleaned_blocks)
-        full_raw_text = "\n".join(b.text for b in ordered_blocks)
+        full_raw_text = self.build_row_formatted_text(cleaned_blocks)
 
         return PagePerception(
             page_number=page_number,
