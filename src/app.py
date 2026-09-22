@@ -94,6 +94,9 @@ benchmarker = ModelBenchmarker(
     validator=validator,
 )
 
+from src.pp_chatocr_engine import PPChatOCREngine
+chat_ocr_engine = PPChatOCREngine()
+
 ROOT_DIR = Path(__file__).resolve().parent.parent
 
 
@@ -814,6 +817,122 @@ def index():
       gap: 0.6rem;
       background: rgba(30, 41, 59, 0.7);
     }
+
+    /* PP-ChatOCRv4 Interactive Chat & Knowledge Payload (Component 6) */
+    .chatocr-container {
+      flex: 1;
+      min-height: 0;
+      display: flex;
+      flex-direction: column;
+      overflow-y: auto;
+      padding: 0.8rem;
+      gap: 0.8rem;
+    }
+    .chatocr-ctrl-box {
+      background: rgba(0, 0, 0, 0.28);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 0.75rem 0.9rem;
+      flex-shrink: 0;
+    }
+    .preset-chips-group {
+      display: flex;
+      gap: 0.4rem;
+      flex-wrap: wrap;
+    }
+    .preset-chip {
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      border-radius: 9999px;
+      padding: 0.25rem 0.6rem;
+      font-size: 0.73rem;
+      color: #cbd5e1;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      user-select: none;
+    }
+    .preset-chip:hover {
+      background: rgba(59, 130, 246, 0.2);
+      border-color: rgba(59, 130, 246, 0.5);
+      color: #93c5fd;
+      transform: translateY(-1px);
+    }
+    .chatocr-answers-card {
+      background: rgba(0, 0, 0, 0.25);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 0.75rem 0.9rem;
+    }
+    .chatocr-card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 0.6rem;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+      padding-bottom: 0.45rem;
+    }
+    .chatocr-qa-list {
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+    }
+    .chatocr-qa-item {
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid rgba(255, 255, 255, 0.06);
+      border-radius: 6px;
+      padding: 0.55rem 0.8rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.25rem;
+      transition: border-color 0.15s;
+    }
+    .chatocr-qa-item:hover {
+      border-color: rgba(59, 130, 246, 0.35);
+    }
+    .chatocr-q-title {
+      font-size: 0.76rem;
+      font-weight: 600;
+      color: #93c5fd;
+      display: flex;
+      align-items: center;
+      gap: 0.35rem;
+    }
+    .chatocr-a-body {
+      font-size: 0.82rem;
+      color: #f8fafc;
+      font-weight: 500;
+      line-height: 1.4;
+    }
+    .knowledge-payload-container {
+      background: rgba(15, 23, 42, 0.7);
+      border: 1px solid rgba(56, 189, 248, 0.25);
+      border-radius: 8px;
+      padding: 0.85rem;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+    }
+    .payload-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0.75rem;
+    }
+    @media (max-width: 900px) {
+      .payload-grid { grid-template-columns: 1fr; }
+    }
+    .payload-card {
+      background: rgba(0, 0, 0, 0.35);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 6px;
+      padding: 0.65rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.45rem;
+    }
+    .payload-card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 0.5rem;
+    }
   </style>
 </head>
 <body>
@@ -895,7 +1014,11 @@ def index():
             <span>🤖 สกัดข้อมูลการเงิน (AI)</span>
             <span class="badge green" id="extractionBadge" style="display: none;">Ready</span>
           </button>
-          <button class="tab-btn" onclick="switchTab('json')">Raw API JSON</button>
+          <button class="tab-btn" onclick="switchTab('chatocr')" id="tabBtnChatOCR">
+            <span>💬 PP-ChatOCRv4 (Chat)</span>
+            <span class="badge green" id="chatocrBadge" style="display: none;">Ready</span>
+          </button>
+          <button class="tab-btn" onclick="switchTab('json')" id="tabBtnJson">Raw API JSON</button>
         </div>
 
         <!-- Tab 1: Scrollable Text Blocks List -->
@@ -1096,6 +1219,166 @@ def index():
             </div>
           </div>
         </div>
+
+        <!-- Tab 5: PP-ChatOCRv4 Interactive Chat & Knowledge Payload -->
+        <div class="tab-content" id="tabChatOCR">
+          <div class="chatocr-container">
+            <!-- Top Controls -->
+            <div class="chatocr-ctrl-box">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.6rem;">
+                <div>
+                  <h3 style="font-size: 0.92rem; font-weight: 600; color: #f8fafc; display: flex; align-items: center; gap: 0.4rem;">
+                    💬 PP-ChatOCRv4: Visual QA & Knowledge Payload
+                  </h3>
+                  <p style="font-size: 0.74rem; color: var(--text-muted); margin-top: 2px;">
+                    ถาม-ตอบจากเอกสารด้วย PaddleX PP-ChatOCRv4 + Local LLM และสร้างก้อน Knowledge สำหรับ Vector DB (Text to Embed & Filter Metadata)
+                  </p>
+                </div>
+                <div style="display: flex; gap: 0.4rem; align-items: center;">
+                  <span id="chatocrStatusBadge" class="badge green">● PP-ChatOCRv4 Ready</span>
+                </div>
+              </div>
+
+              <!-- Preset Query Chips -->
+              <div style="margin-bottom: 0.6rem;">
+                <label style="font-size: 0.74rem; color: var(--text-muted); font-weight: 600; display: block; margin-bottom: 0.3rem;">
+                  🎯 ชุดคำถามด่วน (Preset Templates):
+                </label>
+                <div class="preset-chips-group">
+                  <button type="button" class="preset-chip" onclick="applyPresetQuestions('receipt_general')">
+                    📌 สกัดข้อมูลสำคัญตามประเภทเอกสาร
+                  </button>
+                  <button type="button" class="preset-chip" onclick="applyPresetQuestions('amounts_taxes')">
+                    💰 ยอดเงิน, VAT และสกุลเงิน
+                  </button>
+                  <button type="button" class="preset-chip" onclick="applyPresetQuestions('vendor_party')">
+                    🏢 ข้อมูลร้านค้าและเลขภาษี
+                  </button>
+                  <button type="button" class="preset-chip" onclick="applyPresetQuestions('line_items')">
+                    🧾 รายการสินค้าและราคา
+                  </button>
+                  <button type="button" class="preset-chip" onclick="applyPresetQuestions('disbursement')">
+                    👤 ผู้ขอเบิกจ่ายและเลขที่
+                  </button>
+                </div>
+              </div>
+
+              <!-- Document Type & Questions Input -->
+              <div style="display: flex; gap: 0.6rem; align-items: flex-start; margin-bottom: 0.6rem;">
+                <div style="flex: 1;">
+                  <label style="font-size: 0.74rem; color: var(--text-muted); font-weight: 600; display: block; margin-bottom: 0.25rem;">
+                    ❓ รายการคำถามที่ต้องการถามเอกสาร (ใส่หลายข้อได้ โดยคั่นด้วยเครื่องหมายจุลภาค , หรือขึ้นบรรทัดใหม่):
+                  </label>
+                  <textarea id="chatocrQuestionsInput" class="search-input" rows="3" style="width: 100%; resize: vertical; font-family: inherit; font-size: 0.8rem; line-height: 1.4;" placeholder="เช่น: ชื่อร้านค้าหรือบริษัท, วันที่ออกเอกสาร, ยอดเงินรวมทั้งสิ้น, รายการสินค้า"></textarea>
+                </div>
+                <div style="width: 200px; display: flex; flex-direction: column; gap: 0.4rem;">
+                  <label style="font-size: 0.74rem; color: var(--text-muted); font-weight: 600;">
+                    📄 ประเภทเอกสาร:
+                  </label>
+                  <select id="chatocrDocTypeSelect" class="search-input" style="width: 100%; padding: 0.35rem 0.5rem; font-size: 0.78rem;">
+                    <option value="receipt">ใบเสร็จรับเงิน (Receipt)</option>
+                    <option value="tax_invoice">ใบกำกับภาษี (Tax Invoice)</option>
+                    <option value="invoice">ใบแจ้งหนี้ (Invoice)</option>
+                    <option value="payment_voucher">ใบสำคัญรับเงิน (Payment Voucher)</option>
+                    <option value="credit_card_slip">สลิปบัตรเครดิต (Credit Card Slip)</option>
+                    <option value="general_document">เอกสารทั่วไป</option>
+                  </select>
+
+                  <button class="btn" id="btnRunChatOCR" onclick="executeChatOCR()" style="width: 100%; justify-content: center; margin-top: 0.2rem; background: linear-gradient(135deg, #2563eb, #10b981);">
+                    🚀 ถาม PP-ChatOCRv4
+                  </button>
+                </div>
+              </div>
+
+              <!-- Collapsible Advanced System Prompt -->
+              <details style="font-size: 0.75rem; color: var(--text-muted);">
+                <summary style="cursor: pointer; user-select: none;">⚙️ ปรับแต่ง System Prompt / Task Description (Advanced)</summary>
+                <div style="margin-top: 0.4rem;">
+                  <input type="text" id="chatocrSystemPromptInput" class="search-input" style="width: 100%; font-size: 0.75rem;" placeholder="สกัดข้อมูลสำคัญตามที่ระบุในรายการคำถาม โดยอิงจากข้อความในเอกสารอย่างเคร่งครัด หากไม่มีให้ตอบว่า 'ไม่มีระบุ'">
+                </div>
+              </details>
+            </div>
+
+            <!-- Loading Indicator -->
+            <div id="chatocrLoading" style="display: none; align-items: center; justify-content: center; gap: 0.75rem; padding: 2.5rem; color: #94a3b8;">
+              <div class="spinner" style="display: block; width: 24px; height: 24px;"></div>
+              <span id="chatocrLoadingText">PP-ChatOCRv4 กำลังสกัดคำตอบและสร้าง Knowledge Payload...</span>
+            </div>
+
+            <!-- Empty State -->
+            <div id="chatocrEmpty" style="color: var(--text-muted); font-size: 0.85rem; text-align: center; padding: 3rem;">
+              👈 กรุณาเลือกไฟล์เอกสาร (หรือกดปุ่ม <b>"ทดสอบบิลตัวอย่าง"</b> ด้านบน) จากนั้นใส่คำถามแล้วกด <b>"🚀 ถาม PP-ChatOCRv4"</b>
+            </div>
+
+            <!-- ChatOCR Results Area -->
+            <div id="chatocrResultsArea" style="display: none; flex-direction: column; gap: 0.9rem;">
+              <!-- Meta Badge Header -->
+              <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.5rem;">
+                <div style="display: flex; gap: 0.4rem; align-items: center; flex-wrap: wrap;">
+                  <span id="chatocrResDocTypeBadge" class="badge green">ใบเสร็จรับเงิน</span>
+                  <span id="chatocrResModelBadge" class="badge">PP-ChatOCRv4 + Qwen2.5:3B</span>
+                  <span id="chatocrResLatencyBadge" class="badge">⏱️ - ms</span>
+                </div>
+                <div style="display: flex; gap: 0.4rem;">
+                  <button class="btn btn-secondary" style="padding: 0.25rem 0.6rem; font-size: 0.75rem;" onclick="copyChatOcrAnswersJson()">📋 คัดลอก Q&A JSON</button>
+                </div>
+              </div>
+
+              <!-- 1. Q&A Answers Section -->
+              <div class="chatocr-answers-card">
+                <div class="chatocr-card-header">
+                  <span style="font-weight: 600; font-size: 0.82rem; color: #f1f5f9;">💬 ผลลัพธ์การตอบคำถาม (Extracted Q&A Pairs)</span>
+                  <span class="badge" id="chatocrAnswerCountBadge">0 คำตอบ</span>
+                </div>
+                <div class="chatocr-qa-list" id="chatocrQaList"></div>
+              </div>
+
+              <!-- 2. Dual Knowledge Payload Section for Vector DB -->
+              <div class="knowledge-payload-container">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.4rem;">
+                  <h4 style="font-size: 0.85rem; font-weight: 600; color: #38bdf8; display: flex; align-items: center; gap: 0.4rem;">
+                    📦 Knowledge Payload สำหรับ Vector DB (ก้อนข้อมูลพร้อมใช้งาน)
+                  </h4>
+                  <span style="font-size: 0.72rem; color: var(--text-muted);">Embed Dense Text + Metadata Filter</span>
+                </div>
+
+                <div class="payload-grid">
+                  <!-- Payload 1: embed_text -->
+                  <div class="payload-card">
+                    <div class="payload-card-header">
+                      <div>
+                        <span style="font-weight: 600; font-size: 0.78rem; color: #34d399;">📄 Text to Embed (Natural Language Content)</span>
+                        <div style="font-size: 0.68rem; color: var(--text-muted);">เนื้อหาสำคัญสรุปให้อ่านเข้าใจ สำหรับนำไปทำ Vector Embedding</div>
+                      </div>
+                      <button class="btn btn-secondary" style="padding: 0.2rem 0.5rem; font-size: 0.72rem;" onclick="copyEmbedText()">
+                        📋 คัดลอก
+                      </button>
+                    </div>
+                    <div class="code-scroll-container" style="max-height: 240px; background: rgba(0, 0, 0, 0.4); border-radius: 6px; padding: 0.6rem;">
+                      <pre id="payloadEmbedTextView" style="margin: 0; font-family: monospace; font-size: 0.75rem; white-space: pre-wrap; color: #e2e8f0;"></pre>
+                    </div>
+                  </div>
+
+                  <!-- Payload 2: filter_metadata -->
+                  <div class="payload-card">
+                    <div class="payload-card-header">
+                      <div>
+                        <span style="font-weight: 600; font-size: 0.78rem; color: #60a5fa;">🏷️ Filter Metadata (Structured Attributes)</span>
+                        <div style="font-size: 0.68rem; color: var(--text-muted);">Attribute สำคัญสำหรับตั้งเงื่อนไข WHERE Filter ใน Vector DB</div>
+                      </div>
+                      <button class="btn btn-secondary" style="padding: 0.2rem 0.5rem; font-size: 0.72rem;" onclick="copyFilterMetadata()">
+                        📋 คัดลอก
+                      </button>
+                    </div>
+                    <div class="code-scroll-container" style="max-height: 240px; background: rgba(0, 0, 0, 0.4); border-radius: 6px; padding: 0.6rem;">
+                      <pre id="payloadMetadataView" style="margin: 0; font-family: monospace; font-size: 0.75rem; white-space: pre-wrap; color: #93c5fd;"></pre>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   </main>
@@ -1104,15 +1387,21 @@ def index():
     let currentData = null;
     let currentZoom = 1.0;
     let selectedIdx = null;
+    let currentUploadedFile = null;
+    let isUsingSample = false;
 
     document.getElementById('fileInput').addEventListener('change', function(e) {
       if (e.target.files.length > 0) {
+        currentUploadedFile = e.target.files[0];
+        isUsingSample = false;
         uploadAndProcess(e.target.files[0]);
       }
     });
 
     async function loadSampleReceipt() {
       setStatus('กำลังโหลดบิลตัวอย่าง...', true);
+      currentUploadedFile = null;
+      isUsingSample = true;
       try {
         const res = await fetch('/api/sample');
         const data = await res.json();
@@ -1125,6 +1414,8 @@ def index():
 
     async function uploadAndProcess(file) {
       setStatus('กำลังประมวลผล OCR ภาษาไทย...', true);
+      currentUploadedFile = file;
+      isUsingSample = false;
       const formData = new FormData();
       formData.append('file', file);
       formData.append('auto_deskew', document.getElementById('deskewCheck').checked);
@@ -1357,8 +1648,11 @@ def index():
       } else if (tabId === 'extraction') {
         document.getElementById('tabBtnExtraction').classList.add('active');
         document.getElementById('tabExtraction').classList.add('active');
+      } else if (tabId === 'chatocr') {
+        document.getElementById('tabBtnChatOCR').classList.add('active');
+        document.getElementById('tabChatOCR').classList.add('active');
       } else if (tabId === 'json') {
-        document.querySelector('.tab-btn:nth-child(4)').classList.add('active');
+        document.getElementById('tabBtnJson').classList.add('active');
         document.getElementById('tabJson').classList.add('active');
       }
     }
@@ -1876,6 +2170,171 @@ def index():
         .then(() => alert('คัดลอกตาราง Markdown ลง Clipboard เรียบร้อยแล้ว! นำไปวางในสไลด์หรือรายงานได้ทันที'))
         .catch(err => alert('ไม่สามารถคัดลอกได้: ' + err));
     }
+
+    /* PP-ChatOCRv4 Client Logic (Component 6) */
+    let lastChatOcrResult = null;
+
+    const PRESET_QUESTIONS = {
+      receipt_general: [
+        "ชื่อร้านค้าหรือบริษัท",
+        "วันที่ออกเอกสาร",
+        "ยอดเงินรวมทั้งสิ้น",
+        "เลขประจำตัวผู้เสียภาษี",
+        "รายการสินค้า"
+      ],
+      amounts_taxes: [
+        "ยอดรวมก่อนภาษี",
+        "ภาษีมูลค่าเพิ่ม (VAT)",
+        "ยอดเงินรวมทั้งสิ้น",
+        "ส่วนลด",
+        "สกุลเงิน"
+      ],
+      vendor_party: [
+        "ชื่อร้านค้าหรือบริษัท",
+        "เลขประจำตัวผู้เสียภาษี 13 หลัก",
+        "ที่อยู่ร้านค้า",
+        "เบอร์โทรศัพท์"
+      ],
+      line_items: [
+        "รายการสินค้าทั้งหมด",
+        "จำนวนแต่ละรายการ",
+        "ราคาต่อหน่วย",
+        "ยอดรวมแต่ละรายการ"
+      ],
+      disbursement: [
+        "ชื่อผู้ขอเบิกจ่ายหรือผู้รับเงิน",
+        "หน่วยงานหรือภาควิชา",
+        "เลขที่เอกสาร",
+        "วัตถุประสงค์การขอเบิก"
+      ]
+    };
+
+    function applyPresetQuestions(presetKey) {
+      const qList = PRESET_QUESTIONS[presetKey];
+      if (qList) {
+        document.getElementById('chatocrQuestionsInput').value = qList.join(', ');
+      }
+    }
+
+    async function executeChatOCR() {
+      if (!currentData && !currentUploadedFile && !isUsingSample) {
+        await loadSampleReceipt();
+      }
+
+      const qInput = document.getElementById('chatocrQuestionsInput').value.trim();
+      const docType = document.getElementById('chatocrDocTypeSelect').value || 'receipt';
+      const sysPrompt = document.getElementById('chatocrSystemPromptInput').value.trim();
+
+      const btn = document.getElementById('btnRunChatOCR');
+      const loader = document.getElementById('chatocrLoading');
+      const emptyState = document.getElementById('chatocrEmpty');
+      const resultsArea = document.getElementById('chatocrResultsArea');
+
+      btn.disabled = true;
+      loader.style.display = 'flex';
+      emptyState.style.display = 'none';
+      resultsArea.style.display = 'none';
+
+      const formData = new FormData();
+      if (currentUploadedFile) {
+        formData.append('file', currentUploadedFile);
+        formData.append('use_sample', false);
+      } else {
+        formData.append('use_sample', true);
+      }
+
+      formData.append('questions', qInput || 'ชื่อร้านค้าหรือบริษัท, วันที่ออกเอกสาร, ยอดเงินรวมทั้งสิ้น, รายการสินค้า');
+      formData.append('document_type', docType);
+      if (sysPrompt) {
+        formData.append('custom_prompt', sysPrompt);
+      }
+
+      try {
+        const res = await fetch('/api/chatocr/chat', {
+          method: 'POST',
+          body: formData
+        });
+
+        if (!res.ok) {
+          const errData = await res.json();
+          throw new Error(errData.error || 'ChatOCR request failed');
+        }
+
+        const data = await res.json();
+        lastChatOcrResult = data;
+        renderChatOcrResults(data);
+      } catch (err) {
+        alert('เกิดข้อผิดพลาดในการสกัดข้อมูล PP-ChatOCRv4: ' + err.message);
+        emptyState.style.display = 'block';
+      } finally {
+        btn.disabled = false;
+        loader.style.display = 'none';
+      }
+    }
+
+    function renderChatOcrResults(data) {
+      const resultsArea = document.getElementById('chatocrResultsArea');
+      const emptyState = document.getElementById('chatocrEmpty');
+      emptyState.style.display = 'none';
+      resultsArea.style.display = 'flex';
+
+      // Meta badges
+      document.getElementById('chatocrResDocTypeBadge').innerText = data.document_type || 'receipt';
+      document.getElementById('chatocrResModelBadge').innerText = `${data.model_info?.engine || 'PP-ChatOCRv4'} + ${data.model_info?.llm_model || 'Qwen2.5:3B'}`;
+      document.getElementById('chatocrResLatencyBadge').innerText = `⏱️ ${(data.latency_ms / 1000).toFixed(2)}s`;
+
+      // Render Q&A List
+      const qaList = document.getElementById('chatocrQaList');
+      qaList.innerHTML = '';
+      const answers = data.chat_answers || {};
+      const keys = Object.keys(answers);
+      document.getElementById('chatocrAnswerCountBadge').innerText = `${keys.length} คำตอบ`;
+
+      keys.forEach((q, idx) => {
+        const a = answers[q];
+        const item = document.createElement('div');
+        item.className = 'chatocr-qa-item';
+        item.innerHTML = `
+          <div class="chatocr-q-title">
+            <span>❓ [${idx + 1}]</span>
+            <span>${q}</span>
+          </div>
+          <div class="chatocr-a-body">${a || '<span style="color: var(--text-dim);">- ไม่มีระบุ -</span>'}</div>
+        `;
+        qaList.appendChild(item);
+      });
+
+      // Render Knowledge Payloads
+      const payload = data.knowledge_payload || {};
+      document.getElementById('payloadEmbedTextView').innerText = payload.embed_text || '';
+      document.getElementById('payloadMetadataView').innerText = JSON.stringify(payload.filter_metadata || {}, null, 2);
+
+      // Badge in Tab Header
+      const badge = document.getElementById('chatocrBadge');
+      badge.style.display = 'inline-flex';
+      badge.innerText = 'ตอบแล้ว';
+    }
+
+    function copyChatOcrAnswersJson() {
+      if (!lastChatOcrResult || !lastChatOcrResult.chat_answers) return;
+      navigator.clipboard.writeText(JSON.stringify(lastChatOcrResult.chat_answers, null, 2))
+        .then(() => alert('คัดลอก Q&A JSON ลง Clipboard แล้ว!'))
+        .catch(err => alert('ไม่สามารถคัดลอกได้: ' + err));
+    }
+
+    function copyEmbedText() {
+      if (!lastChatOcrResult || !lastChatOcrResult.knowledge_payload?.embed_text) return;
+      navigator.clipboard.writeText(lastChatOcrResult.knowledge_payload.embed_text)
+        .then(() => alert('คัดลอก Text to Embed สำหรับ Vector DB เรียบร้อยแล้ว!'))
+        .catch(err => alert('ไม่สามารถคัดลอกได้: ' + err));
+    }
+
+    function copyFilterMetadata() {
+      if (!lastChatOcrResult || !lastChatOcrResult.knowledge_payload?.filter_metadata) return;
+      navigator.clipboard.writeText(JSON.stringify(lastChatOcrResult.knowledge_payload.filter_metadata, null, 2))
+        .then(() => alert('คัดลอก Filter Metadata JSON เรียบร้อยแล้ว!'))
+        .catch(err => alert('ไม่สามารถคัดลอกได้: ' + err));
+    }
   </script>
 
   <!-- Model Benchmark Modal Dialog (Component 5) -->
@@ -2120,6 +2579,76 @@ async def api_v1_benchmark(req: BenchmarkRequest):
 async def api_v1_health():
     """Component 5: System health check and component monitoring."""
     return await run_in_threadpool(pipeline.get_health_status)
+
+
+@app.post(
+    "/api/chatocr/chat",
+    tags=["PP-ChatOCRv4 (Component 6)"],
+    summary="Interactive Document Chat & Knowledge Extraction with PP-ChatOCRv4"
+)
+async def api_chatocr_chat(
+    file: Optional[UploadFile] = File(None),
+    use_sample: bool = Form(False),
+    questions: str = Form(...),
+    document_type: str = Form("receipt"),
+    custom_prompt: Optional[str] = Form(None)
+):
+    """
+    Component 6: Interactive Visual Document QA & Knowledge Payload Generator.
+    Uses PaddleX PP-ChatOCRv4 with Thai OCR (th_PP-OCRv5) and Local LLM (qwen2.5:3b).
+    Generates dual Knowledge Payload (text to embed + filter metadata).
+    """
+    import time
+    try:
+        target_path: Optional[Path] = None
+
+        if use_sample or (file is None):
+            target_path = ROOT_DIR / "tests" / "output" / "sample_receipt.png"
+            if not target_path.exists():
+                return JSONResponse({"error": "Sample receipt not found on server"}, status_code=404)
+        else:
+            raw_bytes = await file.read()
+            filename = file.filename or "upload.png"
+            suffix = Path(filename).suffix.lower()
+            upload_dir = ROOT_DIR / "scratch" / "uploads"
+            upload_dir.mkdir(parents=True, exist_ok=True)
+
+            if suffix == ".pdf" or raw_bytes.startswith(b"%PDF"):
+                pages = ingestor.load_document(raw_bytes)
+                if not pages:
+                    return JSONResponse({"error": "Failed to parse PDF document pages"}, status_code=400)
+                temp_path = upload_dir / f"pdf_page_1_{int(time.time() * 1000)}.png"
+                pages[0].image.save(temp_path, format="PNG")
+                target_path = temp_path
+            else:
+                temp_path = upload_dir / f"upload_{int(time.time() * 1000)}{suffix or '.png'}"
+                with open(temp_path, "wb") as f:
+                    f.write(raw_bytes)
+                target_path = temp_path
+
+        # Parse questions list
+        q_list = []
+        for line in questions.replace("\r", "").split("\n"):
+            for part in line.split(","):
+                q_clean = part.strip()
+                if q_clean and q_clean not in q_list:
+                    q_list.append(q_clean)
+
+        if not q_list:
+            q_list = ["ชื่อร้านค้าหรือบริษัท", "วันที่ออกเอกสาร", "ยอดเงินรวมทั้งสิ้น", "รายการสินค้า"]
+
+        res = await run_in_threadpool(
+            chat_ocr_engine.chat_and_extract,
+            image_path=target_path,
+            questions=q_list,
+            document_type=document_type,
+            custom_prompt=custom_prompt
+        )
+        return res
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        return JSONResponse({"error": str(e)}, status_code=500)
 
 
 if __name__ == "__main__":

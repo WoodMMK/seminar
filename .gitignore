@@ -216,3 +216,4 @@ ProjectProposal.pdf
 # Test and runtime outputs
 tests/output/
 output/
+scratch/
