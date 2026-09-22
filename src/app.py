@@ -1223,15 +1223,15 @@ def index():
         <!-- Tab 5: PP-ChatOCRv4 Interactive Chat & Knowledge Payload -->
         <div class="tab-content" id="tabChatOCR">
           <div class="chatocr-container">
-            <!-- Top Controls -->
+            <!-- Top Controls: 100% Automated Type-Directed Template Extraction -->
             <div class="chatocr-ctrl-box">
-              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.6rem;">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem;">
                 <div>
-                  <h3 style="font-size: 0.92rem; font-weight: 600; color: #f8fafc; display: flex; align-items: center; gap: 0.4rem;">
-                    💬 PP-ChatOCRv4: Visual QA & Knowledge Payload
+                  <h3 style="font-size: 0.95rem; font-weight: 600; color: #f8fafc; display: flex; align-items: center; gap: 0.4rem;">
+                    💬 PP-ChatOCRv4: ระบบสกัดข้อมูลอัตโนมัติตาม Template
                   </h3>
-                  <p style="font-size: 0.74rem; color: var(--text-muted); margin-top: 2px;">
-                    ถาม-ตอบจากเอกสารด้วย PaddleX PP-ChatOCRv4 + Local LLM และสร้างก้อน Knowledge สำหรับ Vector DB (Text to Embed & Filter Metadata)
+                  <p style="font-size: 0.75rem; color: var(--text-muted); margin-top: 3px;">
+                    สกัดข้อมูลตาม System Prompt และชุดคำถามของประเภทเอกสารโดยอัตโนมัติ 100% โดยไม่ต้องป้อน Prompt หรือคำถามเอง
                   </p>
                 </div>
                 <div style="display: flex; gap: 0.4rem; align-items: center;">
@@ -1239,75 +1239,52 @@ def index():
                 </div>
               </div>
 
-              <!-- Preset Query Chips -->
-              <div style="margin-bottom: 0.6rem;">
-                <label style="font-size: 0.74rem; color: var(--text-muted); font-weight: 600; display: block; margin-bottom: 0.3rem;">
-                  🎯 ชุดคำถามด่วน (Preset Templates):
-                </label>
-                <div class="preset-chips-group">
-                  <button type="button" class="preset-chip" onclick="applyPresetQuestions('receipt_general')">
-                    📌 สกัดข้อมูลสำคัญตามประเภทเอกสาร
-                  </button>
-                  <button type="button" class="preset-chip" onclick="applyPresetQuestions('amounts_taxes')">
-                    💰 ยอดเงิน, VAT และสกุลเงิน
-                  </button>
-                  <button type="button" class="preset-chip" onclick="applyPresetQuestions('vendor_party')">
-                    🏢 ข้อมูลร้านค้าและเลขภาษี
-                  </button>
-                  <button type="button" class="preset-chip" onclick="applyPresetQuestions('line_items')">
-                    🧾 รายการสินค้าและราคา
-                  </button>
-                  <button type="button" class="preset-chip" onclick="applyPresetQuestions('disbursement')">
-                    👤 ผู้ขอเบิกจ่ายและเลขที่
-                  </button>
-                </div>
-              </div>
-
-              <!-- Document Type & Questions Input -->
-              <div style="display: flex; gap: 0.6rem; align-items: flex-start; margin-bottom: 0.6rem;">
-                <div style="flex: 1;">
-                  <label style="font-size: 0.74rem; color: var(--text-muted); font-weight: 600; display: block; margin-bottom: 0.25rem;">
-                    ❓ รายการคำถามที่ต้องการถามเอกสาร (ใส่หลายข้อได้ โดยคั่นด้วยเครื่องหมายจุลภาค , หรือขึ้นบรรทัดใหม่):
+              <!-- Automated Controls Row -->
+              <div style="display: flex; gap: 0.75rem; align-items: flex-end; flex-wrap: wrap; margin-bottom: 0.6rem;">
+                <div style="flex: 1; min-width: 280px;">
+                  <label style="font-size: 0.76rem; color: var(--text-muted); font-weight: 600; display: block; margin-bottom: 0.3rem;">
+                    📄 เลือกประเภทเอกสาร (Document Type Template):
                   </label>
-                  <textarea id="chatocrQuestionsInput" class="search-input" rows="3" style="width: 100%; resize: vertical; font-family: inherit; font-size: 0.8rem; line-height: 1.4;" placeholder="เช่น: ชื่อร้านค้าหรือบริษัท, วันที่ออกเอกสาร, ยอดเงินรวมทั้งสิ้น, รายการสินค้า"></textarea>
-                </div>
-                <div style="width: 200px; display: flex; flex-direction: column; gap: 0.4rem;">
-                  <label style="font-size: 0.74rem; color: var(--text-muted); font-weight: 600;">
-                    📄 ประเภทเอกสาร:
-                  </label>
-                  <select id="chatocrDocTypeSelect" class="search-input" style="width: 100%; padding: 0.35rem 0.5rem; font-size: 0.78rem;">
-                    <option value="receipt">ใบเสร็จรับเงิน (Receipt)</option>
-                    <option value="tax_invoice">ใบกำกับภาษี (Tax Invoice)</option>
-                    <option value="invoice">ใบแจ้งหนี้ (Invoice)</option>
-                    <option value="payment_voucher">ใบสำคัญรับเงิน (Payment Voucher)</option>
-                    <option value="credit_card_slip">สลิปบัตรเครดิต (Credit Card Slip)</option>
-                    <option value="general_document">เอกสารทั่วไป</option>
+                  <select id="chatocrDocTypeSelect" class="search-input" style="width: 100%; padding: 0.45rem 0.6rem; font-size: 0.82rem;" onchange="onChatOcrDocTypeChange()">
+                    <option value="general_receipt" selected>10. ใบเสร็จรับเงิน / ใบกำกับภาษีทั่วไป</option>
+                    <option value="principle_approval_request">1. เอกสารขออนุมัติหลักการ</option>
+                    <option value="principle_approval_granted">2. เอกสารอนุมัติหลักการ</option>
+                    <option value="disbursement_approval_request">3. ขออนุมัติเบิกจ่าย</option>
+                    <option value="advance_payment_request_1">4. แบบเบิกเงินทดรองจ่าย (แบบที่ 1 - สัญญายืมเงิน/เบิก)</option>
+                    <option value="advance_payment_request_2">5. แบบเบิกเงินทดรองจ่าย (แบบที่ 2 - รับเงิน/เคลียร์เงิน)</option>
+                    <option value="receipt_substitute">6. ใบแทนใบเสร็จ / ใบสำคัญรับเงิน</option>
+                    <option value="parcel_inspection">7. ใบตรวจรับพัสดุ</option>
+                    <option value="procurement_approval_request">8. ขออนุมัติจัดหาพัสดุ</option>
+                    <option value="procurement_attachment">9. เอกสารประกอบการขออนุมัติจัดหา</option>
                   </select>
+                </div>
 
-                  <button class="btn" id="btnRunChatOCR" onclick="executeChatOCR()" style="width: 100%; justify-content: center; margin-top: 0.2rem; background: linear-gradient(135deg, #2563eb, #10b981);">
-                    🚀 ถาม PP-ChatOCRv4
+                <div style="flex-shrink: 0;">
+                  <button class="btn" id="btnRunChatOCR" onclick="executeChatOCR()" style="padding: 0.5rem 1.25rem; font-size: 0.85rem; font-weight: 600; background: linear-gradient(135deg, #2563eb, #10b981); box-shadow: 0 4px 14px rgba(37, 99, 235, 0.4);">
+                    ⚡ สกัดข้อมูลอัตโนมัติ (PP-ChatOCRv4)
                   </button>
                 </div>
               </div>
 
-              <!-- Collapsible Advanced System Prompt -->
-              <details style="font-size: 0.75rem; color: var(--text-muted);">
-                <summary style="cursor: pointer; user-select: none;">⚙️ ปรับแต่ง System Prompt / Task Description (Advanced)</summary>
-                <div style="margin-top: 0.4rem;">
-                  <input type="text" id="chatocrSystemPromptInput" class="search-input" style="width: 100%; font-size: 0.75rem;" placeholder="สกัดข้อมูลสำคัญตามที่ระบุในรายการคำถาม โดยอิงจากข้อความในเอกสารอย่างเคร่งครัด หากไม่มีให้ตอบว่า 'ไม่มีระบุ'">
+              <!-- Automated Target Keys Preview Chips -->
+              <div style="background: rgba(0, 0, 0, 0.2); border-radius: 6px; padding: 0.5rem 0.75rem; border: 1px solid rgba(255, 255, 255, 0.05);">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.35rem;">
+                  <span style="font-size: 0.72rem; color: #94a3b8; font-weight: 600;">🎯 ฟิลด์ที่จะสกัดตาม Template อัตโนมัติ:</span>
+                  <span style="font-size: 0.7rem; color: #10b981; font-weight: 500;">✓ System Prompt ผูกตามประเภทเอกสารแล้ว</span>
                 </div>
-              </details>
+                <div id="chatocrTargetKeysChips" class="preset-chips-group"></div>
+              </div>
             </div>
 
             <!-- Loading Indicator -->
             <div id="chatocrLoading" style="display: none; align-items: center; justify-content: center; gap: 0.75rem; padding: 2.5rem; color: #94a3b8;">
               <div class="spinner" style="display: block; width: 24px; height: 24px;"></div>
-              <span id="chatocrLoadingText">PP-ChatOCRv4 กำลังสกัดคำตอบและสร้าง Knowledge Payload...</span>
+              <span id="chatocrLoadingText">PP-ChatOCRv4 กำลังสกัดคำตอบตาม Template และสร้าง Knowledge Payload...</span>
             </div>
 
             <!-- Empty State -->
             <div id="chatocrEmpty" style="color: var(--text-muted); font-size: 0.85rem; text-align: center; padding: 3rem;">
-              👈 กรุณาเลือกไฟล์เอกสาร (หรือกดปุ่ม <b>"ทดสอบบิลตัวอย่าง"</b> ด้านบน) จากนั้นใส่คำถามแล้วกด <b>"🚀 ถาม PP-ChatOCRv4"</b>
+              👈 กรุณาเลือกไฟล์เอกสาร (หรือกดปุ่ม <b>"⚡ ทดสอบบิลตัวอย่าง"</b> ด้านบน) จากนั้นเลือกประเภทเอกสารแล้วกด <b>"⚡ สกัดข้อมูลอัตโนมัติ (PP-ChatOCRv4)"</b>
             </div>
 
             <!-- ChatOCR Results Area -->
@@ -2086,8 +2063,11 @@ def index():
         .catch(err => alert('ไม่สามารถคัดลอกได้: ' + err));
     }
 
-    // Initialize LLM status on load
-    window.addEventListener('DOMContentLoaded', loadLLMStatus);
+    // Initialize LLM status and ChatOCR templates on load
+    window.addEventListener('DOMContentLoaded', () => {
+      loadLLMStatus();
+      loadChatOcrTemplates();
+    });
 
     async function rotateCurrentDoc(degrees) {
       const docImg = document.getElementById('docImage');
@@ -2171,49 +2151,61 @@ def index():
         .catch(err => alert('ไม่สามารถคัดลอกได้: ' + err));
     }
 
-    /* PP-ChatOCRv4 Client Logic (Component 6) */
+    /* PP-ChatOCRv4 Automated Client Logic (Component 6) */
     let lastChatOcrResult = null;
+    let chatocrTemplatesMap = {};
 
-    const PRESET_QUESTIONS = {
-      receipt_general: [
-        "ชื่อร้านค้าหรือบริษัท",
-        "วันที่ออกเอกสาร",
-        "ยอดเงินรวมทั้งสิ้น",
-        "เลขประจำตัวผู้เสียภาษี",
-        "รายการสินค้า"
-      ],
-      amounts_taxes: [
-        "ยอดรวมก่อนภาษี",
-        "ภาษีมูลค่าเพิ่ม (VAT)",
-        "ยอดเงินรวมทั้งสิ้น",
-        "ส่วนลด",
-        "สกุลเงิน"
-      ],
-      vendor_party: [
-        "ชื่อร้านค้าหรือบริษัท",
-        "เลขประจำตัวผู้เสียภาษี 13 หลัก",
-        "ที่อยู่ร้านค้า",
-        "เบอร์โทรศัพท์"
-      ],
-      line_items: [
-        "รายการสินค้าทั้งหมด",
-        "จำนวนแต่ละรายการ",
-        "ราคาต่อหน่วย",
-        "ยอดรวมแต่ละรายการ"
-      ],
-      disbursement: [
-        "ชื่อผู้ขอเบิกจ่ายหรือผู้รับเงิน",
-        "หน่วยงานหรือภาควิชา",
-        "เลขที่เอกสาร",
-        "วัตถุประสงค์การขอเบิก"
-      ]
-    };
+    async function loadChatOcrTemplates() {
+      try {
+        const res = await fetch('/api/chatocr/templates');
+        const templates = await res.json();
+        const select = document.getElementById('chatocrDocTypeSelect');
+        select.innerHTML = '';
+        chatocrTemplatesMap = {};
 
-    function applyPresetQuestions(presetKey) {
-      const qList = PRESET_QUESTIONS[presetKey];
-      if (qList) {
-        document.getElementById('chatocrQuestionsInput').value = qList.join(', ');
+        templates.forEach((tpl, idx) => {
+          chatocrTemplatesMap[tpl.id] = tpl;
+          const opt = document.createElement('option');
+          opt.value = tpl.id;
+          opt.innerText = tpl.title;
+          if (tpl.id === 'general_receipt') opt.selected = true;
+          select.appendChild(opt);
+        });
+
+        onChatOcrDocTypeChange();
+      } catch (err) {
+        console.warn('Could not load chatocr templates:', err);
       }
+    }
+
+    function onChatOcrDocTypeChange() {
+      const select = document.getElementById('chatocrDocTypeSelect');
+      const docType = select ? select.value : 'general_receipt';
+      const container = document.getElementById('chatocrTargetKeysChips');
+      if (!container) return;
+      container.innerHTML = '';
+
+      const tpl = chatocrTemplatesMap[docType];
+      const keys = tpl ? tpl.keys : [
+        "ชื่อร้านค้าหรือบริษัทผู้ขาย",
+        "เลขประจำตัวผู้เสียภาษี 13 หลัก",
+        "วันที่ออกเอกสาร",
+        "ยอดรวมก่อนภาษี (Subtotal)",
+        "ภาษีมูลค่าเพิ่ม 7% (VAT)",
+        "ยอดเงินรวมทั้งสิ้น (Total Amount)",
+        "รายการสินค้าและบริการ"
+      ];
+
+      keys.forEach((k, idx) => {
+        const chip = document.createElement('span');
+        chip.className = 'preset-chip';
+        chip.style.cursor = 'default';
+        chip.style.background = 'rgba(59, 130, 246, 0.12)';
+        chip.style.borderColor = 'rgba(59, 130, 246, 0.3)';
+        chip.style.color = '#93c5fd';
+        chip.innerText = `${idx + 1}. ${k}`;
+        container.appendChild(chip);
+      });
     }
 
     async function executeChatOCR() {
@@ -2221,9 +2213,7 @@ def index():
         await loadSampleReceipt();
       }
 
-      const qInput = document.getElementById('chatocrQuestionsInput').value.trim();
-      const docType = document.getElementById('chatocrDocTypeSelect').value || 'receipt';
-      const sysPrompt = document.getElementById('chatocrSystemPromptInput').value.trim();
+      const docType = document.getElementById('chatocrDocTypeSelect').value || 'general_receipt';
 
       const btn = document.getElementById('btnRunChatOCR');
       const loader = document.getElementById('chatocrLoading');
@@ -2243,11 +2233,7 @@ def index():
         formData.append('use_sample', true);
       }
 
-      formData.append('questions', qInput || 'ชื่อร้านค้าหรือบริษัท, วันที่ออกเอกสาร, ยอดเงินรวมทั้งสิ้น, รายการสินค้า');
       formData.append('document_type', docType);
-      if (sysPrompt) {
-        formData.append('custom_prompt', sysPrompt);
-      }
 
       try {
         const res = await fetch('/api/chatocr/chat', {
@@ -2581,21 +2567,32 @@ async def api_v1_health():
     return await run_in_threadpool(pipeline.get_health_status)
 
 
+@app.get(
+    "/api/chatocr/templates",
+    tags=["PP-ChatOCRv4 (Component 6)"],
+    summary="Get Predefined Extraction Templates for 10 Document Types"
+)
+async def api_chatocr_templates():
+    """Returns metadata and target keys for all 10 automated document templates."""
+    return chat_ocr_engine.get_supported_templates()
+
+
 @app.post(
     "/api/chatocr/chat",
     tags=["PP-ChatOCRv4 (Component 6)"],
-    summary="Interactive Document Chat & Knowledge Extraction with PP-ChatOCRv4"
+    summary="Automated Document Extraction & Knowledge Payload with PP-ChatOCRv4"
 )
 async def api_chatocr_chat(
     file: Optional[UploadFile] = File(None),
     use_sample: bool = Form(False),
-    questions: str = Form(...),
-    document_type: str = Form("receipt"),
+    questions: Optional[str] = Form(None),
+    document_type: str = Form("general_receipt"),
     custom_prompt: Optional[str] = Form(None)
 ):
     """
-    Component 6: Interactive Visual Document QA & Knowledge Payload Generator.
+    Component 6: Automated Visual Document Extraction & Knowledge Payload Generator.
     Uses PaddleX PP-ChatOCRv4 with Thai OCR (th_PP-OCRv5) and Local LLM (qwen2.5:3b).
+    Automatically applies type-directed system prompts and predefined target keys.
     Generates dual Knowledge Payload (text to embed + filter metadata).
     """
     import time
@@ -2626,16 +2623,15 @@ async def api_chatocr_chat(
                     f.write(raw_bytes)
                 target_path = temp_path
 
-        # Parse questions list
-        q_list = []
-        for line in questions.replace("\r", "").split("\n"):
-            for part in line.split(","):
-                q_clean = part.strip()
-                if q_clean and q_clean not in q_list:
-                    q_list.append(q_clean)
-
-        if not q_list:
-            q_list = ["ชื่อร้านค้าหรือบริษัท", "วันที่ออกเอกสาร", "ยอดเงินรวมทั้งสิ้น", "รายการสินค้า"]
+        # Parse questions list if provided, else None (triggers automatic template keys)
+        q_list = None
+        if questions and questions.strip():
+            q_list = []
+            for line in questions.replace("\r", "").split("\n"):
+                for part in line.split(","):
+                    q_clean = part.strip()
+                    if q_clean and q_clean not in q_list:
+                        q_list.append(q_clean)
 
         res = await run_in_threadpool(
             chat_ocr_engine.chat_and_extract,
