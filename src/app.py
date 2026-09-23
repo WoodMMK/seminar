@@ -1005,6 +1005,33 @@ def index():
       align-items: flex-start;
       gap: 0.5rem;
     }
+    .chatocr-qa-input {
+      width: 100%;
+      background: rgba(0, 0, 0, 0.35);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      border-radius: 5px;
+      color: #f1f5f9;
+      font-size: 0.8rem;
+      padding: 0.4rem 0.6rem;
+      font-family: inherit;
+      resize: vertical;
+      line-height: 1.4;
+      box-sizing: border-box;
+      transition: all 0.2s ease;
+    }
+    .chatocr-qa-input:focus {
+      outline: none;
+      border-color: #38bdf8;
+      background: rgba(0, 0, 0, 0.55);
+      box-shadow: 0 0 0 2px rgba(56, 189, 248, 0.25);
+    }
+    .field-editor-box {
+      background: rgba(15, 23, 42, 0.7);
+      border: 1px solid rgba(59, 130, 246, 0.35);
+      border-radius: 8px;
+      padding: 0.75rem 0.9rem;
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.25);
+    }
   </style>
 </head>
 <body>
@@ -1020,6 +1047,7 @@ def index():
     <div class="badges">
       <a href="/docs" target="_blank" class="badge" style="color: #60a5fa; border-color: rgba(96, 165, 250, 0.4); text-decoration: none; font-weight: 500;">Swagger API Docs (/docs)</a>
       <span class="badge green">● Model: th_PP-OCRv5_mobile_rec</span>
+      <span id="headerDbBadge" class="badge" style="color: #93c5fd; border-color: rgba(59, 130, 246, 0.4);">PostgreSQL: เชื่อมต่อ...</span>
       <span class="badge">Privacy 100% On-Premises</span>
     </div>
   </header>
@@ -1410,26 +1438,84 @@ def index():
 
             <!-- ChatOCR Results Area -->
             <div id="chatocrResultsArea" style="display: none; flex-direction: column; gap: 0.9rem;">
-              <!-- Meta Badge Header -->
-              <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.5rem;">
+              <!-- Meta Badge & Actions Header -->
+              <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.5rem; background: rgba(0, 0, 0, 0.25); border-radius: 8px; padding: 0.5rem 0.75rem; border: 1px solid var(--border);">
                 <div style="display: flex; gap: 0.4rem; align-items: center; flex-wrap: wrap;">
                   <span id="chatocrResDocTypeBadge" class="badge green">ใบเสร็จรับเงิน</span>
                   <span id="chatocrResModelBadge" class="badge">PP-ChatOCRv4 + Qwen2.5:3B</span>
                   <span id="chatocrResLatencyBadge" class="badge">- ms</span>
                   <span id="chatocrMathReconcileBadge" class="badge" style="display: none;"></span>
+                  <span id="chatocrDbStatusBadge" class="badge" style="font-size: 0.7rem; color: #93c5fd; border-color: rgba(59, 130, 246, 0.4);">PostgreSQL: ตรวจสอบ...</span>
                 </div>
-                <div style="display: flex; gap: 0.4rem;">
-                  <button class="btn btn-secondary" style="padding: 0.25rem 0.6rem; font-size: 0.75rem;" onclick="copyChatOcrAnswersJson()">คัดลอก Q&A JSON</button>
+                <div style="display: flex; gap: 0.45rem; align-items: center;">
+                  <button class="btn btn-secondary" style="padding: 0.28rem 0.65rem; font-size: 0.75rem;" onclick="copyChatOcrAnswersJson()">คัดลอก Q&A JSON</button>
+                  <button class="btn" id="btnSaveToPostgres" style="padding: 0.28rem 0.85rem; font-size: 0.76rem; font-weight: 600; background: linear-gradient(135deg, #059669, #10b981); box-shadow: 0 2px 10px rgba(16, 185, 129, 0.35);" onclick="saveToDatabase()">
+                    บันทึกลง Database (PostgreSQL)
+                  </button>
                 </div>
               </div>
+
+              <!-- Database Save Feedback Toast/Banner -->
+              <div id="dbSaveToast" style="display: none; padding: 0.65rem 0.95rem; border-radius: 8px; font-size: 0.82rem; line-height: 1.45; transition: all 0.25s ease;"></div>
 
               <!-- Financial Reconciliation Banner -->
               <div id="chatocrReconcileBanner" style="display: none; padding: 0.65rem 0.95rem; border-radius: 8px; font-size: 0.82rem; line-height: 1.45; transition: all 0.2s ease;"></div>
 
+              <!-- Interactive Field Editor & Live Sync Section -->
+              <div class="field-editor-box">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem; flex-wrap: wrap; gap: 0.4rem;">
+                  <div>
+                    <span style="font-size: 0.84rem; font-weight: 600; color: #60a5fa;">แก้ไขข้อมูลก่อนบันทึก (Interactive Field Editor - แก้ไขแล้วซิงค์กับ Embed & Metadata ทันที)</span>
+                    <div style="font-size: 0.68rem; color: var(--text-muted);">แก้ไขฟิลด์ด้านล่าง แล้วระบบจะคำนวณสูตรและอัปเดตเนื้อหา Embed Text อัตโนมัติ</div>
+                  </div>
+                  <button class="btn btn-secondary" style="padding: 0.2rem 0.55rem; font-size: 0.7rem;" onclick="resetFieldsFromOriginalOcr()" title="รีเซ็ตกลับเป็นค่าเริ่มต้นที่สกัดได้จาก OCR">
+                    รีเซ็ตค่าเดิมจาก OCR
+                  </button>
+                </div>
+                
+                <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); gap: 0.65rem; padding: 0.35rem 0;">
+                  <div>
+                    <label style="font-size: 0.72rem; color: #94a3b8; font-weight: 600; display: block; margin-bottom: 0.25rem;">ยอดรวมทั้งสิ้น (Total Amount - บาท):</label>
+                    <input type="number" step="0.01" id="editTotalAmount" class="search-input" style="width: 100%; font-weight: 600; color: #38bdf8; font-size: 0.82rem;" oninput="onFormFieldChange()">
+                  </div>
+                  <div>
+                    <label style="font-size: 0.72rem; color: #94a3b8; font-weight: 600; display: block; margin-bottom: 0.25rem;">รวมก่อนภาษี (Subtotal - บาท):</label>
+                    <input type="number" step="0.01" id="editSubtotal" class="search-input" style="width: 100%; font-size: 0.82rem;" oninput="onFormFieldChange()">
+                  </div>
+                  <div>
+                    <label style="font-size: 0.72rem; color: #94a3b8; font-weight: 600; display: block; margin-bottom: 0.25rem;">ภาษีมูลค่าเพิ่ม (VAT - บาท):</label>
+                    <input type="number" step="0.01" id="editVat" class="search-input" style="width: 100%; font-size: 0.82rem;" oninput="onFormFieldChange()">
+                  </div>
+                  <div>
+                    <label style="font-size: 0.72rem; color: #94a3b8; font-weight: 600; display: block; margin-bottom: 0.25rem;">เลขที่เอกสาร / หนังสือ:</label>
+                    <input type="text" id="editDocNo" class="search-input" style="width: 100%; font-size: 0.82rem;" oninput="onFormFieldChange()">
+                  </div>
+                  <div>
+                    <label style="font-size: 0.72rem; color: #94a3b8; font-weight: 600; display: block; margin-bottom: 0.25rem;">บุคคล / หน่วยงาน / ร้านค้า:</label>
+                    <input type="text" id="editVendor" class="search-input" style="width: 100%; font-size: 0.82rem;" oninput="onFormFieldChange()">
+                  </div>
+                  <div>
+                    <label style="font-size: 0.72rem; color: #94a3b8; font-weight: 600; display: block; margin-bottom: 0.25rem;">วันที่เอกสาร (ISO YYYY-MM-DD):</label>
+                    <input type="text" id="editDate" class="search-input" style="width: 100%; font-size: 0.82rem;" oninput="onFormFieldChange()">
+                  </div>
+                  <div>
+                    <label style="font-size: 0.72rem; color: #94a3b8; font-weight: 600; display: block; margin-bottom: 0.25rem;">เลขประจำตัวผู้เสียภาษี 13 หลัก:</label>
+                    <input type="text" id="editTaxId" class="search-input" style="width: 100%; font-size: 0.82rem;" oninput="onFormFieldChange()">
+                  </div>
+                  <div>
+                    <label style="font-size: 0.72rem; color: #94a3b8; font-weight: 600; display: block; margin-bottom: 0.25rem;">ชื่อเอกสาร (Document Title):</label>
+                    <input type="text" id="editDocTitle" class="search-input" style="width: 100%; font-size: 0.82rem;" oninput="onFormFieldChange()">
+                  </div>
+                </div>
+              </div>
+
               <!-- 1. Q&A Answers Section -->
               <div class="chatocr-answers-card">
                 <div class="chatocr-card-header">
-                  <span style="font-weight: 600; font-size: 0.82rem; color: #f1f5f9;">ผลลัพธ์การตอบคำถาม (Extracted Q&A Pairs)</span>
+                  <div>
+                    <span style="font-weight: 600; font-size: 0.82rem; color: #f1f5f9;">ผลลัพธ์การตอบคำถาม (Extracted Q&A Pairs)</span>
+                    <span style="font-size: 0.68rem; color: var(--text-muted); margin-left: 0.4rem;">(สามารถคลิกแก้ไขคำตอบในแต่ละข้อได้โดยตรง และจะซิงค์กับ Embed อัตโนมัติ)</span>
+                  </div>
                   <span class="badge" id="chatocrAnswerCountBadge">0 คำตอบ</span>
                 </div>
                 <div class="chatocr-qa-list" id="chatocrQaList"></div>
@@ -2401,10 +2487,11 @@ def index():
         .catch(err => alert('ไม่สามารถคัดลอกได้: ' + err));
     }
 
-    // Initialize LLM status and ChatOCR templates on load
+    // Initialize LLM status, ChatOCR templates and Database status on load
     window.addEventListener('DOMContentLoaded', () => {
       loadLLMStatus();
       loadChatOcrTemplates();
+      checkDatabaseStatus();
     });
 
     async function rotateCurrentDoc(degrees) {
@@ -2626,11 +2713,30 @@ def index():
       }
     }
 
+    let lastChatOcrResult = null;
+    let rawOriginalChatOcrResult = null;
+    let currentChatOcrResult = null;
+
+    function escapeHtml(str) {
+      if (str === null || str === undefined) return '';
+      return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+    }
+
     function renderChatOcrResults(data) {
       const resultsArea = document.getElementById('chatocrResultsArea');
       const emptyState = document.getElementById('chatocrEmpty');
       emptyState.style.display = 'none';
       resultsArea.style.display = 'flex';
+
+      // Save deep copies of original and working copy
+      lastChatOcrResult = data;
+      rawOriginalChatOcrResult = JSON.parse(JSON.stringify(data));
+      currentChatOcrResult = JSON.parse(JSON.stringify(data));
 
       // Update left stage document preview if server returned base64 image
       if (data.image_base64) {
@@ -2642,90 +2748,434 @@ def index():
       }
 
       // Meta badges
-      document.getElementById('chatocrResDocTypeBadge').innerText = data.knowledge_payload?.filter_metadata?.document_type_name || data.document_type_name || data.document_title || data.document_type || 'receipt';
+      const meta = (currentChatOcrResult.knowledge_payload && currentChatOcrResult.knowledge_payload.filter_metadata) || {};
+      document.getElementById('chatocrResDocTypeBadge').innerText = meta.document_type_name || data.document_type_name || data.document_title || data.document_type || 'receipt';
       document.getElementById('chatocrResModelBadge').innerText = `${data.model_info?.engine || 'PP-ChatOCRv4'} + ${data.model_info?.llm_model || 'Qwen2.5:3B'}`;
       document.getElementById('chatocrResLatencyBadge').innerText = `${(data.latency_ms / 1000).toFixed(2)}s`;
 
-      // Financial Reconciliation Badge & Banner
-      const reconcile = data.knowledge_payload?.filter_metadata?.math_reconciliation;
-      const recBadge = document.getElementById('chatocrMathReconcileBadge');
-      const recBanner = document.getElementById('chatocrReconcileBanner');
+      // Badge in Tab Header
+      const badge = document.getElementById('chatocrBadge');
+      badge.style.display = 'inline-flex';
+      badge.innerText = 'ตอบแล้ว';
 
-      if (reconcile && reconcile.status && reconcile.status !== 'unverified') {
-        recBadge.style.display = 'inline-flex';
-        recBanner.style.display = 'block';
+      // Populate interactive editor inputs
+      populateFieldEditor(currentChatOcrResult);
 
-        if (reconcile.status === 'passed') {
-          recBadge.className = 'badge green';
-          recBadge.style.background = '';
-          recBadge.style.color = '';
-          recBadge.style.border = '';
-          recBadge.innerText = '[ถูกต้อง] ตรวจสอบยอดเงินถูกต้อง';
+      // Render Q&A answers with editable textareas
+      renderQaPairs(currentChatOcrResult.chat_answers || {});
 
-          recBanner.style.background = 'rgba(16, 185, 129, 0.12)';
-          recBanner.style.border = '1px solid rgba(16, 185, 129, 0.35)';
-          recBanner.style.color = '#34d399';
-          recBanner.innerHTML = `<b>[ตรวจสอบถูกต้อง] ตรวจสอบความถูกต้องของยอดเงิน (Reconciliation Passed):</b> ${reconcile.details || 'ยอดเงินคำนวณตรงกันสมบูรณ์'}`;
-        } else if (reconcile.status === 'discrepancy') {
-          recBadge.className = 'badge';
-          recBadge.style.background = 'rgba(239, 68, 68, 0.2)';
-          recBadge.style.color = '#ef4444';
-          recBadge.style.border = '1px solid rgba(239, 68, 68, 0.4)';
-          recBadge.innerText = '[ไม่ตรงกัน] ตรวจพบยอดเงินคลาดเคลื่อน (Discrepancy)';
+      // Trigger initial real-time sync & reconciliation calculation
+      onFormFieldChange();
 
-          recBanner.style.background = 'rgba(239, 68, 68, 0.12)';
-          recBanner.style.border = '1px solid rgba(239, 68, 68, 0.35)';
-          recBanner.style.color = '#f87171';
-          recBanner.innerHTML = `<b>[ยอดไม่ตรงกัน] ตรวจพบความคลาดเคลื่อนของยอดเงิน (Math Discrepancy):</b> ${reconcile.details || 'ยอดคำนวณไม่ตรงกับยอดที่ระบุในเอกสาร'}`;
-        } else {
-          recBadge.className = 'badge';
-          recBadge.style.background = 'rgba(56, 189, 248, 0.15)';
-          recBadge.style.color = '#38bdf8';
-          recBadge.style.border = '1px solid rgba(56, 189, 248, 0.35)';
-          recBadge.innerText = '[วิเคราะห์ AI] ตรวจสอบผ่าน AI Cross-Check';
+      // Check and update database status
+      checkDatabaseStatus();
+    }
 
-          recBanner.style.background = 'rgba(56, 189, 248, 0.08)';
-          recBanner.style.border = '1px solid rgba(56, 189, 248, 0.25)';
-          recBanner.style.color = '#7dd3fc';
-          recBanner.innerHTML = `<b>[ตรวจสอบยอดเงิน] การตรวจสอบยอดเงิน (Financial Cross-Check):</b> ${reconcile.details || 'ผ่านการวิเคราะห์เชิงตัวเลขโดย AI'}`;
-        }
-      } else {
-        recBadge.style.display = 'none';
-        recBanner.style.display = 'none';
-      }
+    function populateFieldEditor(data) {
+      const meta = (data.knowledge_payload && data.knowledge_payload.filter_metadata) || {};
+      const elTotal = document.getElementById('editTotalAmount');
+      const elSubtotal = document.getElementById('editSubtotal');
+      const elVat = document.getElementById('editVat');
+      const elDocNo = document.getElementById('editDocNo');
+      const elVendor = document.getElementById('editVendor');
+      const elDate = document.getElementById('editDate');
+      const elTaxId = document.getElementById('editTaxId');
+      const elDocTitle = document.getElementById('editDocTitle');
 
-      // Render Q&A List
+      if (elTotal) elTotal.value = meta.total_amount != null ? meta.total_amount : '';
+      if (elSubtotal) elSubtotal.value = meta.subtotal != null ? meta.subtotal : '';
+      if (elVat) elVat.value = meta.vat != null ? meta.vat : '';
+      if (elDocNo) elDocNo.value = meta.document_no || meta.doc_no || '';
+      if (elVendor) elVendor.value = meta.vendor || meta.vendor_or_requester || '';
+      if (elDate) elDate.value = meta.date || meta.doc_date_iso || '';
+      if (elTaxId) elTaxId.value = meta.tax_id || meta.vendor_tax_id || '';
+      if (elDocTitle) elDocTitle.value = meta.document_title || data.filename || 'เอกสารการเงิน';
+    }
+
+    function renderQaPairs(answers) {
       const qaList = document.getElementById('chatocrQaList');
+      if (!qaList) return;
       qaList.innerHTML = '';
-      const answers = data.chat_answers || {};
-      const keys = Object.keys(answers);
+      const keys = Object.keys(answers || {});
       document.getElementById('chatocrAnswerCountBadge').innerText = `${keys.length} คำตอบ`;
 
       keys.forEach((q, idx) => {
-        const a = answers[q];
+        const a = answers[q] || '';
         const isCrossCheck = q.includes('Cross-check') || q.includes('ตรวจสอบ') || q.includes('ความถูกต้อง');
         const item = document.createElement('div');
         item.className = 'chatocr-qa-item' + (isCrossCheck ? ' crosscheck-item' : '');
         item.innerHTML = `
           <div class="chatocr-q-title">
             <span>[${idx + 1}]</span>
-            <span style="${isCrossCheck ? 'color: #38bdf8; font-weight: 600;' : ''}">${q}</span>
+            <span style="${isCrossCheck ? 'color: #38bdf8; font-weight: 600;' : ''}">${escapeHtml(q)}</span>
             ${isCrossCheck ? '<span class="badge" style="font-size: 0.65rem; background: rgba(56, 189, 248, 0.2); color: #38bdf8; margin-left: auto;">Financial Cross-Check</span>' : ''}
           </div>
-          <div class="chatocr-a-body" style="${isCrossCheck ? 'font-weight: 500; color: #f1f5f9;' : ''}">${a || '<span style="color: var(--text-dim);">- ไม่มีระบุ -</span>'}</div>
+          <div style="margin-top: 0.35rem;">
+            <textarea class="chatocr-qa-input" data-key="${escapeHtml(q)}" oninput="onQaAnswerChange(this)" rows="${a.length > 80 ? 3 : 2}" placeholder="- ไม่มีระบุ -">${escapeHtml(a)}</textarea>
+          </div>
         `;
         qaList.appendChild(item);
       });
+    }
 
-      // Render Knowledge Payloads
-      const payload = data.knowledge_payload || {};
-      document.getElementById('payloadEmbedTextView').innerText = payload.embed_text || '';
-      document.getElementById('payloadMetadataView').innerText = JSON.stringify(payload.filter_metadata || {}, null, 2);
+    function onQaAnswerChange(textarea) {
+      if (!currentChatOcrResult) return;
+      const key = textarea.getAttribute('data-key');
+      const val = textarea.value;
+      if (!currentChatOcrResult.chat_answers) currentChatOcrResult.chat_answers = {};
+      currentChatOcrResult.chat_answers[key] = val;
 
-      // Badge in Tab Header
-      const badge = document.getElementById('chatocrBadge');
-      badge.style.display = 'inline-flex';
-      badge.innerText = 'ตอบแล้ว';
+      // Auto-sync into form field if it's total amount or subtotal or doc number
+      if (key.includes('ยอดเงินรวม') || key.includes('ยอดรวมทั้งสิ้น') || key.includes('วงเงินงบประมาณ')) {
+        const numMatch = val.replace(/,/g, '').match(/([0-9]+(?:[.][0-9]+)?)/);
+        if (numMatch) {
+          const parsed = parseFloat(numMatch[1]);
+          if (!isNaN(parsed) && parsed > 0) {
+            document.getElementById('editTotalAmount').value = parsed;
+          }
+        }
+      }
+
+      onFormFieldChange();
+    }
+
+    function onFormFieldChange() {
+      if (!currentChatOcrResult) return;
+
+      if (!currentChatOcrResult.knowledge_payload) {
+        currentChatOcrResult.knowledge_payload = { filter_metadata: {}, embed_text: '' };
+      }
+      if (!currentChatOcrResult.knowledge_payload.filter_metadata) {
+        currentChatOcrResult.knowledge_payload.filter_metadata = {};
+      }
+
+      const meta = currentChatOcrResult.knowledge_payload.filter_metadata;
+
+      // 1. Read input values from DOM
+      const rawTotal = document.getElementById('editTotalAmount')?.value.trim();
+      const rawSubtotal = document.getElementById('editSubtotal')?.value.trim();
+      const rawVat = document.getElementById('editVat')?.value.trim();
+      const docNo = document.getElementById('editDocNo')?.value.trim() || null;
+      const vendor = document.getElementById('editVendor')?.value.trim() || null;
+      const dateStr = document.getElementById('editDate')?.value.trim() || null;
+      const taxId = document.getElementById('editTaxId')?.value.trim() || null;
+      const docTitle = document.getElementById('editDocTitle')?.value.trim() || null;
+
+      const totalAmount = rawTotal !== '' && !isNaN(parseFloat(rawTotal)) ? parseFloat(rawTotal) : null;
+      const subtotal = rawSubtotal !== '' && !isNaN(parseFloat(rawSubtotal)) ? parseFloat(rawSubtotal) : null;
+      const vat = rawVat !== '' && !isNaN(parseFloat(rawVat)) ? parseFloat(rawVat) : null;
+
+      // 2. Synchronize into filter_metadata
+      meta.total_amount = totalAmount;
+      meta.subtotal = subtotal;
+      meta.vat = vat;
+      meta.doc_no = docNo;
+      meta.document_no = docNo;
+      meta.vendor_or_requester = vendor;
+      meta.vendor = vendor;
+      meta.doc_date_iso = dateStr;
+      meta.date = dateStr;
+      meta.vendor_tax_id = taxId;
+      meta.tax_id = taxId;
+      meta.document_title = docTitle || meta.document_title || currentChatOcrResult.filename || 'เอกสารการเงิน';
+
+      // 3. Dynamic Real-Time Math Reconciliation
+      let reconcile = {
+        status: 'unverified',
+        is_balanced: false,
+        diff: 0.0,
+        calculated_total: totalAmount,
+        details: 'ไม่มีข้อมูลกระทบยอด'
+      };
+
+      // Check for formulas in chat answers (e.g. "600 x 2" or "600*2 = 1200")
+      let formulaFound = null;
+      const answers = currentChatOcrResult.chat_answers || {};
+      for (const [k, v] of Object.entries(answers)) {
+        if (!v) continue;
+        const cleaned = v.replace(/,/g, '');
+        const m = cleaned.match(/([0-9]+(?:[.][0-9]+)?)[ \t]*(?:[*]|x|คูณ)[ \t]*([0-9]+(?:[.][0-9]+)?)/i);
+        if (m) {
+          const n1 = parseFloat(m[1]);
+          const n2 = parseFloat(m[2]);
+          if (!isNaN(n1) && !isNaN(n2)) {
+            formulaFound = { n1, n2, result: Math.round((n1 * n2) * 100) / 100 };
+            break;
+          }
+        }
+      }
+
+      if (formulaFound && totalAmount !== null) {
+        const diff = Math.round(Math.abs(formulaFound.result - totalAmount) * 100) / 100;
+        if (diff <= 0.05) {
+          reconcile = {
+            status: 'passed',
+            is_balanced: true,
+            diff: 0.0,
+            calculated_total: totalAmount,
+            details: `ยอดเงินตรงกันสมบูรณ์: คำนวณสูตร ${formulaFound.n1.toLocaleString('th-TH', {minimumFractionDigits: 2})} x ${formulaFound.n2} = ${totalAmount.toLocaleString('th-TH', {minimumFractionDigits: 2})} บาท`
+          };
+        } else {
+          reconcile = {
+            status: 'discrepancy',
+            is_balanced: false,
+            diff: diff,
+            calculated_total: formulaFound.result,
+            details: `ตรวจพบยอดเงินไม่ตรงกัน (Discrepancy): คำนวณสูตร ${formulaFound.n1.toLocaleString('th-TH', {minimumFractionDigits: 2})} x ${formulaFound.n2} = ${formulaFound.result.toLocaleString('th-TH', {minimumFractionDigits: 2})} บาท แต่ระบุยอดรวม ${totalAmount.toLocaleString('th-TH', {minimumFractionDigits: 2})} บาท (ต่างกัน ${diff.toLocaleString('th-TH', {minimumFractionDigits: 2})} บาท)`
+          };
+        }
+      } else if (subtotal !== null && vat !== null && totalAmount !== null) {
+        const expected = Math.round((subtotal + vat) * 100) / 100;
+        const diff = Math.round(Math.abs(expected - totalAmount) * 100) / 100;
+        if (diff <= 0.05) {
+          reconcile = {
+            status: 'passed',
+            is_balanced: true,
+            diff: 0.0,
+            calculated_total: totalAmount,
+            details: `รวมก่อนภาษี (${subtotal.toLocaleString('th-TH', {minimumFractionDigits: 2})}) + VAT (${vat.toLocaleString('th-TH', {minimumFractionDigits: 2})}) เท่ากับยอดเงินรวมทั้งสิ้น (${totalAmount.toLocaleString('th-TH', {minimumFractionDigits: 2})} บาท) ถูกต้องสมบูรณ์`
+          };
+        } else {
+          reconcile = {
+            status: 'discrepancy',
+            is_balanced: false,
+            diff: diff,
+            calculated_total: expected,
+            details: `รวมก่อนภาษี (${subtotal.toLocaleString('th-TH', {minimumFractionDigits: 2})}) + VAT (${vat.toLocaleString('th-TH', {minimumFractionDigits: 2})}) = ${expected.toLocaleString('th-TH', {minimumFractionDigits: 2})} บาท ไม่ตรงกับยอดเงินรวมทั้งสิ้น ${totalAmount.toLocaleString('th-TH', {minimumFractionDigits: 2})} บาท (ต่างกัน ${diff.toLocaleString('th-TH', {minimumFractionDigits: 2})} บาท)`
+          };
+        }
+      } else if (totalAmount !== null) {
+        reconcile = {
+          status: 'unverified',
+          is_balanced: false,
+          diff: 0.0,
+          calculated_total: totalAmount,
+          details: `มียอดเงินระบุ ${totalAmount.toLocaleString('th-TH', {minimumFractionDigits: 2})} บาท (ยังไม่พบรายการย่อยสำหรับกระทบยอด)`
+        };
+      }
+
+      meta.math_reconciliation = reconcile;
+
+      // 4. Update Reconciliation UI Banner & Badge
+      const recBadge = document.getElementById('chatocrMathReconcileBadge');
+      const recBanner = document.getElementById('chatocrReconcileBanner');
+
+      if (recBadge && recBanner) {
+        if (reconcile.status === 'passed') {
+          recBadge.style.display = 'inline-flex';
+          recBadge.className = 'badge green';
+          recBadge.style.background = '';
+          recBadge.style.color = '';
+          recBadge.style.border = '';
+          recBadge.innerText = '[ถูกต้อง] ตรวจสอบยอดเงินถูกต้อง';
+
+          recBanner.style.display = 'block';
+          recBanner.style.background = 'rgba(16, 185, 129, 0.12)';
+          recBanner.style.border = '1px solid rgba(16, 185, 129, 0.35)';
+          recBanner.style.color = '#34d399';
+          recBanner.innerHTML = `<b>[ตรวจสอบถูกต้อง] ตรวจสอบความถูกต้องของยอดเงิน (Reconciliation Passed):</b> ${reconcile.details}`;
+        } else if (reconcile.status === 'discrepancy') {
+          recBadge.style.display = 'inline-flex';
+          recBadge.className = 'badge';
+          recBadge.style.background = 'rgba(239, 68, 68, 0.2)';
+          recBadge.style.color = '#ef4444';
+          recBadge.style.border = '1px solid rgba(239, 68, 68, 0.4)';
+          recBadge.innerText = '[ไม่ตรงกัน] ตรวจพบยอดเงินคลาดเคลื่อน (Discrepancy)';
+
+          recBanner.style.display = 'block';
+          recBanner.style.background = 'rgba(239, 68, 68, 0.12)';
+          recBanner.style.border = '1px solid rgba(239, 68, 68, 0.35)';
+          recBanner.style.color = '#f87171';
+          recBanner.innerHTML = `<b>[ยอดไม่ตรงกัน] ตรวจพบความคลาดเคลื่อนของยอดเงิน (Math Discrepancy):</b> ${reconcile.details}`;
+        } else {
+          recBadge.style.display = 'none';
+          recBanner.style.display = 'none';
+        }
+      }
+
+      // 5. Reconstruct Embed Text Live
+      const newEmbedText = buildEmbedText(meta, currentChatOcrResult.chat_answers);
+      currentChatOcrResult.knowledge_payload.embed_text = newEmbedText;
+
+      // 6. Update Viewers in UI
+      const embedView = document.getElementById('payloadEmbedTextView');
+      const metaView = document.getElementById('payloadMetadataView');
+      if (embedView) embedView.innerText = newEmbedText;
+      if (metaView) metaView.innerText = JSON.stringify(meta, null, 2);
+
+      // Keep lastChatOcrResult in sync
+      lastChatOcrResult = currentChatOcrResult;
+    }
+
+    function buildEmbedText(meta, chatAnswers) {
+      const statusThaiMap = {
+        passed: 'ตรวจสอบถูกต้อง (Reconciled)',
+        discrepancy: 'พบยอดเงินไม่ตรงกัน (Discrepancy)',
+        verified_by_llm: 'ยืนยันผ่าน AI Cross-Check',
+        unverified: 'ยังไม่ได้ตรวจสอบ (Unverified)'
+      };
+      const rec = meta.math_reconciliation || {};
+      const statusThai = statusThaiMap[rec.status] || rec.status || 'ยังไม่ได้ตรวจสอบ';
+      const recDetails = rec.details || 'ไม่มีข้อมูลกระทบยอด';
+
+      const lines = [
+        '# เอกสารการเงิน: ' + (meta.document_title || 'เอกสารการเงิน'),
+        '- **ชื่อเอกสาร (Document Title):** ' + (meta.document_title || 'เอกสารการเงิน'),
+        '- **ประเภทเอกสาร:** ' + (meta.document_type_name || meta.document_type || 'ไม่ระบุ'),
+        '- **เลขที่เอกสาร:** ' + (meta.doc_no || meta.document_no || 'ไม่ระบุ'),
+        '- **บุคคล/หน่วยงาน/ร้านค้า:** ' + (meta.vendor_or_requester || meta.vendor || 'ไม่ระบุ'),
+        '- **วันที่เอกสาร:** ' + (meta.doc_date_iso || meta.date || 'ไม่ระบุ'),
+        '- **ยอดเงินรวม:** ' + (meta.total_amount != null ? meta.total_amount.toLocaleString('th-TH', {minimumFractionDigits: 2, maximumFractionDigits: 2}) + ' บาท' : 'ไม่ระบุ'),
+        '- **การตรวจสอบความถูกต้องของยอดเงิน (Reconciliation):** ' + statusThai + ' - ' + recDetails
+      ];
+
+      if (meta.subtotal != null) {
+        lines.push('- **ยอดรวมก่อนภาษี (Subtotal):** ' + meta.subtotal.toLocaleString('th-TH', {minimumFractionDigits: 2}) + ' บาท');
+      }
+      if (meta.vat != null) {
+        lines.push('- **ภาษีมูลค่าเพิ่ม (VAT):** ' + meta.vat.toLocaleString('th-TH', {minimumFractionDigits: 2}) + ' บาท');
+      }
+      if (meta.tax_id || meta.vendor_tax_id) {
+        lines.push('- **เลขประจำตัวผู้เสียภาษี:** ' + (meta.tax_id || meta.vendor_tax_id));
+      }
+
+      lines.push('');
+      lines.push('## ข้อมูลที่สกัดได้ตาม Template (PP-ChatOCRv4):');
+      for (const [q, a] of Object.entries(chatAnswers || {})) {
+        lines.push('- **' + q + ':** ' + (a || 'ไม่มีระบุ'));
+      }
+
+      return lines.join('\n');
+    }
+
+    function resetFieldsFromOriginalOcr() {
+      if (!rawOriginalChatOcrResult) {
+        alert('ยังไม่มีข้อมูลต้นฉบับจาก OCR');
+        return;
+      }
+      currentChatOcrResult = JSON.parse(JSON.stringify(rawOriginalChatOcrResult));
+      populateFieldEditor(currentChatOcrResult);
+      renderQaPairs(currentChatOcrResult.chat_answers || {});
+      onFormFieldChange();
+      setStatus('รีเซ็ตฟิลด์ข้อมูลกลับสู่ค่าต้นฉบับจาก OCR เรียบร้อยแล้ว', false);
+    }
+
+    async function checkDatabaseStatus() {
+      const headerBadge = document.getElementById('headerDbBadge');
+      const chatocrBadge = document.getElementById('chatocrDbStatusBadge');
+
+      try {
+        const res = await fetch('/api/db/status');
+        if (!res.ok) throw new Error('DB status request failed');
+        const data = await res.json();
+
+        if (data.connected) {
+          const docCount = data.documents_count || 0;
+          if (headerBadge) {
+            headerBadge.innerText = `PostgreSQL: พร้อมใช้งาน (${docCount} เอกสาร)`;
+            headerBadge.className = 'badge green';
+            headerBadge.style.color = '#34d399';
+            headerBadge.style.borderColor = 'rgba(16, 185, 129, 0.4)';
+          }
+          if (chatocrBadge) {
+            chatocrBadge.innerText = `PostgreSQL: เชื่อมต่อสำเร็จ (${docCount} เอกสาร)`;
+            chatocrBadge.style.color = '#34d399';
+            chatocrBadge.style.borderColor = 'rgba(16, 185, 129, 0.4)';
+          }
+        } else {
+          if (headerBadge) {
+            headerBadge.innerText = 'PostgreSQL: ขัดข้อง';
+            headerBadge.className = 'badge red';
+            headerBadge.style.color = '#f87171';
+            headerBadge.style.borderColor = 'rgba(239, 68, 68, 0.4)';
+          }
+          if (chatocrBadge) {
+            chatocrBadge.innerText = 'PostgreSQL: ไม่พร้อมใช้งาน';
+            chatocrBadge.style.color = '#f87171';
+            chatocrBadge.style.borderColor = 'rgba(239, 68, 68, 0.4)';
+          }
+        }
+      } catch (err) {
+        if (headerBadge) {
+          headerBadge.innerText = 'PostgreSQL: เชื่อมต่อไม่ได้';
+          headerBadge.className = 'badge red';
+        }
+        if (chatocrBadge) {
+          chatocrBadge.innerText = 'PostgreSQL: เชื่อมต่อไม่ได้';
+        }
+      }
+    }
+
+    async function saveToDatabase() {
+      if (!currentChatOcrResult) {
+        alert('กรุณาสกัดข้อมูลเอกสารด้วย PP-ChatOCRv4 ก่อนทำการบันทึกลง Database');
+        return;
+      }
+
+      const btn = document.getElementById('btnSaveToPostgres');
+      const toast = document.getElementById('dbSaveToast');
+      const origText = btn ? btn.innerHTML : '';
+
+      try {
+        if (btn) {
+          btn.disabled = true;
+          btn.innerHTML = 'กำลังบันทึกลง Database...';
+        }
+
+        const payload = {
+          filename: currentUploadedFile ? currentUploadedFile.name : (currentChatOcrResult.filename || 'sample_receipt.png'),
+          document_type: currentChatOcrResult.document_type || document.getElementById('chatocrDocTypeSelect')?.value || 'general_receipt',
+          metadata: currentChatOcrResult.knowledge_payload?.filter_metadata || {},
+          embed_text: currentChatOcrResult.knowledge_payload?.embed_text || '',
+          chat_answers: currentChatOcrResult.chat_answers || {},
+          math_reconciliation: currentChatOcrResult.knowledge_payload?.filter_metadata?.math_reconciliation || {}
+        };
+
+        const res = await fetch('/api/chatocr/save_to_db', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+
+        const data = await res.json();
+        if (!res.ok || !data.success) {
+          throw new Error(data.error || 'บันทึกข้อมูลไม่สำเร็จ');
+        }
+
+        if (toast) {
+          toast.style.display = 'block';
+          toast.style.background = 'rgba(16, 185, 129, 0.15)';
+          toast.style.border = '1px solid rgba(16, 185, 129, 0.4)';
+          toast.style.color = '#34d399';
+          toast.innerHTML = `
+            <b>บันทึกข้อมูลลงฐานข้อมูล PostgreSQL สำเร็จเรียบร้อย!</b><br>
+            <span style="font-size: 0.76rem; color: #a7f3d0;">
+              รหัสใบเบิก (Record ID): <code style="background: rgba(0,0,0,0.3); padding: 0.1rem 0.35rem; border-radius: 4px;">${data.record_id}</code> | 
+              รหัสเอกสาร (Doc ID): <code style="background: rgba(0,0,0,0.3); padding: 0.1rem 0.35rem; border-radius: 4px;">${data.document_id}</code>
+            </span><br>
+            <span style="font-size: 0.72rem; color: #94a3b8;">
+              สถานะ: บันทึกลงตาราง disbursement_records, documents (JSONB extracted_data), expense_items, work_logs ครบถ้วน
+            </span>
+          `;
+        }
+
+        setStatus('บันทึกข้อมูลลงฐานข้อมูล PostgreSQL เรียบร้อยแล้ว!', false);
+        await checkDatabaseStatus();
+      } catch (err) {
+        if (toast) {
+          toast.style.display = 'block';
+          toast.style.background = 'rgba(239, 68, 68, 0.15)';
+          toast.style.border = '1px solid rgba(239, 68, 68, 0.4)';
+          toast.style.color = '#f87171';
+          toast.innerHTML = `<b>เกิดข้อผิดพลาดในการบันทึกลง Database:</b> ${escapeHtml(err.message)}`;
+        }
+        alert('เกิดข้อผิดพลาดในการบันทึก: ' + err.message);
+      } finally {
+        if (btn) {
+          btn.disabled = false;
+          btn.innerHTML = origText;
+        }
+      }
     }
 
     function copyChatOcrAnswersJson() {
@@ -3101,10 +3551,55 @@ async def api_chatocr_chat(
         return JSONResponse({"error": str(e)}, status_code=500)
 
 
+from src.db import check_db_status, save_disbursement_document, get_recent_saved_documents
+
+
+class ChatOcrSaveDbPayload(BaseModel):
+    filename: Optional[str] = "document.png"
+    document_type: Optional[str] = "general_receipt"
+    metadata: Optional[dict] = {}
+    embed_text: Optional[str] = ""
+    chat_answers: Optional[dict] = {}
+    math_reconciliation: Optional[dict] = {}
+
+
+@app.get("/api/db/status", tags=["PostgreSQL Database"])
+async def api_db_status():
+    """Check connectivity to local PostgreSQL container (kxcvbnm/expense-reimbursement-postgres)."""
+    return await run_in_threadpool(check_db_status)
+
+
+@app.post("/api/chatocr/save_to_db", tags=["PostgreSQL Database"])
+async def api_chatocr_save_to_db(payload: ChatOcrSaveDbPayload):
+    """Save verified/edited document and metadata into PostgreSQL database container."""
+    try:
+        res = await run_in_threadpool(
+            save_disbursement_document,
+            filename=payload.filename or "document.png",
+            doc_type=payload.document_type or "general_receipt",
+            metadata=payload.metadata or {},
+            embed_text=payload.embed_text or "",
+            chat_answers=payload.chat_answers or {},
+            math_reconciliation=payload.math_reconciliation or {}
+        )
+        return res
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        return JSONResponse({"error": str(e), "success": False}, status_code=500)
+
+
+@app.get("/api/db/recent", tags=["PostgreSQL Database"])
+async def api_db_recent(limit: int = 10):
+    """Fetch recent saved reimbursement documents from PostgreSQL."""
+    return await run_in_threadpool(get_recent_saved_documents, limit=limit)
+
+
 if __name__ == "__main__":
     print("\n" + "=" * 60)
     print("Starting Thai Financial Document OCR UI...")
     print("Open your browser at: http://localhost:8000")
     print("=" * 60 + "\n")
     uvicorn.run(app, host="127.0.0.1", port=8000)
+
 
