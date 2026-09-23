@@ -214,6 +214,70 @@ def index():
       overflow: hidden;
     }
 
+    /* Flow Selector Segmented Bar */
+    .flow-selector-bar {
+      display: flex;
+      flex-shrink: 0;
+      gap: 0.5rem;
+    }
+    .flow-segmented-control {
+      display: flex;
+      width: 100%;
+      background: rgba(15, 23, 42, 0.65);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 3px;
+      gap: 6px;
+    }
+    .flow-btn {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      gap: 0.65rem;
+      padding: 0.5rem 0.9rem;
+      background: transparent;
+      border: 1px solid transparent;
+      border-radius: 7px;
+      cursor: pointer;
+      color: var(--text-muted);
+      text-align: left;
+      transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    .flow-btn:hover {
+      background: rgba(255, 255, 255, 0.05);
+      color: var(--text);
+    }
+    .flow-btn.active#flowBtnCustom {
+      background: rgba(37, 99, 235, 0.16);
+      border-color: rgba(59, 130, 246, 0.45);
+      color: #93c5fd;
+      box-shadow: 0 2px 10px rgba(37, 99, 235, 0.25);
+    }
+    .flow-btn.active#flowBtnChatOCR {
+      background: rgba(168, 85, 247, 0.18);
+      border-color: rgba(168, 85, 247, 0.5);
+      color: #e9d5ff;
+      box-shadow: 0 2px 10px rgba(168, 85, 247, 0.25);
+    }
+    .flow-icon {
+      font-size: 1.25rem;
+      line-height: 1;
+      flex-shrink: 0;
+    }
+    .flow-text {
+      display: flex;
+      flex-direction: column;
+      gap: 1px;
+    }
+    .flow-title {
+      font-size: 0.82rem;
+      font-weight: 600;
+    }
+    .flow-desc {
+      font-size: 0.69rem;
+      opacity: 0.75;
+    }
+
     /* Controls Bar */
     .controls-bar {
       background: var(--panel-bg);
@@ -953,21 +1017,44 @@ def index():
   </header>
 
   <main>
+    <!-- Flow Architecture Segmented Switcher -->
+    <div class="flow-selector-bar">
+      <div class="flow-segmented-control">
+        <button class="flow-btn active" id="flowBtnCustom" onclick="setAppFlow('custom')">
+          <span class="flow-icon">⚙️</span>
+          <div class="flow-text">
+            <span class="flow-title">โฟลว์ที่ 1: Custom Pipeline (Hybrid RT-DETR + PaddleOCR + LLM + Validator)</span>
+            <span class="flow-desc">สกัดโครงสร้างข้อความ, ทำ Context Markdown, ตรวจสอบกฎเบิกจ่าย และความถูกต้องทางบัญชี</span>
+          </div>
+        </button>
+        <button class="flow-btn" id="flowBtnChatOCR" onclick="setAppFlow('chatocr')">
+          <span class="flow-icon">💬</span>
+          <div class="flow-text">
+            <span class="flow-title">โฟลว์ที่ 2: PP-ChatOCRv4 (PaddleX สำเร็จรูป + Type-Directed Prompts)</span>
+            <span class="flow-desc">สกัด 9 ประเภทเบิกจ่ายราชการ + 1 ใบเสร็จทั่วไปอัตโนมัติ สร้าง Knowledge Payload สำหรับ Vector DB</span>
+          </div>
+        </button>
+      </div>
+    </div>
+
     <!-- Top Compact Controls Toolbar -->
     <div class="controls-bar">
       <div class="file-input-group">
         <input type="file" id="fileInput" accept="image/*,.pdf" style="display: none;">
-        <button class="btn" onclick="document.getElementById('fileInput').click()">
+        <button class="btn" id="btnUploadFile" onclick="document.getElementById('fileInput').click()">
           📁 เลือกไฟล์ภาพหรือ PDF
         </button>
-        <button class="btn btn-secondary" onclick="loadSampleReceipt()">
+        <button class="btn btn-secondary" id="btnLoadSample" onclick="loadSampleReceipt()">
           ⚡ ทดสอบบิลตัวอย่าง (Sample)
         </button>
-        <label class="checkbox-label">
+        <label class="checkbox-label" id="deskewCheckLabel">
           <input type="checkbox" id="deskewCheck"> ปรับมุมเอียงอัตโนมัติ (Deskew)
         </label>
       </div>
       <div style="display: flex; align-items: center; gap: 0.75rem;">
+        <span id="activeFlowBadge" class="badge" style="background: rgba(37, 99, 235, 0.15); color: #93c5fd; border: 1px solid rgba(37, 99, 235, 0.3); font-size: 0.75rem;">
+          ⚙️ โฟลว์: Custom Pipeline
+        </span>
         <div class="spinner" id="loadingSpinner"></div>
         <span id="statusText" style="font-size: 0.82rem; color: var(--text-muted);">พร้อมใช้งาน</span>
       </div>
@@ -1239,6 +1326,30 @@ def index():
                 </div>
               </div>
 
+              <!-- Dedicated File Status & Switcher Bar for PP-ChatOCRv4 Flow -->
+              <div style="display: flex; justify-content: space-between; align-items: center; background: rgba(0, 0, 0, 0.25); border: 1px solid rgba(168, 85, 247, 0.25); border-radius: 8px; padding: 0.45rem 0.8rem; margin-bottom: 0.75rem; flex-wrap: wrap; gap: 0.5rem;">
+                <div style="display: flex; align-items: center; gap: 0.5rem;">
+                  <span style="font-size: 0.74rem; color: #cbd5e1; font-weight: 500;">📁 เอกสารที่เลือก:</span>
+                  <span id="chatocrCurrentFileBadge" class="badge" style="background: rgba(168, 85, 247, 0.15); color: #d8b4fe; border: 1px solid rgba(168, 85, 247, 0.3); font-size: 0.76rem;">
+                    ⚡ บิลตัวอย่าง (sample_receipt.png)
+                  </span>
+                </div>
+                <div style="display: flex; gap: 0.4rem;">
+                  <button class="btn btn-secondary" onclick="document.getElementById('fileInput').click()" style="padding: 0.22rem 0.65rem; font-size: 0.74rem;">
+                    📁 เลือกไฟล์สำหรับ PP-ChatOCRv4
+                  </button>
+                  <button class="btn btn-secondary" onclick="loadSampleReceipt()" style="padding: 0.22rem 0.65rem; font-size: 0.74rem;">
+                    ⚡ ใช้บิลตัวอย่าง
+                  </button>
+                </div>
+              </div>
+
+              <!-- Flow Independence Banner -->
+              <div style="background: rgba(168, 85, 247, 0.08); border: 1px solid rgba(168, 85, 247, 0.25); border-radius: 6px; padding: 0.4rem 0.75rem; font-size: 0.74rem; color: #d8b4fe; display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.65rem;">
+                <span>⚡ <b>โฟลว์อิสระ 100%:</b> อัปโหลดไฟล์แล้วสามารถกด <b>"⚡ สกัดข้อมูลอัตโนมัติ"</b> ได้ทันที ไม่ต้องรอ Custom OCR Pipeline</span>
+                <span class="badge" style="font-size: 0.68rem; background: rgba(168, 85, 247, 0.2); color: #e9d5ff;">อิสระ ไม่บล็อก</span>
+              </div>
+
               <!-- Automated Controls Row -->
               <div style="display: flex; gap: 0.75rem; align-items: flex-end; flex-wrap: wrap; margin-bottom: 0.6rem;">
                 <div style="flex: 1; min-width: 280px;">
@@ -1370,42 +1481,162 @@ def index():
     let selectedIdx = null;
     let currentUploadedFile = null;
     let isUsingSample = false;
+    let activeTab = 'blocks';
+    let currentFlowMode = 'custom';
+    let customPipelineController = null;
+
+    function setAppFlow(flow) {
+      currentFlowMode = flow;
+      const btnCustom = document.getElementById('flowBtnCustom');
+      const btnChatOCR = document.getElementById('flowBtnChatOCR');
+      const uploadBtn = document.getElementById('btnUploadFile');
+      const sampleBtn = document.getElementById('btnLoadSample');
+      const deskewLabel = document.getElementById('deskewCheckLabel');
+      const flowBadge = document.getElementById('activeFlowBadge');
+
+      if (flow === 'chatocr') {
+        if (btnCustom) btnCustom.classList.remove('active');
+        if (btnChatOCR) btnChatOCR.classList.add('active');
+
+        if (uploadBtn) uploadBtn.innerHTML = '📁 เลือกไฟล์สำหรับ PP-ChatOCRv4';
+        if (sampleBtn) sampleBtn.innerHTML = '⚡ บิลตัวอย่าง (PP-ChatOCRv4)';
+        if (deskewLabel) deskewLabel.style.display = 'none';
+
+        // Abort background custom pipeline if it was still running
+        if (customPipelineController) {
+          customPipelineController.abort();
+          customPipelineController = null;
+        }
+
+        switchTab('chatocr');
+        setStatus(currentUploadedFile ? `📄 โหมด PP-ChatOCRv4: พร้อมสกัดข้อมูล "${currentUploadedFile.name}" (กดปุ่มด้านล่าง)` : '💬 โหมด PP-ChatOCRv4 สำเร็จรูป (เลือกไฟล์แล้วกดปุ่มสกัดได้ทันที)', false);
+      } else {
+        if (btnCustom) btnCustom.classList.add('active');
+        if (btnChatOCR) btnChatOCR.classList.remove('active');
+
+        if (uploadBtn) uploadBtn.innerHTML = '📁 เลือกไฟล์ภาพหรือ PDF';
+        if (sampleBtn) sampleBtn.innerHTML = '⚡ ทดสอบบิลตัวอย่าง (Sample)';
+        if (deskewLabel) deskewLabel.style.display = 'inline-flex';
+
+        switchTab('blocks');
+        setStatus('⚙️ โหมด Custom Pipeline พร้อมใช้งาน', false);
+      }
+    }
 
     document.getElementById('fileInput').addEventListener('change', function(e) {
-      if (e.target.files.length > 0) {
-        currentUploadedFile = e.target.files[0];
-        isUsingSample = false;
-        uploadAndProcess(e.target.files[0]);
+      if (e.target.files && e.target.files.length > 0) {
+        handleFileSelection(e.target.files[0]);
       }
     });
 
+    function handleFileSelection(file) {
+      if (!file) return;
+      currentUploadedFile = file;
+      isUsingSample = false;
+
+      // Update filename badges
+      const chatFileBadge = document.getElementById('chatocrCurrentFileBadge');
+      if (chatFileBadge) {
+        chatFileBadge.innerText = `📄 ${file.name}`;
+      }
+
+      // Instant Client-Side Image Preview (0ms delay)
+      if (file.type.startsWith('image/')) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+          const docImage = document.getElementById('docImage');
+          docImage.src = e.target.result;
+          docImage.style.display = 'block';
+          document.getElementById('emptyState').style.display = 'none';
+          document.getElementById('pageInfo').innerText = `${file.name} (${(file.size / 1024).toFixed(1)} KB)`;
+          zoomReset();
+        };
+        reader.readAsDataURL(file);
+      } else {
+        document.getElementById('pageInfo').innerText = `${file.name} (${(file.size / 1024).toFixed(1)} KB)`;
+      }
+
+      // Route according to active flow
+      if (activeTab === 'chatocr' || currentFlowMode === 'chatocr') {
+        // Dedicated PP-ChatOCRv4 Flow: Abort any custom pipeline request & DO NOT trigger heavy custom pipeline OCR!
+        if (customPipelineController) {
+          customPipelineController.abort();
+          customPipelineController = null;
+        }
+        setStatus(`📄 โหลด "${file.name}" สำหรับ PP-ChatOCRv4 เรียบร้อย (กดปุ่มสกัดด้านล่างได้ทันที)`, false);
+        const chatSelect = document.getElementById('chatocrDocTypeSelect');
+        if (chatSelect && chatSelect.value === 'general_receipt') {
+          chatSelect.value = 'principle_approval_request';
+          onChatOcrDocTypeChange();
+        }
+      } else {
+        // Custom Pipeline Flow: Run full OCR extraction
+        uploadAndProcess(file);
+      }
+    }
+
     async function loadSampleReceipt() {
-      setStatus('กำลังโหลดบิลตัวอย่าง...', true);
       currentUploadedFile = null;
       isUsingSample = true;
+
+      // Update PP-ChatOCR filename badge
+      const chatFileBadge = document.getElementById('chatocrCurrentFileBadge');
+      if (chatFileBadge) {
+        chatFileBadge.innerText = '⚡ บิลตัวอย่าง (sample_receipt.png)';
+      }
+
+      // Auto-select general receipt for sample receipt
+      const chatSelect = document.getElementById('chatocrDocTypeSelect');
+      if (chatSelect) {
+        chatSelect.value = 'general_receipt';
+        onChatOcrDocTypeChange();
+      }
+      const llmSelect = document.getElementById('llmDocTypeSelect');
+      if (llmSelect) {
+        llmSelect.value = 'general_receipt';
+      }
+
+      // If user is on PP-ChatOCR tab or mode, load sample preview immediately without running heavy custom OCR pipeline
+      if (activeTab === 'chatocr' || currentFlowMode === 'chatocr') {
+        if (customPipelineController) {
+          customPipelineController.abort();
+          customPipelineController = null;
+        }
+        setStatus('กำลังโหลดภาพบิลตัวอย่าง...', true);
+        try {
+          const res = await fetch('/api/sample/preview');
+          const data = await res.json();
+          const docImage = document.getElementById('docImage');
+          docImage.src = 'data:image/png;base64,' + data.image_base64;
+          docImage.style.display = 'block';
+          document.getElementById('emptyState').style.display = 'none';
+          document.getElementById('pageInfo').innerText = `${data.width}x${data.height} px`;
+          zoomReset();
+          setStatus('⚡ โหลดบิลตัวอย่างสำหรับ PP-ChatOCRv4 พร้อมสกัดแล้ว (กดปุ่มสกัดได้ทันที)', false);
+        } catch (err) {
+          setStatus('⚡ โหลดบิลตัวอย่างพร้อมสกัดแล้ว', false);
+        }
+        return;
+      }
+
+      setStatus('กำลังโหลดบิลตัวอย่าง (Custom Pipeline)...', true);
       try {
         const res = await fetch('/api/sample');
         const data = await res.json();
         displayResults(data);
-        setStatus('สกัดข้อความภาษาไทยสำเร็จ!', false);
-
-        // Auto-select general receipt for sample receipt
-        const chatSelect = document.getElementById('chatocrDocTypeSelect');
-        if (chatSelect) {
-          chatSelect.value = 'general_receipt';
-          onChatOcrDocTypeChange();
-        }
-        const llmSelect = document.getElementById('llmDocTypeSelect');
-        if (llmSelect) {
-          llmSelect.value = 'general_receipt';
-        }
+        setStatus('สกัดข้อความภาษาไทยสำเร็จ! (Custom Pipeline)', false);
       } catch (err) {
         setStatus('เกิดข้อผิดพลาด: ' + err.message, false);
       }
     }
 
     async function uploadAndProcess(file) {
-      setStatus('กำลังประมวลผล OCR ภาษาไทย...', true);
+      if (customPipelineController) {
+        customPipelineController.abort();
+      }
+      customPipelineController = new AbortController();
+
+      setStatus('กำลังประมวลผล OCR ภาษาไทย (Custom Pipeline)...', true);
       currentUploadedFile = file;
       isUsingSample = false;
       const formData = new FormData();
@@ -1415,23 +1646,23 @@ def index():
       try {
         const res = await fetch('/api/extract', {
           method: 'POST',
-          body: formData
+          body: formData,
+          signal: customPipelineController.signal
         });
+        if (!res.ok) {
+          const errData = await res.json();
+          throw new Error(errData.error || 'Extract failed');
+        }
         const data = await res.json();
+        customPipelineController = null;
         displayResults(data);
-        setStatus('สกัดข้อความภาษาไทยสำเร็จ!', false);
-
-        // Switch to primary official document when uploading custom document
-        const chatSelect = document.getElementById('chatocrDocTypeSelect');
-        if (chatSelect && chatSelect.value === 'general_receipt') {
-          chatSelect.value = 'principle_approval_request';
-          onChatOcrDocTypeChange();
-        }
-        const llmSelect = document.getElementById('llmDocTypeSelect');
-        if (llmSelect && llmSelect.value === 'general_receipt') {
-          llmSelect.value = 'principle_approval_request';
-        }
+        setStatus('สกัดข้อความภาษาไทยสำเร็จ! (Custom Pipeline)', false);
       } catch (err) {
+        if (err.name === 'AbortError') {
+          console.log('Custom Pipeline aborted by user / flow switch');
+          return;
+        }
+        customPipelineController = null;
         setStatus('เกิดข้อผิดพลาด: ' + err.message, false);
       }
     }
@@ -1639,8 +1870,16 @@ def index():
 
     /* Tabs Switching */
     function switchTab(tabId) {
+      activeTab = tabId;
       document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
       document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+
+      const flowBadge = document.getElementById('activeFlowBadge');
+      const deskewLabel = document.getElementById('deskewCheckLabel');
+      const uploadBtn = document.getElementById('btnUploadFile');
+      const sampleBtn = document.getElementById('btnLoadSample');
+      const btnCustom = document.getElementById('flowBtnCustom');
+      const btnChatOCR = document.getElementById('flowBtnChatOCR');
 
       if (tabId === 'blocks') {
         document.querySelector('.tab-btn:nth-child(1)').classList.add('active');
@@ -1657,6 +1896,43 @@ def index():
       } else if (tabId === 'json') {
         document.getElementById('tabBtnJson').classList.add('active');
         document.getElementById('tabJson').classList.add('active');
+      }
+
+      // Update flow indicator badge & toolbar
+      if (tabId === 'chatocr') {
+        currentFlowMode = 'chatocr';
+        if (btnCustom) btnCustom.classList.remove('active');
+        if (btnChatOCR) btnChatOCR.classList.add('active');
+        if (flowBadge) {
+          flowBadge.innerHTML = '💬 โฟลว์: PP-ChatOCRv4 (PaddleX)';
+          flowBadge.style.background = 'rgba(168, 85, 247, 0.2)';
+          flowBadge.style.color = '#d8b4fe';
+          flowBadge.style.borderColor = 'rgba(168, 85, 247, 0.4)';
+        }
+        if (uploadBtn) uploadBtn.innerHTML = '📁 เลือกไฟล์สำหรับ PP-ChatOCRv4';
+        if (sampleBtn) sampleBtn.innerHTML = '⚡ บิลตัวอย่าง (PP-ChatOCRv4)';
+        if (deskewLabel) deskewLabel.style.display = 'none';
+
+        // Abort background custom pipeline if it was running
+        if (customPipelineController) {
+          customPipelineController.abort();
+          customPipelineController = null;
+        }
+
+        setStatus(currentUploadedFile ? `📄 พร้อมสกัดข้อมูลด้วย PP-ChatOCRv4: "${currentUploadedFile.name}" (กดปุ่มสกัดด้านล่าง)` : '💬 PP-ChatOCRv4 พร้อมใช้งาน (เลือกไฟล์แล้วกดปุ่มสกัด)', false);
+      } else {
+        currentFlowMode = 'custom';
+        if (btnCustom) btnCustom.classList.add('active');
+        if (btnChatOCR) btnChatOCR.classList.remove('active');
+        if (flowBadge) {
+          flowBadge.innerHTML = '⚙️ โฟลว์: Custom Pipeline';
+          flowBadge.style.background = 'rgba(37, 99, 235, 0.15)';
+          flowBadge.style.color = '#93c5fd';
+          flowBadge.style.borderColor = 'rgba(37, 99, 235, 0.3)';
+        }
+        if (uploadBtn) uploadBtn.innerHTML = '📁 เลือกไฟล์ภาพหรือ PDF';
+        if (sampleBtn) sampleBtn.innerHTML = '⚡ ทดสอบบิลตัวอย่าง (Sample)';
+        if (deskewLabel) deskewLabel.style.display = 'inline-flex';
       }
     }
 
@@ -2282,8 +2558,14 @@ def index():
     }
 
     async function executeChatOCR() {
-      if (!currentData && !currentUploadedFile && !isUsingSample) {
-        await loadSampleReceipt();
+      // Abort background custom pipeline immediately so resources are freed
+      if (customPipelineController) {
+        customPipelineController.abort();
+        customPipelineController = null;
+      }
+
+      if (!currentUploadedFile && !isUsingSample) {
+        isUsingSample = true;
       }
 
       const docType = document.getElementById('chatocrDocTypeSelect').value || 'general_receipt';
@@ -2297,6 +2579,7 @@ def index():
       loader.style.display = 'flex';
       emptyState.style.display = 'none';
       resultsArea.style.display = 'none';
+      setStatus('PP-ChatOCRv4 กำลังสกัดคำตอบตาม Template...', true);
 
       const formData = new FormData();
       if (currentUploadedFile) {
@@ -2322,9 +2605,11 @@ def index():
         const data = await res.json();
         lastChatOcrResult = data;
         renderChatOcrResults(data);
+        setStatus('สกัดข้อมูลด้วย PP-ChatOCRv4 สำเร็จ!', false);
       } catch (err) {
         alert('เกิดข้อผิดพลาดในการสกัดข้อมูล PP-ChatOCRv4: ' + err.message);
         emptyState.style.display = 'block';
+        setStatus('เกิดข้อผิดพลาดในการสกัดข้อมูล PP-ChatOCRv4', false);
       } finally {
         btn.disabled = false;
         loader.style.display = 'none';
@@ -2336,6 +2621,15 @@ def index():
       const emptyState = document.getElementById('chatocrEmpty');
       emptyState.style.display = 'none';
       resultsArea.style.display = 'flex';
+
+      // Update left stage document preview if server returned base64 image
+      if (data.image_base64) {
+        const docImage = document.getElementById('docImage');
+        docImage.src = 'data:image/png;base64,' + data.image_base64;
+        docImage.style.display = 'block';
+        document.getElementById('emptyState').style.display = 'none';
+        zoomReset();
+      }
 
       // Meta badges
       document.getElementById('chatocrResDocTypeBadge').innerText = data.document_type || 'receipt';
@@ -2483,6 +2777,26 @@ async def extract_document(
         "text_blocks": [block.model_dump() for block in perception.text_blocks],
         "raw_text": perception.raw_text,
         "llm_markdown": perception.to_llm_markdown()
+    }
+
+
+@app.get("/api/sample/preview")
+async def get_sample_preview():
+    """Returns sample image preview immediately without running heavy OCR engine."""
+    sample_path = ROOT_DIR / "tests" / "output" / "sample_receipt.png"
+    if not sample_path.exists():
+        from tests.test_components_1_2 import create_sample_receipt_image
+        sample_path.parent.mkdir(parents=True, exist_ok=True)
+        img = create_sample_receipt_image()
+        img.save(sample_path)
+    else:
+        img = Image.open(sample_path)
+
+    return {
+        "filename": "sample_receipt.png",
+        "width": img.width,
+        "height": img.height,
+        "image_base64": pil_to_base64(img)
     }
 
 
@@ -2713,6 +3027,13 @@ async def api_chatocr_chat(
             document_type=document_type,
             custom_prompt=custom_prompt
         )
+
+        # Attach image_base64 so frontend left viewer displays the document
+        if target_path and target_path.exists():
+            import base64
+            img_bytes = target_path.read_bytes()
+            res["image_base64"] = base64.b64encode(img_bytes).decode("utf-8")
+
         return res
     except Exception as e:
         import traceback
