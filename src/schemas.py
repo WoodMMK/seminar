@@ -32,7 +32,7 @@ DOCUMENT_TYPE_TITLES: Dict[str, str] = {
     DocumentType.PARCEL_INSPECTION.value: "7. ใบตรวจรับพัสดุ",
     DocumentType.PROCUREMENT_APPROVAL_REQUEST.value: "8. ขออนุมัติจัดหาพัสดุ",
     DocumentType.PROCUREMENT_ATTACHMENT.value: "9. เอกสารประกอบการขออนุมัติจัดหา",
-    DocumentType.GENERAL_RECEIPT.value: "10. ใบเสร็จรับเงิน / ใบกำกับภาษีทั่วไป"
+    DocumentType.GENERAL_RECEIPT.value: "ใบเสร็จรับเงิน / ใบกำกับภาษีทั่วไป (ร้านค้า/บริษัท)"
 }
 
 

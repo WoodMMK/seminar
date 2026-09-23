@@ -166,7 +166,9 @@ PP_CHATOCR_TEMPLATES: Dict[str, Dict[str, Any]] = {
         )
     },
     "general_receipt": {
-        "title": "10. ใบเสร็จรับเงิน / ใบกำกับภาษีทั่วไป",
+        "title": "ใบเสร็จรับเงิน / ใบกำกับภาษีทั่วไป (ร้านค้า/บริษัท)",
+        "group": "supplementary",
+        "group_title": "🧾 เอกสารประกอบภายนอก (หมวดเสริม)",
         "keys": [
             "ชื่อร้านค้าหรือบริษัทผู้ขาย",
             "เลขประจำตัวผู้เสียภาษี 13 หลัก",
@@ -217,12 +219,14 @@ class PPChatOCREngine:
 
     @staticmethod
     def get_supported_templates() -> List[Dict[str, Any]]:
-        """Returns metadata of all 10 supported document type templates."""
+        """Returns metadata of all supported document type templates categorized into official and supplementary."""
         results = []
         for key, conf in PP_CHATOCR_TEMPLATES.items():
             results.append({
                 "id": key,
                 "title": conf["title"],
+                "group": conf.get("group", "official_reimbursement"),
+                "group_title": conf.get("group_title", "🏛️ เอกสารเบิกจ่ายราชการ (9 ประเภทหลัก)"),
                 "keys": conf["keys"],
                 "system_prompt": conf["system_prompt"]
             })

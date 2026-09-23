@@ -1246,16 +1246,20 @@ def index():
                     📄 เลือกประเภทเอกสาร (Document Type Template):
                   </label>
                   <select id="chatocrDocTypeSelect" class="search-input" style="width: 100%; padding: 0.45rem 0.6rem; font-size: 0.82rem;" onchange="onChatOcrDocTypeChange()">
-                    <option value="general_receipt" selected>10. ใบเสร็จรับเงิน / ใบกำกับภาษีทั่วไป</option>
-                    <option value="principle_approval_request">1. เอกสารขออนุมัติหลักการ</option>
-                    <option value="principle_approval_granted">2. เอกสารอนุมัติหลักการ</option>
-                    <option value="disbursement_approval_request">3. ขออนุมัติเบิกจ่าย</option>
-                    <option value="advance_payment_request_1">4. แบบเบิกเงินทดรองจ่าย (แบบที่ 1 - สัญญายืมเงิน/เบิก)</option>
-                    <option value="advance_payment_request_2">5. แบบเบิกเงินทดรองจ่าย (แบบที่ 2 - รับเงิน/เคลียร์เงิน)</option>
-                    <option value="receipt_substitute">6. ใบแทนใบเสร็จ / ใบสำคัญรับเงิน</option>
-                    <option value="parcel_inspection">7. ใบตรวจรับพัสดุ</option>
-                    <option value="procurement_approval_request">8. ขออนุมัติจัดหาพัสดุ</option>
-                    <option value="procurement_attachment">9. เอกสารประกอบการขออนุมัติจัดหา</option>
+                    <optgroup label="🏛️ เอกสารเบิกจ่ายราชการ (9 ประเภทหลัก)">
+                      <option value="principle_approval_request" selected>1. เอกสารขออนุมัติหลักการ</option>
+                      <option value="principle_approval_granted">2. เอกสารอนุมัติหลักการ</option>
+                      <option value="disbursement_approval_request">3. ขออนุมัติเบิกจ่าย</option>
+                      <option value="advance_payment_request_1">4. แบบเบิกเงินทดรองจ่าย (แบบที่ 1 - สัญญายืมเงิน/เบิก)</option>
+                      <option value="advance_payment_request_2">5. แบบเบิกเงินทดรองจ่าย (แบบที่ 2 - รับเงิน/เคลียร์เงิน)</option>
+                      <option value="receipt_substitute">6. ใบแทนใบเสร็จ / ใบสำคัญรับเงิน</option>
+                      <option value="parcel_inspection">7. ใบตรวจรับพัสดุ</option>
+                      <option value="procurement_approval_request">8. ขออนุมัติจัดหาพัสดุ</option>
+                      <option value="procurement_attachment">9. เอกสารประกอบการขออนุมัติจัดหา</option>
+                    </optgroup>
+                    <optgroup label="🧾 เอกสารประกอบภายนอก (หมวดเสริม)">
+                      <option value="general_receipt">ใบเสร็จรับเงิน / ใบกำกับภาษีทั่วไป (ร้านค้า/บริษัท)</option>
+                    </optgroup>
                   </select>
                 </div>
 
@@ -1384,6 +1388,17 @@ def index():
         const data = await res.json();
         displayResults(data);
         setStatus('สกัดข้อความภาษาไทยสำเร็จ!', false);
+
+        // Auto-select general receipt for sample receipt
+        const chatSelect = document.getElementById('chatocrDocTypeSelect');
+        if (chatSelect) {
+          chatSelect.value = 'general_receipt';
+          onChatOcrDocTypeChange();
+        }
+        const llmSelect = document.getElementById('llmDocTypeSelect');
+        if (llmSelect) {
+          llmSelect.value = 'general_receipt';
+        }
       } catch (err) {
         setStatus('เกิดข้อผิดพลาด: ' + err.message, false);
       }
@@ -1405,6 +1420,17 @@ def index():
         const data = await res.json();
         displayResults(data);
         setStatus('สกัดข้อความภาษาไทยสำเร็จ!', false);
+
+        // Switch to primary official document when uploading custom document
+        const chatSelect = document.getElementById('chatocrDocTypeSelect');
+        if (chatSelect && chatSelect.value === 'general_receipt') {
+          chatSelect.value = 'principle_approval_request';
+          onChatOcrDocTypeChange();
+        }
+        const llmSelect = document.getElementById('llmDocTypeSelect');
+        if (llmSelect && llmSelect.value === 'general_receipt') {
+          llmSelect.value = 'principle_approval_request';
+        }
       } catch (err) {
         setStatus('เกิดข้อผิดพลาด: ' + err.message, false);
       }
@@ -1681,21 +1707,47 @@ def index():
         docSelect.innerHTML = '';
         if (bmDocSelect) bmDocSelect.innerHTML = '';
         if (data.supported_document_types && data.supported_document_types.length > 0) {
+          const officialGroup = document.createElement('optgroup');
+          officialGroup.label = '🏛️ เอกสารเบิกจ่ายราชการ (9 ประเภทหลัก)';
+          const suppGroup = document.createElement('optgroup');
+          suppGroup.label = '🧾 เอกสารประกอบภายนอก (หมวดเสริม)';
+
+          const bmOfficialGroup = document.createElement('optgroup');
+          bmOfficialGroup.label = '🏛️ เอกสารเบิกจ่ายราชการ (9 ประเภทหลัก)';
+          const bmSuppGroup = document.createElement('optgroup');
+          bmSuppGroup.label = '🧾 เอกสารประกอบภายนอก (หมวดเสริม)';
+
           data.supported_document_types.forEach((dt, idx) => {
             const opt = document.createElement('option');
             opt.value = dt.id;
             opt.innerText = dt.title;
             if (idx === 0) opt.selected = true;
-            docSelect.appendChild(opt);
+            if (dt.id === 'general_receipt') {
+              suppGroup.appendChild(opt);
+            } else {
+              officialGroup.appendChild(opt);
+            }
 
             if (bmDocSelect) {
               const bmOpt = document.createElement('option');
               bmOpt.value = dt.id;
               bmOpt.innerText = dt.title;
               if (dt.id === 'general_receipt' || idx === 0) bmOpt.selected = true;
-              bmDocSelect.appendChild(bmOpt);
+              if (dt.id === 'general_receipt') {
+                bmSuppGroup.appendChild(bmOpt);
+              } else {
+                bmOfficialGroup.appendChild(bmOpt);
+              }
             }
           });
+
+          docSelect.appendChild(officialGroup);
+          if (suppGroup.children.length > 0) docSelect.appendChild(suppGroup);
+
+          if (bmDocSelect) {
+            bmDocSelect.appendChild(bmOfficialGroup);
+            if (bmSuppGroup.children.length > 0) bmDocSelect.appendChild(bmSuppGroup);
+          }
         }
       } catch (err) {
         console.warn('Could not load LLM status:', err);
@@ -2160,17 +2212,39 @@ def index():
         const res = await fetch('/api/chatocr/templates');
         const templates = await res.json();
         const select = document.getElementById('chatocrDocTypeSelect');
+        const prevVal = select ? select.value : null;
         select.innerHTML = '';
         chatocrTemplatesMap = {};
 
-        templates.forEach((tpl, idx) => {
+        const officialGroup = document.createElement('optgroup');
+        officialGroup.label = '🏛️ เอกสารเบิกจ่ายราชการ (9 ประเภทหลัก)';
+        const suppGroup = document.createElement('optgroup');
+        suppGroup.label = '🧾 เอกสารประกอบภายนอก (หมวดเสริม)';
+
+        templates.forEach((tpl) => {
           chatocrTemplatesMap[tpl.id] = tpl;
           const opt = document.createElement('option');
           opt.value = tpl.id;
           opt.innerText = tpl.title;
-          if (tpl.id === 'general_receipt') opt.selected = true;
-          select.appendChild(opt);
+          if (tpl.group === 'supplementary') {
+            suppGroup.appendChild(opt);
+          } else {
+            officialGroup.appendChild(opt);
+          }
         });
+
+        select.appendChild(officialGroup);
+        if (suppGroup.children.length > 0) {
+          select.appendChild(suppGroup);
+        }
+
+        if (prevVal && chatocrTemplatesMap[prevVal]) {
+          select.value = prevVal;
+        } else if (isUsingSample) {
+          select.value = 'general_receipt';
+        } else {
+          select.value = 'principle_approval_request';
+        }
 
         onChatOcrDocTypeChange();
       } catch (err) {
@@ -2180,20 +2254,19 @@ def index():
 
     function onChatOcrDocTypeChange() {
       const select = document.getElementById('chatocrDocTypeSelect');
-      const docType = select ? select.value : 'general_receipt';
+      const docType = select ? select.value : 'principle_approval_request';
       const container = document.getElementById('chatocrTargetKeysChips');
       if (!container) return;
       container.innerHTML = '';
 
       const tpl = chatocrTemplatesMap[docType];
       const keys = tpl ? tpl.keys : [
-        "ชื่อร้านค้าหรือบริษัทผู้ขาย",
-        "เลขประจำตัวผู้เสียภาษี 13 หลัก",
-        "วันที่ออกเอกสาร",
-        "ยอดรวมก่อนภาษี (Subtotal)",
-        "ภาษีมูลค่าเพิ่ม 7% (VAT)",
-        "ยอดเงินรวมทั้งสิ้น (Total Amount)",
-        "รายการสินค้าและบริการ"
+        "เลขที่เอกสารหรือเลขที่หนังสือ",
+        "วันที่ทำเอกสาร",
+        "เรื่อง",
+        "ผู้ทำการเบิกหรือหน่วยงานที่ขอ",
+        "รายละเอียดค่าใช้จ่าย",
+        "ยอดรวมเงินงบประมาณที่ขออนุมัติ"
       ];
 
       keys.forEach((k, idx) => {
