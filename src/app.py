@@ -953,6 +953,14 @@ def index():
     .chatocr-qa-item:hover {
       border-color: rgba(59, 130, 246, 0.35);
     }
+    .chatocr-qa-item.crosscheck-item {
+      background: rgba(56, 189, 248, 0.05);
+      border: 1px solid rgba(56, 189, 248, 0.28);
+      border-left: 4px solid #38bdf8;
+    }
+    .chatocr-qa-item.crosscheck-item:hover {
+      border-color: rgba(56, 189, 248, 0.55);
+    }
     .chatocr-q-title {
       font-size: 0.76rem;
       font-weight: 600;
@@ -1410,11 +1418,15 @@ def index():
                   <span id="chatocrResDocTypeBadge" class="badge green">ใบเสร็จรับเงิน</span>
                   <span id="chatocrResModelBadge" class="badge">PP-ChatOCRv4 + Qwen2.5:3B</span>
                   <span id="chatocrResLatencyBadge" class="badge">⏱️ - ms</span>
+                  <span id="chatocrMathReconcileBadge" class="badge" style="display: none;"></span>
                 </div>
                 <div style="display: flex; gap: 0.4rem;">
                   <button class="btn btn-secondary" style="padding: 0.25rem 0.6rem; font-size: 0.75rem;" onclick="copyChatOcrAnswersJson()">📋 คัดลอก Q&A JSON</button>
                 </div>
               </div>
+
+              <!-- Financial Reconciliation Banner -->
+              <div id="chatocrReconcileBanner" style="display: none; padding: 0.65rem 0.95rem; border-radius: 8px; font-size: 0.82rem; line-height: 1.45; transition: all 0.2s ease;"></div>
 
               <!-- 1. Q&A Answers Section -->
               <div class="chatocr-answers-card">
@@ -2632,9 +2644,57 @@ def index():
       }
 
       // Meta badges
-      document.getElementById('chatocrResDocTypeBadge').innerText = data.document_type || 'receipt';
+      document.getElementById('chatocrResDocTypeBadge').innerText = data.document_title || data.document_type || 'receipt';
       document.getElementById('chatocrResModelBadge').innerText = `${data.model_info?.engine || 'PP-ChatOCRv4'} + ${data.model_info?.llm_model || 'Qwen2.5:3B'}`;
       document.getElementById('chatocrResLatencyBadge').innerText = `⏱️ ${(data.latency_ms / 1000).toFixed(2)}s`;
+
+      // Financial Reconciliation Badge & Banner
+      const reconcile = data.knowledge_payload?.filter_metadata?.math_reconciliation;
+      const recBadge = document.getElementById('chatocrMathReconcileBadge');
+      const recBanner = document.getElementById('chatocrReconcileBanner');
+
+      if (reconcile && reconcile.status && reconcile.status !== 'unverified') {
+        recBadge.style.display = 'inline-flex';
+        recBanner.style.display = 'block';
+
+        if (reconcile.status === 'passed') {
+          recBadge.className = 'badge green';
+          recBadge.style.background = '';
+          recBadge.style.color = '';
+          recBadge.style.border = '';
+          recBadge.innerText = '✅ ตรวจสอบยอดเงินถูกต้อง';
+
+          recBanner.style.background = 'rgba(16, 185, 129, 0.12)';
+          recBanner.style.border = '1px solid rgba(16, 185, 129, 0.35)';
+          recBanner.style.color = '#34d399';
+          recBanner.innerHTML = `<b>✅ ตรวจสอบความถูกต้องของยอดเงิน (Reconciliation Passed):</b> ${reconcile.details || 'ยอดเงินคำนวณตรงกันสมบูรณ์'}`;
+        } else if (reconcile.status === 'discrepancy') {
+          recBadge.className = 'badge';
+          recBadge.style.background = 'rgba(239, 68, 68, 0.2)';
+          recBadge.style.color = '#ef4444';
+          recBadge.style.border = '1px solid rgba(239, 68, 68, 0.4)';
+          recBadge.innerText = '⚠️ ยอดเงินไม่ตรงกัน (Discrepancy)';
+
+          recBanner.style.background = 'rgba(239, 68, 68, 0.12)';
+          recBanner.style.border = '1px solid rgba(239, 68, 68, 0.35)';
+          recBanner.style.color = '#f87171';
+          recBanner.innerHTML = `<b>⚠️ ตรวจพบความคลาดเคลื่อนของยอดเงิน (Math Discrepancy):</b> ${reconcile.details || 'ยอดคำนวณไม่ตรงกับยอดที่ระบุในเอกสาร'}`;
+        } else {
+          recBadge.className = 'badge';
+          recBadge.style.background = 'rgba(56, 189, 248, 0.15)';
+          recBadge.style.color = '#38bdf8';
+          recBadge.style.border = '1px solid rgba(56, 189, 248, 0.35)';
+          recBadge.innerText = '🔍 ตรวจสอบผ่าน AI Cross-Check';
+
+          recBanner.style.background = 'rgba(56, 189, 248, 0.08)';
+          recBanner.style.border = '1px solid rgba(56, 189, 248, 0.25)';
+          recBanner.style.color = '#7dd3fc';
+          recBanner.innerHTML = `<b>🔍 การตรวจสอบยอดเงิน (Financial Cross-Check):</b> ${reconcile.details || 'ผ่านการวิเคราะห์เชิงตัวเลขโดย AI'}`;
+        }
+      } else {
+        recBadge.style.display = 'none';
+        recBanner.style.display = 'none';
+      }
 
       // Render Q&A List
       const qaList = document.getElementById('chatocrQaList');
@@ -2645,14 +2705,16 @@ def index():
 
       keys.forEach((q, idx) => {
         const a = answers[q];
+        const isCrossCheck = q.includes('Cross-check') || q.includes('ตรวจสอบ') || q.includes('ความถูกต้อง');
         const item = document.createElement('div');
-        item.className = 'chatocr-qa-item';
+        item.className = 'chatocr-qa-item' + (isCrossCheck ? ' crosscheck-item' : '');
         item.innerHTML = `
           <div class="chatocr-q-title">
-            <span>❓ [${idx + 1}]</span>
-            <span>${q}</span>
+            <span>${isCrossCheck ? '🔍' : '❓'} [${idx + 1}]</span>
+            <span style="${isCrossCheck ? 'color: #38bdf8; font-weight: 600;' : ''}">${q}</span>
+            ${isCrossCheck ? '<span class="badge" style="font-size: 0.65rem; background: rgba(56, 189, 248, 0.2); color: #38bdf8; margin-left: auto;">Financial Cross-Check</span>' : ''}
           </div>
-          <div class="chatocr-a-body">${a || '<span style="color: var(--text-dim);">- ไม่มีระบุ -</span>'}</div>
+          <div class="chatocr-a-body" style="${isCrossCheck ? 'font-weight: 500; color: #f1f5f9;' : ''}">${a || '<span style="color: var(--text-dim);">- ไม่มีระบุ -</span>'}</div>
         `;
         qaList.appendChild(item);
       });

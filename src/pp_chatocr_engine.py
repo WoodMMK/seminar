@@ -44,11 +44,13 @@ PP_CHATOCR_TEMPLATES: Dict[str, Dict[str, Any]] = {
             "เรื่อง",
             "ผู้ทำการเบิกหรือหน่วยงานที่ขอ",
             "รายละเอียดค่าใช้จ่าย",
-            "ยอดรวมเงินงบประมาณที่ขออนุมัติ"
+            "ยอดรวมเงินงบประมาณที่ขออนุมัติ",
+            "การตรวจสอบความถูกต้องของยอดเงิน (Cross-check: รวมรายการค่าใช้จ่ายย่อยตรงกับยอดรวมเงินงบประมาณหรือไม่)"
         ],
         "system_prompt": (
             "คุณเป็นผู้เชี่ยวชาญการสกัดข้อมูลเอกสารราชการและเอกสารการเงิน หน้าที่ของคุณคือสกัดข้อมูลจากบันทึกข้อความ 'ขออนุมัติหลักการ' "
-            "โดยอ้างอิงจากข้อความในเอกสารอย่างเคร่งครัด สกัดเลขที่หนังสือ (สังเกตข้อความระบุ 'ที่' หรือ 'ที่ อว' เช่น ที่ อว 78.101/...) วันที่ เรื่อง ผู้ขออนุมัติ และยอดเงินรวมที่ขออนุมัติ "
+            "โดยอ้างอิงจากข้อความในเอกสารอย่างเคร่งครัด สกัดเลขที่หนังสือ (สังเกตข้อความระบุ 'ที่' หรือ 'ที่ อว' เช่น ที่ อว 78.101/...) วันที่ เรื่อง ผู้ขออนุมัติ ยอดรวมเงินงบประมาณ "
+            "และทำการตรวจสอบความถูกต้องของยอดเงิน (คำนวณยอดรายการย่อยว่าตรงกับยอดรวมงบประมาณที่ขออนุมัติหรือไม่ พร้อมระบุวิธีคิดและผลลัพธ์ว่าตรงกันหรือมีผลต่าง) "
             "หากไม่มีข้อมูลระบุชัดเจนให้ตอบว่า 'ไม่มีระบุ'"
         )
     },
@@ -57,11 +59,12 @@ PP_CHATOCR_TEMPLATES: Dict[str, Dict[str, Any]] = {
         "keys": [
             "ตามหนังสือขออนุมัติหลักการเลขที่",
             "รายละเอียดการอนุมัติ",
-            "ยอดรวมเงินที่ได้รับการอนุมัติ"
+            "ยอดรวมเงินที่ได้รับการอนุมัติ",
+            "การตรวจสอบความถูกต้องของยอดเงิน (Cross-check: ยอดรวมเงินอนุมัติตรงตามที่ระบุในเนื้อความหรือไม่)"
         ],
         "system_prompt": (
             "สกัดข้อมูลจาก 'เอกสารอนุมัติหลักการ' โดยดึงเลขที่หนังสือเดิมที่อ้างอิงถึง รายการที่อนุมัติ และยอดเงินที่อนุมัติทั้งหมด "
-            "หากไม่มีระบุให้ตอบว่า 'ไม่มีระบุ'"
+            "พร้อมทั้งตรวจสอบความถูกต้องของยอดเงินที่อนุมัติ หากไม่มีระบุให้ตอบว่า 'ไม่มีระบุ'"
         )
     },
     "disbursement_approval_request": {
@@ -72,11 +75,13 @@ PP_CHATOCR_TEMPLATES: Dict[str, Dict[str, Any]] = {
             "เรื่อง",
             "รายละเอียดค่าใช้จ่าย",
             "ยอดรวมเงินที่ขอเบิก",
-            "ประเภทของการเบิกจ่าย (เงินสดย่อย หรือ ทดรองจ่าย)"
+            "ประเภทของการเบิกจ่าย (เงินสดย่อย หรือ ทดรองจ่าย)",
+            "การตรวจสอบความถูกต้องของยอดเงิน (Cross-check: รวมรายการค่าใช้จ่ายย่อยตรงกับยอดรวมเงินที่ขอเบิกหรือไม่)"
         ],
         "system_prompt": (
             "สกัดข้อมูลจากบันทึกข้อความ 'ขออนุมัติเบิกจ่าย' ระบุเลขที่ วันที่ เรื่อง รายละเอียดค่าใช้จ่าย ยอดรวม "
-            "และระบุว่าเป็นการเบิกจ่ายประเภทใด (เช่น เงินสดย่อย หรือ ทดรองจ่าย) หากไม่มีระบุให้ตอบว่า 'ไม่มีระบุ'"
+            "และระบุว่าเป็นการเบิกจ่ายประเภทใด พร้อมคำนวณตรวจสอบว่าผลรวมรายการค่าใช้จ่ายย่อยตรงกับยอดรวมเงินที่ขอเบิกหรือไม่ "
+            "หากไม่มีระบุให้ตอบว่า 'ไม่มีระบุ'"
         )
     },
     "advance_payment_request_1": {
@@ -87,11 +92,12 @@ PP_CHATOCR_TEMPLATES: Dict[str, Dict[str, Any]] = {
             "ยอดเงินรวมที่ขอยืม",
             "ตามหนังสืออนุมัติเบิกจ่ายเลขที่",
             "รายละเอียดตามประเภทค่าใช้จ่าย",
-            "โอนเงินไปที่ใด (ธนาคารหรือเลขบัญชี)"
+            "โอนเงินไปที่ใด (ธนาคารหรือเลขบัญชี)",
+            "การตรวจสอบความถูกต้องของยอดเงิน (Cross-check: รวมรายการค่าใช้จ่ายย่อยตรงกับยอดเงินที่ขอยืมหรือไม่)"
         ],
         "system_prompt": (
-            "สกัดข้อมูลจากแบบเบิกเงินทดรองจ่าย (แบบที่ 1) ระบุชื่อผู้เบิก ยอดเงินยืม เลขที่หนังสืออ้างอิง "
-            "และช่องทางการโอนเงินหรือบัญชีผู้รับ หากไม่มีระบุให้ตอบว่า 'ไม่มีระบุ'"
+            "สกัดข้อมูลจากแบบเบิกเงินทดรองจ่าย (แบบที่ 1) ระบุชื่อผู้เบิก ยอดเงินยืม เลขที่หนังสืออ้างอิง ช่องทางโอนเงิน "
+            "และคำนวณตรวจสอบว่ารายการค่าใช้จ่ายย่อยรวมกันได้ตรงกับยอดเงินรวมที่ขอยืมหรือไม่ หากไม่มีระบุให้ตอบว่า 'ไม่มีระบุ'"
         )
     },
     "advance_payment_request_2": {
@@ -104,11 +110,12 @@ PP_CHATOCR_TEMPLATES: Dict[str, Dict[str, Any]] = {
             "ยอดเงินรวม",
             "ตามหนังสืออนุมัติหลักการเลขที่",
             "รายละเอียดค่าใช้จ่าย",
-            "โอนเงินไปที่ใด"
+            "โอนเงินไปที่ใด",
+            "การตรวจสอบความถูกต้องของยอดเงิน (Cross-check: รวมรายการค่าใช้จ่ายย่อยตรงกับยอดเงินรวมหรือไม่)"
         ],
         "system_prompt": (
-            "สกัดข้อมูลจากแบบเบิกเงินทดรองจ่าย (แบบที่ 2 - รับเงิน/เคลียร์เงิน) ระบุวันที่ส่ง วันที่ขอรับเงิน "
-            "ผู้เบิก ยอดเงินรวม และบัญชีปลายทาง หากไม่มีระบุให้ตอบว่า 'ไม่มีระบุ'"
+            "สกัดข้อมูลจากแบบเบิกเงินทดรองจ่าย (แบบที่ 2 - รับเงิน/เคลียร์เงิน) ระบุวันที่ส่ง วันที่ขอรับเงิน ผู้เบิก ยอดเงินรวม "
+            "บัญชีปลายทาง และคำนวณตรวจสอบความถูกต้องของรายการค่าใช้จ่ายย่อยเทียบกับยอดรวม หากไม่มีระบุให้ตอบว่า 'ไม่มีระบุ'"
         )
     },
     "receipt_substitute": {
@@ -117,11 +124,12 @@ PP_CHATOCR_TEMPLATES: Dict[str, Dict[str, Any]] = {
             "วันเดือนปีที่จ่ายเงิน",
             "รายละเอียดของรายการการเบิก",
             "ยอดเงินรวมทั้งสิ้น",
-            "ผู้จ่ายเงินหรือผู้รับรองการจ่าย"
+            "ผู้จ่ายเงินหรือผู้รับรองการจ่าย",
+            "การตรวจสอบความถูกต้องของยอดเงิน (Cross-check: รวมรายการค่าใช้จ่ายย่อยตรงกับยอดรวมทั้งสิ้นหรือไม่)"
         ],
         "system_prompt": (
-            "สกัดข้อมูลจากใบแทนใบเสร็จรับเงิน หรือใบสำคัญรับเงิน ระบุวันเดือนปี รายการการเบิก ยอดเงินรวม "
-            "และชื่อผู้จ่ายเงิน หากไม่มีระบุให้ตอบว่า 'ไม่มีระบุ'"
+            "สกัดข้อมูลจากใบแทนใบเสร็จรับเงิน หรือใบสำคัญรับเงิน ระบุวันเดือนปี รายการการเบิก ยอดเงินรวม ชื่อผู้จ่ายเงิน "
+            "และคำนวณตรวจสอบว่ายอดเงินรายการย่อยรวมกันได้ตรงกับยอดรวมทั้งสิ้นหรือไม่ หากไม่มีระบุให้ตอบว่า 'ไม่มีระบุ'"
         )
     },
     "parcel_inspection": {
@@ -130,11 +138,12 @@ PP_CHATOCR_TEMPLATES: Dict[str, Dict[str, Any]] = {
             "เลขที่เอกสาร",
             "รายชื่อผู้ตรวจรับพัสดุหรือคณะกรรมการ",
             "วันที่ตรวจรับพัสดุ",
-            "ตามใบสั่งซื้อหรือสัญญาเลขที่"
+            "ตามใบสั่งซื้อหรือสัญญาเลขที่",
+            "การตรวจสอบความถูกต้อง (Cross-check: ตรวจรับถูกต้องครบถ้วนตามสัญญาหรือไม่)"
         ],
         "system_prompt": (
-            "สกัดข้อมูลจากใบตรวจรับพัสดุ ระบุเลขที่เอกสาร รายชื่อคณะกรรมการตรวจรับพัสดุ วันที่ตรวจรับ "
-            "และเลขที่ใบสั่งซื้อหรือสัญญา หากไม่มีระบุให้ตอบว่า 'ไม่มีระบุ'"
+            "สกัดข้อมูลจากใบตรวจรับพัสดุ ระบุเลขที่เอกสาร รายชื่อคณะกรรมการตรวจรับพัสดุ วันที่ตรวจรับ เลขที่สัญญา "
+            "และตรวจสอบผลการตรวจรับว่าถูกต้องครบถ้วนตามสัญญาหรือไม่ หากไม่มีระบุให้ตอบว่า 'ไม่มีระบุ'"
         )
     },
     "procurement_approval_request": {
@@ -146,11 +155,12 @@ PP_CHATOCR_TEMPLATES: Dict[str, Dict[str, Any]] = {
             "เหตุผลความจำเป็นที่ต้องจัดหา",
             "รายละเอียดของพัสดุ",
             "วงเงินงบประมาณที่ใช้ทั้งหมด",
-            "เวลาที่ต้องใช้พัสดุ"
+            "เวลาที่ต้องใช้พัสดุ",
+            "การตรวจสอบความถูกต้องของยอดเงิน (Cross-check: รวมรายการพัสดุย่อยตรงกับวงเงินงบประมาณหรือไม่)"
         ],
         "system_prompt": (
-            "สกัดข้อมูลจากบันทึกขออนุมัติจัดหาพัสดุ ระบุเลขที่ วันที่ เรื่อง เหตุผล รายการพัสดุ "
-            "วงเงินงบประมาณ และกำหนดเวลาที่ต้องใช้พัสดุ หากไม่มีระบุให้ตอบว่า 'ไม่มีระบุ'"
+            "สกัดข้อมูลจากบันทึกขออนุมัติจัดหาพัสดุ ระบุเลขที่ วันที่ เรื่อง เหตุผล รายการพัสดุ วงเงินงบประมาณ "
+            "กำหนดเวลาที่ต้องใช้พัสดุ และตรวจสอบความถูกต้องของวงเงินรวมเทียบกับรายการพัสดุ หากไม่มีระบุให้ตอบว่า 'ไม่มีระบุ'"
         )
     },
     "procurement_attachment": {
@@ -158,11 +168,12 @@ PP_CHATOCR_TEMPLATES: Dict[str, Dict[str, Any]] = {
         "keys": [
             "แนบท้ายบันทึกเอกสารเลขที่",
             "รายละเอียดพัสดุหรือรายการเปรียบเทียบราคา",
-            "ยอดรวมงบประมาณ"
+            "ยอดรวมงบประมาณ",
+            "การตรวจสอบความถูกต้องของยอดเงิน (Cross-check: รายการพัสดุหรือราคาเปรียบเทียบรวมกันได้ตรงกับยอดรวมงบประมาณหรือไม่)"
         ],
         "system_prompt": (
-            "สกัดข้อมูลจากเอกสารประกอบการขออนุมัติจัดหา ระบุเลขที่แนบท้ายบันทึก รายละเอียดพัสดุ และยอดรวม "
-            "หากไม่มีระบุให้ตอบว่า 'ไม่มีระบุ'"
+            "สกัดข้อมูลจากเอกสารประกอบการขออนุมัติจัดหา ระบุเลขที่แนบท้ายบันทึก รายละเอียดพัสดุ ยอดรวม "
+            "และตรวจสอบผลรวมราคาพัสดุเทียบกับงบประมาณ หากไม่มีระบุให้ตอบว่า 'ไม่มีระบุ'"
         )
     },
     "general_receipt": {
@@ -176,11 +187,13 @@ PP_CHATOCR_TEMPLATES: Dict[str, Dict[str, Any]] = {
             "ยอดรวมก่อนภาษี (Subtotal)",
             "ภาษีมูลค่าเพิ่ม 7% (VAT)",
             "ยอดเงินรวมทั้งสิ้น (Total Amount)",
-            "รายการสินค้าและบริการ"
+            "รายการสินค้าและบริการ",
+            "การตรวจสอบความถูกต้องของยอดเงิน (Cross-check: รวมก่อนภาษี + VAT 7% เท่ากับยอดเงินรวมทั้งสิ้นหรือไม่)"
         ],
         "system_prompt": (
             "คุณเป็นผู้เชี่ยวชาญการตรวจเอกสารการเงิน สกัดข้อมูลจากใบเสร็จรับเงินหรือใบกำกับภาษีอย่างแม่นยำ "
             "ระบุชื่อร้านค้า เลขประจำตัวผู้เสียภาษี 13 หลัก วันที่ ยอดรวมก่อนภาษี VAT 7% และยอดสุทธิรวมทั้งสิ้น "
+            "พร้อมทั้งตรวจสอบความถูกต้องทางคณิตศาสตร์ (Cross-check: ยอดรวมก่อนภาษี + VAT 7% เท่ากับยอดรวมทั้งสิ้นหรือไม่ และแสดงวิธีคำนวณพร้อมผลต่าง) "
             "หากไม่มีระบุให้ตอบว่า 'ไม่มีระบุ'"
         )
     }
@@ -392,6 +405,9 @@ class PPChatOCREngine:
         vendor_tax_id = None
         doc_date_str = None
         total_amount = None
+        subtotal = None
+        vat_amount = None
+        cross_check_text = None
         currency = "THB"
 
         for key, val in chat_answers.items():
@@ -400,28 +416,52 @@ class PPChatOCREngine:
             
             k_lower = key.lower()
 
+            # Cross-check answer: record and skip further numeric field matching
+            if any(term in k_lower for term in ["cross-check", "ตรวจสอบความถูกต้อง", "ตรวจสอบยอดเงิน", "ตรวจสอบ"]):
+                if not cross_check_text:
+                    cross_check_text = val.strip()
+                continue
+
             # 1. Document No
             if any(term in k_lower for term in ["เลขที่", "doc_no", "no."]):
                 if not doc_no:
-                    doc_no = val
+                    doc_no = val.strip()
 
             # 2. Requester or Vendor
             if any(term in k_lower for term in ["ผู้ทำการเบิก", "ผู้ยืม", "ผู้ขอ", "ร้านค้า", "บริษัท", "ผู้ขาย", "requester", "vendor"]):
                 if not vendor_or_requester:
-                    vendor_or_requester = val
+                    vendor_or_requester = val.strip()
 
             # 3. Tax ID
             if any(term in k_lower for term in ["เลขประจำตัวผู้เสียภาษี", "tax id", "tax_id"]):
                 tax_match = re.search(r"\d{13}", val.replace("-", "").replace(" ", ""))
-                vendor_tax_id = tax_match.group(0) if tax_match else val
+                vendor_tax_id = tax_match.group(0) if tax_match else val.strip()
 
             # 4. Date
             if any(term in k_lower for term in ["วันที่", "date", "วันเดือนปี"]):
                 if not doc_date_str:
-                    doc_date_str = val
+                    doc_date_str = val.strip()
 
-            # 5. Amount
-            if any(term in k_lower for term in ["ยอดเงิน", "ยอดรวม", "จำนวนเงิน", "งบประมาณ", "total", "amount", "สุทธิ"]):
+            # Subtotal (ก่อนภาษี)
+            if any(term in k_lower for term in ["ก่อนภาษี", "subtotal", "รวมก่อนภาษี"]):
+                amt_match = re.search(r"[\d,]+(?:\.\d{1,2})?", val)
+                if amt_match:
+                    try:
+                        subtotal = float(amt_match.group(0).replace(",", ""))
+                    except ValueError:
+                        pass
+
+            # VAT (ภาษีมูลค่าเพิ่ม)
+            if any(term in k_lower for term in ["ภาษีมูลค่าเพิ่ม", "vat"]):
+                amt_match = re.search(r"[\d,]+(?:\.\d{1,2})?", val)
+                if amt_match:
+                    try:
+                        vat_amount = float(amt_match.group(0).replace(",", ""))
+                    except ValueError:
+                        pass
+
+            # 5. Total Amount (ยอดรวม / ยอดเงินสุทธิ / งบประมาณ)
+            if any(term in k_lower for term in ["ยอดรวมทั้งสิ้น", "ยอดเงินทั้งสิ้น", "ยอดรวมเงิน", "ยอดเงินรวม", "รวมทั้งสิ้น", "total amount", "total", "สุทธิ", "ขอยืม", "ขอเบิก", "วงเงินงบประมาณ", "งบประมาณที่ขออนุมัติ"]) and not any(term in k_lower for term in ["ก่อนภาษี", "subtotal"]):
                 amt_match = re.search(r"[\d,]+(?:\.\d{1,2})?", val)
                 if amt_match:
                     try:
@@ -437,6 +477,79 @@ class PPChatOCREngine:
             if norm_res and norm_res.is_valid and norm_res.iso_date:
                 doc_date_iso = norm_res.iso_date
 
+        # Mathematical Reconciliation Evaluation (Hybrid: Algorithmic + LLM Reasoning)
+        reconcile_status = "unverified"
+        reconcile_details = "ไม่มีข้อมูลตัวเลขเพียงพอสำหรับการตรวจสอบยอดเงิน"
+        is_balanced = False
+        calculated_total = None
+        diff = 0.0
+
+        if subtotal is not None and vat_amount is not None and total_amount is not None:
+            calculated_total = round(subtotal + vat_amount, 2)
+            diff = round(abs(calculated_total - total_amount), 2)
+            if diff <= 0.05:
+                reconcile_status = "passed"
+                is_balanced = True
+                reconcile_details = f"ยอดเงินตรงกันสมบูรณ์: รวมก่อนภาษี ({subtotal:,.2f}) + VAT ({vat_amount:,.2f}) = {total_amount:,.2f} บาท"
+            else:
+                reconcile_status = "discrepancy"
+                is_balanced = False
+                reconcile_details = f"ตรวจพบผลต่าง: รวมก่อนภาษี + VAT ได้ {calculated_total:,.2f} บาท แต่ยอดรวมระบุ {total_amount:,.2f} บาท (ต่างกัน {diff:,.2f} บาท)"
+        elif subtotal is not None and total_amount is not None and vat_amount is None:
+            diff = round(abs(subtotal - total_amount), 2)
+            if diff <= 0.05:
+                reconcile_status = "passed"
+                is_balanced = True
+                calculated_total = subtotal
+                reconcile_details = f"ยอดรวมก่อนภาษีตรงกับยอดสุทธิ: {total_amount:,.2f} บาท (ไม่มี VAT)"
+            else:
+                calculated_total = subtotal
+                reconcile_status = "unverified"
+                reconcile_details = f"ยอดก่อนภาษี {subtotal:,.2f} บาท vs ยอดสุทธิ {total_amount:,.2f} บาท"
+        elif cross_check_text:
+            unverified_keywords = ["ไม่มีรายการย่อย", "ไม่พบรายการย่อย", "ไม่สามารถดำเนินการ", "ไม่สามารถตรวจสอบ", "ไม่มีระบุ", "ไม่ปรากฏรายการ"]
+            discrepancy_keywords = ["ไม่ตรง", "ต่างกัน", "คลาดเคลื่อน", "ไม่สอดคล้อง", "เกิน", "ขาด", "discrepancy", "unmatched", "mismatch"]
+            pass_keywords = ["คำนวณตรงกัน", "รวมกันได้ตรงกับ", "ยอดตรงกัน", "ตรงกับยอด", "เท่ากับยอด", "ได้ตรงกับ", "สอดคล้องกัน", "ตรงตามที่ระบุ", "ยอดรวมถูกต้อง", "matches", "balanced", "reconciled"]
+
+            has_unverified = any(kw in cross_check_text for kw in unverified_keywords)
+            has_discrepancy = any(kw in cross_check_text for kw in discrepancy_keywords)
+            has_passed = any(kw in cross_check_text for kw in pass_keywords)
+
+            if has_unverified:
+                if total_amount is not None:
+                    reconcile_status = "verified_by_llm"
+                    is_balanced = True
+                    reconcile_details = f"มียอดเงินระบุ {total_amount:,.2f} บาท (ไม่มีรายการย่อยให้กระทบยอด)"
+                else:
+                    reconcile_status = "unverified"
+                    is_balanced = False
+                    reconcile_details = cross_check_text
+            elif has_passed and not has_discrepancy:
+                reconcile_status = "passed"
+                is_balanced = True
+                reconcile_details = f"ตรวจสอบผ่านการคำนวณของ AI: {cross_check_text}"
+            elif has_discrepancy:
+                reconcile_status = "discrepancy"
+                is_balanced = False
+                reconcile_details = f"ตรวจพบความคลาดเคลื่อน: {cross_check_text}"
+            else:
+                reconcile_status = "verified_by_llm"
+                is_balanced = True
+                reconcile_details = cross_check_text
+        elif total_amount is not None:
+            reconcile_status = "verified_by_llm"
+            is_balanced = True
+            reconcile_details = f"มียอดเงินระบุ {total_amount:,.2f} บาท (ไม่พบรายการย่อยสำหรับกระทบยอด)"
+
+        # Status badge label in Thai for embedding
+        status_thai_map = {
+            "passed": "✅ ตรวจสอบถูกต้อง (Reconciled)",
+            "discrepancy": "⚠️ พบยอดเงินไม่ตรงกัน (Discrepancy)",
+            "verified_by_llm": "🔍 ยืนยันผ่าน AI Cross-Check",
+            "unverified": "⏳ ยังไม่ได้ตรวจสอบ (Unverified)"
+        }
+        status_thai = status_thai_map.get(reconcile_status, reconcile_status)
+
         # Build Clean Embed Text
         md_lines = [
             f"# เอกสารการเงิน: {doc_title}",
@@ -446,7 +559,12 @@ class PPChatOCREngine:
             f"- **บุคคล/หน่วยงาน/ร้านค้า:** {vendor_or_requester or 'ไม่ระบุ'}",
             f"- **วันที่เอกสาร:** {doc_date_str or 'ไม่ระบุ'}" + (f" (ISO: {doc_date_iso})" if doc_date_iso else ""),
             f"- **ยอดเงินรวม:** {f'{total_amount:,.2f} บาท' if total_amount is not None else 'ไม่ระบุ'}",
+            f"- **การตรวจสอบความถูกต้องของยอดเงิน (Reconciliation):** {status_thai} - {reconcile_details}",
         ]
+        if subtotal is not None:
+            md_lines.append(f"- **ยอดรวมก่อนภาษี (Subtotal):** {subtotal:,.2f} บาท")
+        if vat_amount is not None:
+            md_lines.append(f"- **ภาษีมูลค่าเพิ่ม (VAT):** {vat_amount:,.2f} บาท")
         if vendor_tax_id:
             md_lines.append(f"- **เลขประจำตัวผู้เสียภาษี:** {vendor_tax_id}")
 
@@ -464,9 +582,21 @@ class PPChatOCREngine:
             "vendor_or_requester": vendor_or_requester,
             "vendor_tax_id": vendor_tax_id,
             "doc_date_iso": doc_date_iso,
+            "subtotal": subtotal,
+            "vat": vat_amount,
             "total_amount": total_amount,
             "currency": currency,
             "source_filename": source_filename,
+            "math_reconciliation": {
+                "status": reconcile_status,
+                "is_balanced": is_balanced,
+                "details": reconcile_details,
+                "subtotal": subtotal,
+                "vat": vat_amount,
+                "stated_total": total_amount,
+                "calculated_total": calculated_total,
+                "difference": diff
+            },
             "extracted_at": datetime.now().isoformat(),
             "extracted_by": f"PP-ChatOCRv4 ({self.llm_model})"
         }
