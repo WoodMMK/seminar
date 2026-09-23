@@ -48,7 +48,7 @@ PP_CHATOCR_TEMPLATES: Dict[str, Dict[str, Any]] = {
         ],
         "system_prompt": (
             "คุณเป็นผู้เชี่ยวชาญการสกัดข้อมูลเอกสารราชการและเอกสารการเงิน หน้าที่ของคุณคือสกัดข้อมูลจากบันทึกข้อความ 'ขออนุมัติหลักการ' "
-            "โดยอ้างอิงจากข้อความในเอกสารอย่างเคร่งครัด สกัดเลขที่หนังสือ วันที่ เรื่อง ผู้ขออนุมัติ และยอดเงินรวมที่ขออนุมัติ "
+            "โดยอ้างอิงจากข้อความในเอกสารอย่างเคร่งครัด สกัดเลขที่หนังสือ (สังเกตข้อความระบุ 'ที่' หรือ 'ที่ อว' เช่น ที่ อว 78.101/...) วันที่ เรื่อง ผู้ขออนุมัติ และยอดเงินรวมที่ขออนุมัติ "
             "หากไม่มีข้อมูลระบุชัดเจนให้ตอบว่า 'ไม่มีระบุ'"
         )
     },
@@ -233,14 +233,26 @@ class PPChatOCREngine:
         return results
 
     def get_pipeline(self):
-        """Lazy initialization of PP-ChatOCRv4 pipeline."""
+        """Lazy initialization of PP-ChatOCRv4 pipeline with Thai OCR optimizations."""
         if self._pipeline is None:
             cfg = load_pipeline_config('PP-ChatOCRv4-doc')
             cfg['use_mllm_predict'] = False
             
+            # Disable unwarping and doc orientation classifier to avoid distortion on flat documents
+            cfg['SubPipelines']['LayoutParser']['use_doc_preprocessor'] = False
+
             # Use PicoDet-S_layout_3cls for maximum stability on CPU
             cfg['SubPipelines']['LayoutParser']['SubModules']['LayoutDetection']['model_name'] = 'PicoDet-S_layout_3cls'
             
+            # CRITICAL FOR THAI OCR: Disable textline orientation classifier!
+            # Chinese/English orientation models misclassify Thai vowels/marks as upside-down and rotate text 180 deg,
+            # causing numbers like "อว 78.101/334" to turn into garbled "DEE/IOT'8L CO"
+            cfg['SubPipelines']['LayoutParser']['SubPipelines']['GeneralOCR']['use_textline_orientation'] = False
+
+            # Upgrade detector to PP-OCRv6_medium_det with high resolution limit for superior Thai text boundary detection
+            cfg['SubPipelines']['LayoutParser']['SubPipelines']['GeneralOCR']['SubModules']['TextDetection']['model_name'] = 'PP-OCRv6_medium_det'
+            cfg['SubPipelines']['LayoutParser']['SubPipelines']['GeneralOCR']['SubModules']['TextDetection']['limit_side_len'] = 2400
+
             # Thai OCR recognition model
             cfg['SubPipelines']['LayoutParser']['SubPipelines']['GeneralOCR']['SubModules']['TextRecognition']['model_name'] = 'th_PP-OCRv5_mobile_rec'
             
