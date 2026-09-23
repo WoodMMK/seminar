@@ -23,15 +23,15 @@ class DocumentType(str, Enum):
 
 
 DOCUMENT_TYPE_TITLES: Dict[str, str] = {
-    DocumentType.PRINCIPLE_APPROVAL_REQUEST.value: "1. เอกสารขออนุมัติหลักการ",
-    DocumentType.PRINCIPLE_APPROVAL_GRANTED.value: "2. เอกสารอนุมัติหลักการ",
-    DocumentType.DISBURSEMENT_APPROVAL_REQUEST.value: "3. ขออนุมัติเบิกจ่าย",
-    DocumentType.ADVANCE_PAYMENT_REQUEST_1.value: "4. แบบเบิกเงินทดรองจ่าย (สัญญายืมเงิน/เบิก)",
-    DocumentType.ADVANCE_PAYMENT_REQUEST_2.value: "5. แบบเบิกเงินทดรองจ่าย (ขอรับเงิน/เคลียร์เงิน)",
-    DocumentType.RECEIPT_SUBSTITUTE.value: "6. ใบแทนใบเสร็จ / ใบสำคัญรับเงิน",
-    DocumentType.PARCEL_INSPECTION.value: "7. ใบตรวจรับพัสดุ",
-    DocumentType.PROCUREMENT_APPROVAL_REQUEST.value: "8. ขออนุมัติจัดหาพัสดุ",
-    DocumentType.PROCUREMENT_ATTACHMENT.value: "9. เอกสารประกอบการขออนุมัติจัดหา",
+    DocumentType.PRINCIPLE_APPROVAL_REQUEST.value: "เอกสารขออนุมัติหลักการ",
+    DocumentType.PRINCIPLE_APPROVAL_GRANTED.value: "เอกสารอนุมัติหลักการ",
+    DocumentType.DISBURSEMENT_APPROVAL_REQUEST.value: "ขออนุมัติเบิกจ่าย",
+    DocumentType.ADVANCE_PAYMENT_REQUEST_1.value: "แบบเบิกเงินทดรองจ่าย (สัญญายืมเงิน/เบิก)",
+    DocumentType.ADVANCE_PAYMENT_REQUEST_2.value: "แบบเบิกเงินทดรองจ่าย (ขอรับเงิน/เคลียร์เงิน)",
+    DocumentType.RECEIPT_SUBSTITUTE.value: "ใบแทนใบเสร็จ / ใบสำคัญรับเงิน",
+    DocumentType.PARCEL_INSPECTION.value: "ใบตรวจรับพัสดุ",
+    DocumentType.PROCUREMENT_APPROVAL_REQUEST.value: "ขออนุมัติจัดหาพัสดุ",
+    DocumentType.PROCUREMENT_ATTACHMENT.value: "เอกสารประกอบการขออนุมัติจัดหา",
     DocumentType.GENERAL_RECEIPT.value: "ใบเสร็จรับเงิน / ใบกำกับภาษีทั่วไป (ร้านค้า/บริษัท)"
 }
 

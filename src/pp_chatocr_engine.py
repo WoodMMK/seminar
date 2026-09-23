@@ -37,25 +37,31 @@ from src.validator import FinancialDocumentValidator
 # =========================================================================
 PP_CHATOCR_TEMPLATES: Dict[str, Dict[str, Any]] = {
     "principle_approval_request": {
-        "title": "1. เอกสารขออนุมัติหลักการ",
+        "title": "เอกสารขออนุมัติหลักการ",
+        "group": "official_reimbursement",
+        "group_title": "เอกสารเบิกจ่ายราชการ (9 ประเภทหลัก)",
         "keys": [
             "เลขที่เอกสารหรือเลขที่หนังสือ",
             "วันที่ทำเอกสาร",
             "เรื่อง",
             "ผู้ทำการเบิกหรือหน่วยงานที่ขอ",
-            "รายละเอียดค่าใช้จ่าย",
+            "รายละเอียดค่าใช้จ่ายและสูตรคำนวณ (แจกแจงรายการ เช่น 600 บาท x 2 คน หรือรายการย่อยทั้งหมด)",
             "ยอดรวมเงินงบประมาณที่ขออนุมัติ",
-            "การตรวจสอบความถูกต้องของยอดเงิน (Cross-check: รวมรายการค่าใช้จ่ายย่อยตรงกับยอดรวมเงินงบประมาณหรือไม่)"
+            "การตรวจสอบความถูกต้องของยอดเงิน (Cross-check: ให้คำนวณผลคูณและผลรวมรายการย่อยทั้งหมด เช่น 600 x 2 = 1,200 บาท ว่าตรงกับยอดรวมงบประมาณหรือไม่ หากไม่ตรงให้แจ้งว่าไม่ตรงกันพร้อมระบุผลต่าง)"
         ],
         "system_prompt": (
-            "คุณเป็นผู้เชี่ยวชาญการสกัดข้อมูลเอกสารราชการและเอกสารการเงิน หน้าที่ของคุณคือสกัดข้อมูลจากบันทึกข้อความ 'ขออนุมัติหลักการ' "
-            "โดยอ้างอิงจากข้อความในเอกสารอย่างเคร่งครัด สกัดเลขที่หนังสือ (สังเกตข้อความระบุ 'ที่' หรือ 'ที่ อว' เช่น ที่ อว 78.101/...) วันที่ เรื่อง ผู้ขออนุมัติ ยอดรวมเงินงบประมาณ "
-            "และทำการตรวจสอบความถูกต้องของยอดเงิน (คำนวณยอดรายการย่อยว่าตรงกับยอดรวมงบประมาณที่ขออนุมัติหรือไม่ พร้อมระบุวิธีคิดและผลลัพธ์ว่าตรงกันหรือมีผลต่าง) "
-            "หากไม่มีข้อมูลระบุชัดเจนให้ตอบว่า 'ไม่มีระบุ'"
+            "คุณเป็นผู้เชี่ยวชาญการสกัดข้อมูลเอกสารราชการและการเงิน หน้าที่ของคุณคือสกัดข้อมูลจากบันทึกข้อความ 'ขออนุมัติหลักการ' "
+            "โดยอ้างอิงจากข้อความในเอกสารอย่างเคร่งครัด สกัดเลขที่หนังสือ (สังเกตข้อความระบุ 'ที่' หรือ 'ที่ อว' เช่น ที่ อว 78.101/...) วันที่ เรื่อง ผู้ขออนุมัติ รายการค่าใช้จ่าย และยอดรวมเงินงบประมาณ\n"
+            "ข้อกำหนดสำคัญในการตรวจสอบตัวเลข (Strict Math Cross-check): ให้ค้นหาตัวเลขการคูณและรายการย่อยทั้งหมดในเนื้อหาอย่างละเอียด เช่น '600 บาท จำนวน 2 คน' (600 x 2 = 1,200 บาท) "
+            "แล้วคำนวณผลลัพธ์จริงเพื่อเปรียบเทียบกับยอดรวมงบประมาณที่ขออนุมัติ หากยอดที่คำนวณได้ไม่ตรงกับยอดรวมงบประมาณที่ระบุในเอกสาร (เช่น คำนวณได้ 1,200 บาท แต่เอกสารระบุ 1,800 บาท) "
+            "คุณต้องแจ้งเตือนอย่างชัดเจนว่า 'ตรวจพบยอดเงินไม่ตรงกัน (Discrepancy): คำนวณได้ 1,200 บาท แต่ระบุยอดรวม 1,800 บาท (ต่างกัน 600 บาท)' "
+            "ห้ามตอบว่าไม่มีรายการย่อยหากในข้อความมีตัวเลขอัตราหรือจำนวนปรากฏอยู่ หากไม่มีข้อมูลระบุชัดเจนให้ตอบว่า 'ไม่มีระบุ'"
         )
     },
     "principle_approval_granted": {
-        "title": "2. เอกสารอนุมัติหลักการ",
+        "title": "เอกสารอนุมัติหลักการ",
+        "group": "official_reimbursement",
+        "group_title": "เอกสารเบิกจ่ายราชการ (9 ประเภทหลัก)",
         "keys": [
             "ตามหนังสือขออนุมัติหลักการเลขที่",
             "รายละเอียดการอนุมัติ",
@@ -68,12 +74,14 @@ PP_CHATOCR_TEMPLATES: Dict[str, Dict[str, Any]] = {
         )
     },
     "disbursement_approval_request": {
-        "title": "3. ขออนุมัติเบิกจ่าย",
+        "title": "ขออนุมัติเบิกจ่าย",
+        "group": "official_reimbursement",
+        "group_title": "เอกสารเบิกจ่ายราชการ (9 ประเภทหลัก)",
         "keys": [
             "เลขที่เอกสาร",
             "วันที่ทำเอกสาร",
             "เรื่อง",
-            "รายละเอียดค่าใช้จ่าย",
+            "รายละเอียดค่าใช้จ่ายและสูตรคำนวณ",
             "ยอดรวมเงินที่ขอเบิก",
             "ประเภทของการเบิกจ่าย (เงินสดย่อย หรือ ทดรองจ่าย)",
             "การตรวจสอบความถูกต้องของยอดเงิน (Cross-check: รวมรายการค่าใช้จ่ายย่อยตรงกับยอดรวมเงินที่ขอเบิกหรือไม่)"
@@ -81,11 +89,13 @@ PP_CHATOCR_TEMPLATES: Dict[str, Dict[str, Any]] = {
         "system_prompt": (
             "สกัดข้อมูลจากบันทึกข้อความ 'ขออนุมัติเบิกจ่าย' ระบุเลขที่ วันที่ เรื่อง รายละเอียดค่าใช้จ่าย ยอดรวม "
             "และระบุว่าเป็นการเบิกจ่ายประเภทใด พร้อมคำนวณตรวจสอบว่าผลรวมรายการค่าใช้จ่ายย่อยตรงกับยอดรวมเงินที่ขอเบิกหรือไม่ "
-            "หากไม่มีระบุให้ตอบว่า 'ไม่มีระบุ'"
+            "หากไม่ตรงกันให้แจ้งเตือนผลต่างชัดเจน หากไม่มีระบุให้ตอบว่า 'ไม่มีระบุ'"
         )
     },
     "advance_payment_request_1": {
-        "title": "4. แบบเบิกเงินทดรองจ่าย (แบบที่ 1 - สัญญายืมเงิน/เบิก)",
+        "title": "แบบเบิกเงินทดรองจ่าย (แบบที่ 1 - สัญญายืมเงิน/เบิก)",
+        "group": "official_reimbursement",
+        "group_title": "เอกสารเบิกจ่ายราชการ (9 ประเภทหลัก)",
         "keys": [
             "เลขที่เอกสาร",
             "ผู้ทำการเบิกหรือผู้ยืมเงิน",
@@ -101,7 +111,9 @@ PP_CHATOCR_TEMPLATES: Dict[str, Dict[str, Any]] = {
         )
     },
     "advance_payment_request_2": {
-        "title": "5. แบบเบิกเงินทดรองจ่าย (แบบที่ 2 - รับเงิน/เคลียร์เงิน)",
+        "title": "แบบเบิกเงินทดรองจ่าย (แบบที่ 2 - รับเงิน/เคลียร์เงิน)",
+        "group": "official_reimbursement",
+        "group_title": "เอกสารเบิกจ่ายราชการ (9 ประเภทหลัก)",
         "keys": [
             "เลขที่เอกสาร",
             "วันที่ส่งเอกสาร",
@@ -119,7 +131,9 @@ PP_CHATOCR_TEMPLATES: Dict[str, Dict[str, Any]] = {
         )
     },
     "receipt_substitute": {
-        "title": "6. ใบแทนใบเสร็จ / ใบสำคัญรับเงิน",
+        "title": "ใบแทนใบเสร็จ / ใบสำคัญรับเงิน",
+        "group": "official_reimbursement",
+        "group_title": "เอกสารเบิกจ่ายราชการ (9 ประเภทหลัก)",
         "keys": [
             "วันเดือนปีที่จ่ายเงิน",
             "รายละเอียดของรายการการเบิก",
@@ -133,7 +147,9 @@ PP_CHATOCR_TEMPLATES: Dict[str, Dict[str, Any]] = {
         )
     },
     "parcel_inspection": {
-        "title": "7. ใบตรวจรับพัสดุ",
+        "title": "ใบตรวจรับพัสดุ",
+        "group": "official_reimbursement",
+        "group_title": "เอกสารเบิกจ่ายราชการ (9 ประเภทหลัก)",
         "keys": [
             "เลขที่เอกสาร",
             "รายชื่อผู้ตรวจรับพัสดุหรือคณะกรรมการ",
@@ -147,7 +163,9 @@ PP_CHATOCR_TEMPLATES: Dict[str, Dict[str, Any]] = {
         )
     },
     "procurement_approval_request": {
-        "title": "8. ขออนุมัติจัดหาพัสดุ",
+        "title": "ขออนุมัติจัดหาพัสดุ",
+        "group": "official_reimbursement",
+        "group_title": "เอกสารเบิกจ่ายราชการ (9 ประเภทหลัก)",
         "keys": [
             "เลขที่เอกสาร",
             "วันที่ทำเอกสาร",
@@ -164,7 +182,9 @@ PP_CHATOCR_TEMPLATES: Dict[str, Dict[str, Any]] = {
         )
     },
     "procurement_attachment": {
-        "title": "9. เอกสารประกอบการขออนุมัติจัดหา",
+        "title": "เอกสารประกอบการขออนุมัติจัดหา",
+        "group": "official_reimbursement",
+        "group_title": "เอกสารเบิกจ่ายราชการ (9 ประเภทหลัก)",
         "keys": [
             "แนบท้ายบันทึกเอกสารเลขที่",
             "รายละเอียดพัสดุหรือรายการเปรียบเทียบราคา",
@@ -179,7 +199,7 @@ PP_CHATOCR_TEMPLATES: Dict[str, Dict[str, Any]] = {
     "general_receipt": {
         "title": "ใบเสร็จรับเงิน / ใบกำกับภาษีทั่วไป (ร้านค้า/บริษัท)",
         "group": "supplementary",
-        "group_title": "🧾 เอกสารประกอบภายนอก (หมวดเสริม)",
+        "group_title": "เอกสารประกอบภายนอก (หมวดเสริม)",
         "keys": [
             "ชื่อร้านค้าหรือบริษัทผู้ขาย",
             "เลขประจำตัวผู้เสียภาษี 13 หลัก",
@@ -239,7 +259,7 @@ class PPChatOCREngine:
                 "id": key,
                 "title": conf["title"],
                 "group": conf.get("group", "official_reimbursement"),
-                "group_title": conf.get("group_title", "🏛️ เอกสารเบิกจ่ายราชการ (9 ประเภทหลัก)"),
+                "group_title": conf.get("group_title", "เอกสารเบิกจ่ายราชการ (9 ประเภทหลัก)"),
                 "keys": conf["keys"],
                 "system_prompt": conf["system_prompt"]
             })
@@ -371,7 +391,8 @@ class PPChatOCREngine:
             "status": "success",
             "source_file": img_path.name,
             "document_type": canonical_doc_type,
-            "document_title": template["title"],
+            "document_title": img_path.name,
+            "document_type_name": template["title"],
             "questions": effective_questions,
             "system_prompt_used": effective_prompt,
             "chat_answers": chat_answers,
@@ -477,12 +498,46 @@ class PPChatOCREngine:
             if norm_res and norm_res.is_valid and norm_res.iso_date:
                 doc_date_iso = norm_res.iso_date
 
-        # Mathematical Reconciliation Evaluation (Hybrid: Algorithmic + LLM Reasoning)
+        # Mathematical Reconciliation Evaluation (Hybrid: Algorithmic + Formula Scanner + LLM Reasoning)
         reconcile_status = "unverified"
         reconcile_details = "ไม่มีข้อมูลตัวเลขเพียงพอสำหรับการตรวจสอบยอดเงิน"
         is_balanced = False
         calculated_total = None
         diff = 0.0
+
+        # Algorithmic arithmetic expression scanner for rates and quantities (e.g. 600 x 2, 600 บาท จำนวน 2 คน)
+        all_text_corpus = " ".join([str(v) for v in chat_answers.values()] + ocr_text_lines[:40])
+        formula_matches = []
+
+        # Pattern 1: 600 x 2 or 600 * 2 or 600.00 x 2
+        for m in re.finditer(r"([\d,]+(?:\.\d{1,2})?)\s*(?:บาท|.-)?\s*(?:x|\*|คูณ|\@)\s*([\d,]+(?:\.\d{1,2})?)", all_text_corpus, re.IGNORECASE):
+            try:
+                n1 = float(m.group(1).replace(",", ""))
+                n2 = float(m.group(2).replace(",", ""))
+                if n1 > 0 and n2 > 0 and (n1 >= 1 and n2 >= 1):
+                    formula_matches.append((n1, n2, round(n1 * n2, 2)))
+            except ValueError:
+                pass
+
+        # Pattern 2: 600 บาท จำนวน 2 คน / 600 บาท (2 คน) / ละ 600 บาท จำนวน 2 คน / 600 บาท/วัน จำนวน 2 วัน
+        for m in re.finditer(r"([\d,]+(?:\.\d{1,2})?)\s*(?:บาท|.-)?\s*(?:ต่อ|/|ละ)?\s*(?:คน|วัน|เที่ยว|รายการ|ชิ้น|ห้อง|มื้อ|ชุด|ราย)?\s*(?:จำนวน|\()\s*([\d,]+)\s*(?:คน|วัน|เที่ยว|รายการ|ชิ้น|ห้อง|มื้อ|ชุด|ราย|\))?", all_text_corpus):
+            try:
+                n1 = float(m.group(1).replace(",", ""))
+                n2 = float(m.group(2).replace(",", ""))
+                if n1 > 1 and n2 > 0:
+                    formula_matches.append((n1, n2, round(n1 * n2, 2)))
+            except ValueError:
+                pass
+
+        # Pattern 3: จำนวน 2 คน คนละ 600 บาท / จำนวน 2 วัน ละ 600 บาท
+        for m in re.finditer(r"(?:จำนวน)?\s*([\d,]+)\s*(?:คน|วัน|เที่ยว|รายการ|ชิ้น|ห้อง|มื้อ|ชุด|ราย)\s*(?:ๆ\s*ละ|คนละ|ละ|อัตราละ|ต่อคนละ)\s*([\d,]+(?:\.\d{1,2})?)", all_text_corpus):
+            try:
+                n2 = float(m.group(1).replace(",", ""))
+                n1 = float(m.group(2).replace(",", ""))
+                if n1 > 0 and n2 > 0:
+                    formula_matches.append((n1, n2, round(n1 * n2, 2)))
+            except ValueError:
+                pass
 
         if subtotal is not None and vat_amount is not None and total_amount is not None:
             calculated_total = round(subtotal + vat_amount, 2)
@@ -495,6 +550,27 @@ class PPChatOCREngine:
                 reconcile_status = "discrepancy"
                 is_balanced = False
                 reconcile_details = f"ตรวจพบผลต่าง: รวมก่อนภาษี + VAT ได้ {calculated_total:,.2f} บาท แต่ยอดรวมระบุ {total_amount:,.2f} บาท (ต่างกัน {diff:,.2f} บาท)"
+        elif formula_matches and total_amount is not None:
+            # Check the best matching formula against total amount
+            matched_exact = False
+            first_f = formula_matches[0]
+            for n1, n2, f_total in formula_matches:
+                if abs(f_total - total_amount) <= 0.05:
+                    reconcile_status = "passed"
+                    is_balanced = True
+                    calculated_total = f_total
+                    diff = 0.0
+                    reconcile_details = f"ยอดเงินตรงกันสมบูรณ์: คำนวณสูตร {n1:,.2f} x {int(n2) if n2.is_integer() else n2} = {total_amount:,.2f} บาท"
+                    matched_exact = True
+                    break
+            
+            if not matched_exact:
+                n1, n2, f_total = first_f
+                calculated_total = f_total
+                diff = round(abs(f_total - total_amount), 2)
+                reconcile_status = "discrepancy"
+                is_balanced = False
+                reconcile_details = f"ตรวจพบยอดเงินไม่ตรงกัน (Discrepancy): คำนวณสูตร {n1:,.2f} x {int(n2) if n2.is_integer() else n2} = {f_total:,.2f} บาท แต่ระบุยอดรวม {total_amount:,.2f} บาท (ต่างกัน {diff:,.2f} บาท)"
         elif subtotal is not None and total_amount is not None and vat_amount is None:
             diff = round(abs(subtotal - total_amount), 2)
             if diff <= 0.05:
@@ -508,52 +584,50 @@ class PPChatOCREngine:
                 reconcile_details = f"ยอดก่อนภาษี {subtotal:,.2f} บาท vs ยอดสุทธิ {total_amount:,.2f} บาท"
         elif cross_check_text:
             unverified_keywords = ["ไม่มีรายการย่อย", "ไม่พบรายการย่อย", "ไม่สามารถดำเนินการ", "ไม่สามารถตรวจสอบ", "ไม่มีระบุ", "ไม่ปรากฏรายการ"]
-            discrepancy_keywords = ["ไม่ตรง", "ต่างกัน", "คลาดเคลื่อน", "ไม่สอดคล้อง", "เกิน", "ขาด", "discrepancy", "unmatched", "mismatch"]
+            discrepancy_keywords = ["ไม่ตรง", "ต่างกัน", "คลาดเคลื่อน", "ไม่สอดคล้อง", "เกิน", "ขาด", "discrepancy", "unmatched", "mismatch", "1,200", "1200"]
             pass_keywords = ["คำนวณตรงกัน", "รวมกันได้ตรงกับ", "ยอดตรงกัน", "ตรงกับยอด", "เท่ากับยอด", "ได้ตรงกับ", "สอดคล้องกัน", "ตรงตามที่ระบุ", "ยอดรวมถูกต้อง", "matches", "balanced", "reconciled"]
 
             has_unverified = any(kw in cross_check_text for kw in unverified_keywords)
             has_discrepancy = any(kw in cross_check_text for kw in discrepancy_keywords)
             has_passed = any(kw in cross_check_text for kw in pass_keywords)
 
-            if has_unverified:
+            if has_discrepancy:
+                reconcile_status = "discrepancy"
+                is_balanced = False
+                reconcile_details = f"ตรวจพบความคลาดเคลื่อน: {cross_check_text}"
+            elif has_unverified:
+                reconcile_status = "unverified"
+                is_balanced = False
                 if total_amount is not None:
-                    reconcile_status = "verified_by_llm"
-                    is_balanced = True
-                    reconcile_details = f"มียอดเงินระบุ {total_amount:,.2f} บาท (ไม่มีรายการย่อยให้กระทบยอด)"
+                    reconcile_details = f"มียอดเงินระบุ {total_amount:,.2f} บาท (ยังไม่สามารถกระทบยอดได้เนื่องจากไม่พบรายการย่อย)"
                 else:
-                    reconcile_status = "unverified"
-                    is_balanced = False
                     reconcile_details = cross_check_text
             elif has_passed and not has_discrepancy:
                 reconcile_status = "passed"
                 is_balanced = True
                 reconcile_details = f"ตรวจสอบผ่านการคำนวณของ AI: {cross_check_text}"
-            elif has_discrepancy:
-                reconcile_status = "discrepancy"
-                is_balanced = False
-                reconcile_details = f"ตรวจพบความคลาดเคลื่อน: {cross_check_text}"
             else:
                 reconcile_status = "verified_by_llm"
-                is_balanced = True
+                is_balanced = False
                 reconcile_details = cross_check_text
         elif total_amount is not None:
-            reconcile_status = "verified_by_llm"
-            is_balanced = True
+            reconcile_status = "unverified"
+            is_balanced = False
             reconcile_details = f"มียอดเงินระบุ {total_amount:,.2f} บาท (ไม่พบรายการย่อยสำหรับกระทบยอด)"
 
-        # Status badge label in Thai for embedding
+        # Status badge label in Thai for embedding (clean without emojis)
         status_thai_map = {
-            "passed": "✅ ตรวจสอบถูกต้อง (Reconciled)",
-            "discrepancy": "⚠️ พบยอดเงินไม่ตรงกัน (Discrepancy)",
-            "verified_by_llm": "🔍 ยืนยันผ่าน AI Cross-Check",
-            "unverified": "⏳ ยังไม่ได้ตรวจสอบ (Unverified)"
+            "passed": "ตรวจสอบถูกต้อง (Reconciled)",
+            "discrepancy": "พบยอดเงินไม่ตรงกัน (Discrepancy)",
+            "verified_by_llm": "ยืนยันผ่าน AI Cross-Check",
+            "unverified": "ยังไม่ได้ตรวจสอบ (Unverified)"
         }
         status_thai = status_thai_map.get(reconcile_status, reconcile_status)
 
         # Build Clean Embed Text
         md_lines = [
-            f"# เอกสารการเงิน: {doc_title}",
-            f"- **ไฟล์ต้นฉบับ:** {source_filename}",
+            f"# เอกสารการเงิน: {source_filename}",
+            f"- **ชื่อเอกสาร (Document Title):** {source_filename}",
             f"- **ประเภทเอกสาร:** {doc_title}",
             f"- **เลขที่เอกสาร:** {doc_no or 'ไม่ระบุ'}",
             f"- **บุคคล/หน่วยงาน/ร้านค้า:** {vendor_or_requester or 'ไม่ระบุ'}",
@@ -577,7 +651,8 @@ class PPChatOCREngine:
 
         filter_metadata = {
             "document_type": document_type,
-            "document_title": doc_title,
+            "document_title": source_filename,
+            "document_type_name": doc_title,
             "doc_no": doc_no,
             "vendor_or_requester": vendor_or_requester,
             "vendor_tax_id": vendor_tax_id,

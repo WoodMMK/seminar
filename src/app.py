@@ -1018,7 +1018,7 @@ def index():
       </div>
     </div>
     <div class="badges">
-      <a href="/docs" target="_blank" class="badge" style="color: #60a5fa; border-color: rgba(96, 165, 250, 0.4); text-decoration: none; font-weight: 500;">📖 Swagger API Docs (/docs)</a>
+      <a href="/docs" target="_blank" class="badge" style="color: #60a5fa; border-color: rgba(96, 165, 250, 0.4); text-decoration: none; font-weight: 500;">Swagger API Docs (/docs)</a>
       <span class="badge green">● Model: th_PP-OCRv5_mobile_rec</span>
       <span class="badge">Privacy 100% On-Premises</span>
     </div>
@@ -1029,14 +1029,12 @@ def index():
     <div class="flow-selector-bar">
       <div class="flow-segmented-control">
         <button class="flow-btn active" id="flowBtnCustom" onclick="setAppFlow('custom')">
-          <span class="flow-icon">⚙️</span>
           <div class="flow-text">
             <span class="flow-title">โฟลว์ที่ 1: Custom Pipeline (Hybrid RT-DETR + PaddleOCR + LLM + Validator)</span>
             <span class="flow-desc">สกัดโครงสร้างข้อความ, ทำ Context Markdown, ตรวจสอบกฎเบิกจ่าย และความถูกต้องทางบัญชี</span>
           </div>
         </button>
         <button class="flow-btn" id="flowBtnChatOCR" onclick="setAppFlow('chatocr')">
-          <span class="flow-icon">💬</span>
           <div class="flow-text">
             <span class="flow-title">โฟลว์ที่ 2: PP-ChatOCRv4 (PaddleX สำเร็จรูป + Type-Directed Prompts)</span>
             <span class="flow-desc">สกัด 9 ประเภทเบิกจ่ายราชการ + 1 ใบเสร็จทั่วไปอัตโนมัติ สร้าง Knowledge Payload สำหรับ Vector DB</span>
@@ -1050,10 +1048,10 @@ def index():
       <div class="file-input-group">
         <input type="file" id="fileInput" accept="image/*,.pdf" style="display: none;">
         <button class="btn" id="btnUploadFile" onclick="document.getElementById('fileInput').click()">
-          📁 เลือกไฟล์ภาพหรือ PDF
+          เลือกไฟล์ภาพหรือ PDF
         </button>
         <button class="btn btn-secondary" id="btnLoadSample" onclick="loadSampleReceipt()">
-          ⚡ ทดสอบบิลตัวอย่าง (Sample)
+          ทดสอบบิลตัวอย่าง (Sample)
         </button>
         <label class="checkbox-label" id="deskewCheckLabel">
           <input type="checkbox" id="deskewCheck"> ปรับมุมเอียงอัตโนมัติ (Deskew)
@@ -1061,7 +1059,7 @@ def index():
       </div>
       <div style="display: flex; align-items: center; gap: 0.75rem;">
         <span id="activeFlowBadge" class="badge" style="background: rgba(37, 99, 235, 0.15); color: #93c5fd; border: 1px solid rgba(37, 99, 235, 0.3); font-size: 0.75rem;">
-          ⚙️ โฟลว์: Custom Pipeline
+          โฟลว์: Custom Pipeline
         </span>
         <div class="spinner" id="loadingSpinner"></div>
         <span id="statusText" style="font-size: 0.82rem; color: var(--text-muted);">พร้อมใช้งาน</span>
@@ -1073,16 +1071,16 @@ def index():
       <!-- Left: Visual Document Stage with Bounding Box Overlay -->
       <div class="panel">
         <div class="panel-header">
-          <h2>📄 การแสดงผลเอกสาร & Bounding Boxes</h2>
+          <h2>การแสดงผลเอกสาร & Bounding Boxes</h2>
           <div class="tool-group">
             <label class="checkbox-label" style="margin-right: 0.4rem;">
               <input type="checkbox" id="toggleBboxCheck" checked onchange="toggleBoundingBoxes(this.checked)"> แสดงกรอบ
             </label>
-            <button class="btn-icon" onclick="zoomChange(-0.15)" title="Zoom Out">🔍-</button>
+            <button class="btn-icon" onclick="zoomChange(-0.15)" title="Zoom Out">-</button>
             <button class="btn-icon" id="zoomLabel" onclick="zoomReset()" title="Reset Zoom">100%</button>
-            <button class="btn-icon" onclick="zoomChange(0.15)" title="Zoom In">🔍+</button>
-            <button class="btn-icon" onclick="zoomFit()" title="Fit Width">⤢ Fit</button>
-            <button class="btn-icon" onclick="rotateCurrentDoc(90)" title="หมุนเอกสาร 90 องศาตามเข็ม">⟳ หมุน 90°</button>
+            <button class="btn-icon" onclick="zoomChange(0.15)" title="Zoom In">+</button>
+            <button class="btn-icon" onclick="zoomFit()" title="Fit Width">Fit</button>
+            <button class="btn-icon" onclick="rotateCurrentDoc(90)" title="หมุนเอกสาร 90 องศาตามเข็ม">หมุน 90°</button>
             <span id="pageInfo" class="badge">0x0 px</span>
           </div>
         </div>
@@ -1092,7 +1090,7 @@ def index():
             <div class="bbox-overlay" id="bboxOverlay"></div>
           </div>
           <div id="emptyState" style="color: var(--text-muted); font-size: 0.88rem; align-self: center;">
-            👈 กรุณาเลือกไฟล์ภาพบิล หรือกดปุ่ม "ทดสอบบิลตัวอย่าง" เพื่อเริ่มต้น
+            กรุณาเลือกไฟล์ภาพบิล หรือกดปุ่ม "ทดสอบบิลตัวอย่าง" เพื่อเริ่มต้น
           </div>
         </div>
       </div>
@@ -1106,11 +1104,11 @@ def index():
           </button>
           <button class="tab-btn" onclick="switchTab('markdown')">LLM Context (Markdown)</button>
           <button class="tab-btn" onclick="switchTab('extraction')" id="tabBtnExtraction">
-            <span>🤖 สกัดข้อมูลการเงิน (AI)</span>
+            <span>สกัดข้อมูลการเงิน (AI)</span>
             <span class="badge green" id="extractionBadge" style="display: none;">Ready</span>
           </button>
           <button class="tab-btn" onclick="switchTab('chatocr')" id="tabBtnChatOCR">
-            <span>💬 PP-ChatOCRv4 (Chat)</span>
+            <span>PP-ChatOCRv4 (Chat)</span>
             <span class="badge green" id="chatocrBadge" style="display: none;">Ready</span>
           </button>
           <button class="tab-btn" onclick="switchTab('json')" id="tabBtnJson">Raw API JSON</button>
@@ -1119,7 +1117,7 @@ def index():
         <!-- Tab 1: Scrollable Text Blocks List -->
         <div class="tab-content active" id="tabBlocks">
           <div class="filter-bar">
-            <input type="text" id="filterInput" class="search-input" placeholder="🔍 ค้นหาข้อความใน Blocks..." oninput="filterBlocks(this.value)">
+            <input type="text" id="filterInput" class="search-input" placeholder="ค้นหาข้อความใน Blocks..." oninput="filterBlocks(this.value)">
             <span id="filterCount" class="badge" style="display: none;">0 พบ</span>
           </div>
 
@@ -1160,7 +1158,7 @@ def index():
             <!-- Controls Bar -->
             <div class="extract-ctrl-bar">
               <div style="display: flex; align-items: center; gap: 0.6rem; flex-wrap: wrap;">
-                <label style="font-size: 0.78rem; color: var(--text-muted); font-weight: 600;">📄 ประเภทเอกสาร (Manual Input):</label>
+                <label style="font-size: 0.78rem; color: var(--text-muted); font-weight: 600;">ประเภทเอกสาร (Manual Input):</label>
                 <select id="llmDocTypeSelect" class="search-input" style="width: auto; min-width: 240px; padding: 0.25rem 0.5rem;"></select>
 
                 <label style="font-size: 0.78rem; color: var(--text-muted); margin-left: 0.3rem;">โมเดล LLM:</label>
@@ -1180,36 +1178,36 @@ def index():
               <div style="display: flex; align-items: center; gap: 0.6rem;">
                 <span id="ollamaStatusBadge" class="badge">ตรวจสถานะ Ollama...</span>
                 <button class="btn btn-secondary" id="btnOpenBenchmark" onclick="openBenchmarkModal()" title="เปรียบเทียบประสิทธิภาพโมเดล LLM เชิงตัวเลข">
-                  📊 เปรียบเทียบโมเดล (Benchmark)
+                  เปรียบเทียบโมเดล (Benchmark)
                 </button>
                 <button class="btn" id="btnExtractLLM" onclick="runLLMExtraction()">
-                  ⚡ สกัดข้อมูลด้วย AI
+                  สกัดข้อมูลด้วย AI
                 </button>
               </div>
             </div>
 
             <div id="extractionEmpty" style="color: var(--text-muted); font-size: 0.85rem; text-align: center; padding: 2.5rem;">
-              กรุณาเลือกประเภทเอกสารใน Dropdown แล้วกดปุ่ม <b>"⚡ สกัดข้อมูลด้วย AI"</b> เพื่อให้โมเดลสกัดข้อมูลเฉพาะประเภท
+              กรุณาเลือกประเภทเอกสารใน Dropdown แล้วกดปุ่ม <b>"สกัดข้อมูลด้วย AI"</b> เพื่อให้โมเดลสกัดข้อมูลเฉพาะประเภท
             </div>
 
             <div id="extractionResultsArea" style="display: none; flex-direction: column; gap: 0.75rem;">
               <!-- Meta & Latency Banner -->
               <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.5rem;">
                 <div style="display: flex; gap: 0.4rem; align-items: center;">
-                  <span id="resDocTypeBadge" class="badge green">1. เอกสารขออนุมัติหลักการ</span>
+                  <span id="resDocTypeBadge" class="badge green">เอกสารขออนุมัติหลักการ</span>
                   <span id="resModelBadge" class="badge">qwen2.5:3b</span>
                   <span id="resModeBadge" class="badge">Local GPU</span>
-                  <span id="resLatencyBadge" class="badge">⏱️ - ms</span>
-                  <span id="resValStatusBadge" class="badge green" style="display: none;">✓ ตรวจสอบผ่าน</span>
+                  <span id="resLatencyBadge" class="badge">- ms</span>
+                  <span id="resValStatusBadge" class="badge green" style="display: none;">[ผ่าน] ตรวจสอบผ่าน</span>
                 </div>
                 <div style="display: flex; gap: 0.4rem;">
-                  <button class="btn btn-secondary" style="padding: 0.25rem 0.6rem; font-size: 0.75rem;" onclick="copyExtractionJson()">📋 คัดลอก JSON</button>
+                  <button class="btn btn-secondary" style="padding: 0.25rem 0.6rem; font-size: 0.75rem;" onclick="copyExtractionJson()">คัดลอก JSON</button>
                 </div>
               </div>
 
               <!-- Pipeline Timing Stages Breakdown (Component 5) -->
               <div class="timing-bar" id="pipelineTimingsBanner" style="display: none;">
-                <span style="font-weight: 600; color: #94a3b8;">⏱️ Pipeline Latency:</span>
+                <span style="font-weight: 600; color: #94a3b8;">Pipeline Latency:</span>
                 <span id="timingOcrTag" class="badge">OCR: - ms</span>
                 <span id="timingLlmTag" class="badge">LLM: - ms</span>
                 <span id="timingValTag" class="badge">Validation: - ms</span>
@@ -1219,7 +1217,7 @@ def index():
               <!-- Collapsible CoT Reasoning -->
               <div class="cot-accordion" id="cotAccordion" style="display: none;">
                 <div class="cot-header" onclick="toggleCot()">
-                  <span>🧠 ลำดับความคิดวิเคราะห์ (Chain-of-Thought / &lt;think&gt;)</span>
+                  <span>ลำดับความคิดวิเคราะห์ (Chain-of-Thought / &lt;think&gt;)</span>
                   <span id="cotToggleIcon">▼</span>
                 </div>
                 <div class="cot-body" id="cotBody"></div>
@@ -1228,33 +1226,33 @@ def index():
               <!-- Component 4: Validation & Rules Engine Status Card -->
               <div class="field-card" id="validationResultCard" style="display: none;">
                 <div class="field-card-title">
-                  <span>🛡️ การตรวจสอบความถูกต้อง & กฎระเบียบ (Component 4 Rules Engine)</span>
+                  <span>การตรวจสอบความถูกต้อง & กฎระเบียบ (Component 4 Rules Engine)</span>
                   <span id="valOverallBadge" class="badge green">PASSED</span>
                 </div>
                 
                 <!-- 4 Quality Gates Grid -->
                 <div class="val-gate-grid">
                   <div class="val-gate-item" id="gateDateBox">
-                    <span class="gate-title">📅 รูปแบบวันที่ (Thai Date Normalization)</span>
+                    <span class="gate-title">รูปแบบวันที่ (Thai Date Normalization)</span>
                     <span class="gate-desc" id="gateDateDesc">-</span>
                   </div>
                   <div class="val-gate-item" id="gateTaxBox">
-                    <span class="gate-title">🏢 เลขประจำตัวผู้เสียภาษี (Tax ID Mod 11)</span>
+                    <span class="gate-title">เลขประจำตัวผู้เสียภาษี (Tax ID Mod 11)</span>
                     <span class="gate-desc" id="gateTaxDesc">-</span>
                   </div>
                   <div class="val-gate-item" id="gateMathBox">
-                    <span class="gate-title">🧮 กระทบยอดตัวเลข (Financial Math Reconciliation)</span>
+                    <span class="gate-title">กระทบยอดตัวเลข (Financial Math Reconciliation)</span>
                     <span class="gate-desc" id="gateMathDesc">-</span>
                   </div>
                   <div class="val-gate-item" id="gatePolicyBox">
-                    <span class="gate-title">📜 กฎระเบียบและเงื่อนไข (University Policy)</span>
+                    <span class="gate-title">กฎระเบียบและเงื่อนไข (University Policy)</span>
                     <span class="gate-desc" id="gatePolicyDesc">-</span>
                   </div>
                 </div>
 
                 <!-- Issues List (if any) -->
                 <div id="valIssuesContainer" style="display: none; margin-top: 0.7rem; flex-direction: column; gap: 0.4rem;">
-                  <div style="font-size: 0.76rem; font-weight: 600; color: #cbd5e1;">⚠️ รายการข้อผิดพลาดและข้อสังเกต (Issues):</div>
+                  <div style="font-size: 0.76rem; font-weight: 600; color: #cbd5e1;">รายการข้อผิดพลาดและข้อสังเกต (Issues):</div>
                   <div id="valIssuesList" style="display: flex; flex-direction: column; gap: 0.35rem;"></div>
                 </div>
               </div>
@@ -1262,7 +1260,7 @@ def index():
               <!-- Dynamic Document Fields Card -->
               <div class="field-card" id="documentFieldsCard">
                 <div class="field-card-title">
-                  <span>🏢 ข้อมูลสำคัญของเอกสาร (Extracted Key Fields)</span>
+                  <span>ข้อมูลสำคัญของเอกสาร (Extracted Key Fields)</span>
                   <span id="docTypeTag" class="badge green">ระบุประเภท</span>
                 </div>
                 <div class="field-grid" id="fieldGrid">
@@ -1273,7 +1271,7 @@ def index():
               <!-- Line Items Table Card -->
               <div class="field-card" id="lineItemsCard">
                 <div class="field-card-title">
-                  <span>🛒 รายการสินค้าและบริการ (Line Items)</span>
+                  <span>รายการสินค้าและบริการ (Line Items)</span>
                   <span id="valItemCount" class="badge">0 รายการ</span>
                 </div>
                 <div style="overflow-x: auto;">
@@ -1303,7 +1301,7 @@ def index():
                     ภาษีมูลค่าเพิ่ม 7% (VAT): <b id="valVat" style="color: var(--text); font-family: monospace;">-</b>
                   </div>
                   <div id="mathValidationBadge" class="badge green" style="align-self: flex-start; margin-top: 0.2rem; display: none;">
-                    ✓ ตรวจสอบยอดถูกต้อง
+                    ตรวจสอบยอดถูกต้อง
                   </div>
                 </div>
                 <div style="text-align: right;">
@@ -1323,7 +1321,7 @@ def index():
               <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem;">
                 <div>
                   <h3 style="font-size: 0.95rem; font-weight: 600; color: #f8fafc; display: flex; align-items: center; gap: 0.4rem;">
-                    💬 PP-ChatOCRv4: ระบบสกัดข้อมูลอัตโนมัติตาม Template
+                    PP-ChatOCRv4: ระบบสกัดข้อมูลอัตโนมัติตาม Template
                   </h3>
                   <p style="font-size: 0.75rem; color: var(--text-muted); margin-top: 3px;">
                     สกัดข้อมูลตาม System Prompt และชุดคำถามของประเภทเอกสารโดยอัตโนมัติ 100% โดยไม่ต้องป้อน Prompt หรือคำถามเอง
@@ -1337,24 +1335,24 @@ def index():
               <!-- Dedicated File Status & Switcher Bar for PP-ChatOCRv4 Flow -->
               <div style="display: flex; justify-content: space-between; align-items: center; background: rgba(0, 0, 0, 0.25); border: 1px solid rgba(168, 85, 247, 0.25); border-radius: 8px; padding: 0.45rem 0.8rem; margin-bottom: 0.75rem; flex-wrap: wrap; gap: 0.5rem;">
                 <div style="display: flex; align-items: center; gap: 0.5rem;">
-                  <span style="font-size: 0.74rem; color: #cbd5e1; font-weight: 500;">📁 เอกสารที่เลือก:</span>
+                  <span style="font-size: 0.74rem; color: #cbd5e1; font-weight: 500;">เอกสารที่เลือก:</span>
                   <span id="chatocrCurrentFileBadge" class="badge" style="background: rgba(168, 85, 247, 0.15); color: #d8b4fe; border: 1px solid rgba(168, 85, 247, 0.3); font-size: 0.76rem;">
-                    ⚡ บิลตัวอย่าง (sample_receipt.png)
+                    บิลตัวอย่าง (sample_receipt.png)
                   </span>
                 </div>
                 <div style="display: flex; gap: 0.4rem;">
                   <button class="btn btn-secondary" onclick="document.getElementById('fileInput').click()" style="padding: 0.22rem 0.65rem; font-size: 0.74rem;">
-                    📁 เลือกไฟล์สำหรับ PP-ChatOCRv4
+                    เลือกไฟล์สำหรับ PP-ChatOCRv4
                   </button>
                   <button class="btn btn-secondary" onclick="loadSampleReceipt()" style="padding: 0.22rem 0.65rem; font-size: 0.74rem;">
-                    ⚡ ใช้บิลตัวอย่าง
+                    ใช้บิลตัวอย่าง
                   </button>
                 </div>
               </div>
 
               <!-- Flow Independence Banner -->
               <div style="background: rgba(168, 85, 247, 0.08); border: 1px solid rgba(168, 85, 247, 0.25); border-radius: 6px; padding: 0.4rem 0.75rem; font-size: 0.74rem; color: #d8b4fe; display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.65rem;">
-                <span>⚡ <b>โฟลว์อิสระ 100%:</b> อัปโหลดไฟล์แล้วสามารถกด <b>"⚡ สกัดข้อมูลอัตโนมัติ"</b> ได้ทันที ไม่ต้องรอ Custom OCR Pipeline</span>
+                <span><b>โฟลว์อิสระ 100%:</b> อัปโหลดไฟล์แล้วสามารถกด <b>"สกัดข้อมูลอัตโนมัติ"</b> ได้ทันที ไม่ต้องรอ Custom OCR Pipeline</span>
                 <span class="badge" style="font-size: 0.68rem; background: rgba(168, 85, 247, 0.2); color: #e9d5ff;">อิสระ ไม่บล็อก</span>
               </div>
 
@@ -1362,21 +1360,21 @@ def index():
               <div style="display: flex; gap: 0.75rem; align-items: flex-end; flex-wrap: wrap; margin-bottom: 0.6rem;">
                 <div style="flex: 1; min-width: 280px;">
                   <label style="font-size: 0.76rem; color: var(--text-muted); font-weight: 600; display: block; margin-bottom: 0.3rem;">
-                    📄 เลือกประเภทเอกสาร (Document Type Template):
+                    เลือกประเภทเอกสาร (Document Type Template):
                   </label>
                   <select id="chatocrDocTypeSelect" class="search-input" style="width: 100%; padding: 0.45rem 0.6rem; font-size: 0.82rem;" onchange="onChatOcrDocTypeChange()">
-                    <optgroup label="🏛️ เอกสารเบิกจ่ายราชการ (9 ประเภทหลัก)">
-                      <option value="principle_approval_request" selected>1. เอกสารขออนุมัติหลักการ</option>
-                      <option value="principle_approval_granted">2. เอกสารอนุมัติหลักการ</option>
-                      <option value="disbursement_approval_request">3. ขออนุมัติเบิกจ่าย</option>
-                      <option value="advance_payment_request_1">4. แบบเบิกเงินทดรองจ่าย (แบบที่ 1 - สัญญายืมเงิน/เบิก)</option>
-                      <option value="advance_payment_request_2">5. แบบเบิกเงินทดรองจ่าย (แบบที่ 2 - รับเงิน/เคลียร์เงิน)</option>
-                      <option value="receipt_substitute">6. ใบแทนใบเสร็จ / ใบสำคัญรับเงิน</option>
-                      <option value="parcel_inspection">7. ใบตรวจรับพัสดุ</option>
-                      <option value="procurement_approval_request">8. ขออนุมัติจัดหาพัสดุ</option>
-                      <option value="procurement_attachment">9. เอกสารประกอบการขออนุมัติจัดหา</option>
+                    <optgroup label="เอกสารเบิกจ่ายราชการ (9 ประเภทหลัก)">
+                      <option value="principle_approval_request" selected>เอกสารขออนุมัติหลักการ</option>
+                      <option value="principle_approval_granted">เอกสารอนุมัติหลักการ</option>
+                      <option value="disbursement_approval_request">ขออนุมัติเบิกจ่าย</option>
+                      <option value="advance_payment_request_1">แบบเบิกเงินทดรองจ่าย (แบบที่ 1 - สัญญายืมเงิน/เบิก)</option>
+                      <option value="advance_payment_request_2">แบบเบิกเงินทดรองจ่าย (แบบที่ 2 - รับเงิน/เคลียร์เงิน)</option>
+                      <option value="receipt_substitute">ใบแทนใบเสร็จ / ใบสำคัญรับเงิน</option>
+                      <option value="parcel_inspection">ใบตรวจรับพัสดุ</option>
+                      <option value="procurement_approval_request">ขออนุมัติจัดหาพัสดุ</option>
+                      <option value="procurement_attachment">เอกสารประกอบการขออนุมัติจัดหา</option>
                     </optgroup>
-                    <optgroup label="🧾 เอกสารประกอบภายนอก (หมวดเสริม)">
+                    <optgroup label="เอกสารประกอบภายนอก (หมวดเสริม)">
                       <option value="general_receipt">ใบเสร็จรับเงิน / ใบกำกับภาษีทั่วไป (ร้านค้า/บริษัท)</option>
                     </optgroup>
                   </select>
@@ -1384,7 +1382,7 @@ def index():
 
                 <div style="flex-shrink: 0;">
                   <button class="btn" id="btnRunChatOCR" onclick="executeChatOCR()" style="padding: 0.5rem 1.25rem; font-size: 0.85rem; font-weight: 600; background: linear-gradient(135deg, #2563eb, #10b981); box-shadow: 0 4px 14px rgba(37, 99, 235, 0.4);">
-                    ⚡ สกัดข้อมูลอัตโนมัติ (PP-ChatOCRv4)
+                    สกัดข้อมูลอัตโนมัติ (PP-ChatOCRv4)
                   </button>
                 </div>
               </div>
@@ -1392,8 +1390,8 @@ def index():
               <!-- Automated Target Keys Preview Chips -->
               <div style="background: rgba(0, 0, 0, 0.2); border-radius: 6px; padding: 0.5rem 0.75rem; border: 1px solid rgba(255, 255, 255, 0.05);">
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.35rem;">
-                  <span style="font-size: 0.72rem; color: #94a3b8; font-weight: 600;">🎯 ฟิลด์ที่จะสกัดตาม Template อัตโนมัติ:</span>
-                  <span style="font-size: 0.7rem; color: #10b981; font-weight: 500;">✓ System Prompt ผูกตามประเภทเอกสารแล้ว</span>
+                  <span style="font-size: 0.72rem; color: #94a3b8; font-weight: 600;">ฟิลด์ที่จะสกัดตาม Template อัตโนมัติ:</span>
+                  <span style="font-size: 0.7rem; color: #10b981; font-weight: 500;">System Prompt ผูกตามประเภทเอกสารแล้ว</span>
                 </div>
                 <div id="chatocrTargetKeysChips" class="preset-chips-group"></div>
               </div>
@@ -1407,7 +1405,7 @@ def index():
 
             <!-- Empty State -->
             <div id="chatocrEmpty" style="color: var(--text-muted); font-size: 0.85rem; text-align: center; padding: 3rem;">
-              👈 กรุณาเลือกไฟล์เอกสาร (หรือกดปุ่ม <b>"⚡ ทดสอบบิลตัวอย่าง"</b> ด้านบน) จากนั้นเลือกประเภทเอกสารแล้วกด <b>"⚡ สกัดข้อมูลอัตโนมัติ (PP-ChatOCRv4)"</b>
+              กรุณาเลือกไฟล์เอกสาร (หรือกดปุ่ม <b>"ทดสอบบิลตัวอย่าง"</b> ด้านบน) จากนั้นเลือกประเภทเอกสารแล้วกด <b>"สกัดข้อมูลอัตโนมัติ (PP-ChatOCRv4)"</b>
             </div>
 
             <!-- ChatOCR Results Area -->
@@ -1417,11 +1415,11 @@ def index():
                 <div style="display: flex; gap: 0.4rem; align-items: center; flex-wrap: wrap;">
                   <span id="chatocrResDocTypeBadge" class="badge green">ใบเสร็จรับเงิน</span>
                   <span id="chatocrResModelBadge" class="badge">PP-ChatOCRv4 + Qwen2.5:3B</span>
-                  <span id="chatocrResLatencyBadge" class="badge">⏱️ - ms</span>
+                  <span id="chatocrResLatencyBadge" class="badge">- ms</span>
                   <span id="chatocrMathReconcileBadge" class="badge" style="display: none;"></span>
                 </div>
                 <div style="display: flex; gap: 0.4rem;">
-                  <button class="btn btn-secondary" style="padding: 0.25rem 0.6rem; font-size: 0.75rem;" onclick="copyChatOcrAnswersJson()">📋 คัดลอก Q&A JSON</button>
+                  <button class="btn btn-secondary" style="padding: 0.25rem 0.6rem; font-size: 0.75rem;" onclick="copyChatOcrAnswersJson()">คัดลอก Q&A JSON</button>
                 </div>
               </div>
 
@@ -1431,7 +1429,7 @@ def index():
               <!-- 1. Q&A Answers Section -->
               <div class="chatocr-answers-card">
                 <div class="chatocr-card-header">
-                  <span style="font-weight: 600; font-size: 0.82rem; color: #f1f5f9;">💬 ผลลัพธ์การตอบคำถาม (Extracted Q&A Pairs)</span>
+                  <span style="font-weight: 600; font-size: 0.82rem; color: #f1f5f9;">ผลลัพธ์การตอบคำถาม (Extracted Q&A Pairs)</span>
                   <span class="badge" id="chatocrAnswerCountBadge">0 คำตอบ</span>
                 </div>
                 <div class="chatocr-qa-list" id="chatocrQaList"></div>
@@ -1441,7 +1439,7 @@ def index():
               <div class="knowledge-payload-container">
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.4rem;">
                   <h4 style="font-size: 0.85rem; font-weight: 600; color: #38bdf8; display: flex; align-items: center; gap: 0.4rem;">
-                    📦 Knowledge Payload สำหรับ Vector DB (ก้อนข้อมูลพร้อมใช้งาน)
+                    Knowledge Payload สำหรับ Vector DB (ก้อนข้อมูลพร้อมใช้งาน)
                   </h4>
                   <span style="font-size: 0.72rem; color: var(--text-muted);">Embed Dense Text + Metadata Filter</span>
                 </div>
@@ -1451,11 +1449,11 @@ def index():
                   <div class="payload-card">
                     <div class="payload-card-header">
                       <div>
-                        <span style="font-weight: 600; font-size: 0.78rem; color: #34d399;">📄 Text to Embed (Natural Language Content)</span>
+                        <span style="font-weight: 600; font-size: 0.78rem; color: #34d399;">Text to Embed (Natural Language Content)</span>
                         <div style="font-size: 0.68rem; color: var(--text-muted);">เนื้อหาสำคัญสรุปให้อ่านเข้าใจ สำหรับนำไปทำ Vector Embedding</div>
                       </div>
                       <button class="btn btn-secondary" style="padding: 0.2rem 0.5rem; font-size: 0.72rem;" onclick="copyEmbedText()">
-                        📋 คัดลอก
+                        คัดลอก
                       </button>
                     </div>
                     <div class="code-scroll-container" style="max-height: 240px; background: rgba(0, 0, 0, 0.4); border-radius: 6px; padding: 0.6rem;">
@@ -1467,11 +1465,11 @@ def index():
                   <div class="payload-card">
                     <div class="payload-card-header">
                       <div>
-                        <span style="font-weight: 600; font-size: 0.78rem; color: #60a5fa;">🏷️ Filter Metadata (Structured Attributes)</span>
+                        <span style="font-weight: 600; font-size: 0.78rem; color: #60a5fa;">Filter Metadata (Structured Attributes)</span>
                         <div style="font-size: 0.68rem; color: var(--text-muted);">Attribute สำคัญสำหรับตั้งเงื่อนไข WHERE Filter ใน Vector DB</div>
                       </div>
                       <button class="btn btn-secondary" style="padding: 0.2rem 0.5rem; font-size: 0.72rem;" onclick="copyFilterMetadata()">
-                        📋 คัดลอก
+                        คัดลอก
                       </button>
                     </div>
                     <div class="code-scroll-container" style="max-height: 240px; background: rgba(0, 0, 0, 0.4); border-radius: 6px; padding: 0.6rem;">
@@ -1510,8 +1508,8 @@ def index():
         if (btnCustom) btnCustom.classList.remove('active');
         if (btnChatOCR) btnChatOCR.classList.add('active');
 
-        if (uploadBtn) uploadBtn.innerHTML = '📁 เลือกไฟล์สำหรับ PP-ChatOCRv4';
-        if (sampleBtn) sampleBtn.innerHTML = '⚡ บิลตัวอย่าง (PP-ChatOCRv4)';
+        if (uploadBtn) uploadBtn.innerHTML = 'เลือกไฟล์สำหรับ PP-ChatOCRv4';
+        if (sampleBtn) sampleBtn.innerHTML = 'บิลตัวอย่าง (PP-ChatOCRv4)';
         if (deskewLabel) deskewLabel.style.display = 'none';
 
         // Abort background custom pipeline if it was still running
@@ -1521,17 +1519,17 @@ def index():
         }
 
         switchTab('chatocr');
-        setStatus(currentUploadedFile ? `📄 โหมด PP-ChatOCRv4: พร้อมสกัดข้อมูล "${currentUploadedFile.name}" (กดปุ่มด้านล่าง)` : '💬 โหมด PP-ChatOCRv4 สำเร็จรูป (เลือกไฟล์แล้วกดปุ่มสกัดได้ทันที)', false);
+        setStatus(currentUploadedFile ? `โหมด PP-ChatOCRv4: พร้อมสกัดข้อมูล "${currentUploadedFile.name}" (กดปุ่มด้านล่าง)` : 'โหมด PP-ChatOCRv4 สำเร็จรูป (เลือกไฟล์แล้วกดปุ่มสกัดได้ทันที)', false);
       } else {
         if (btnCustom) btnCustom.classList.add('active');
         if (btnChatOCR) btnChatOCR.classList.remove('active');
 
-        if (uploadBtn) uploadBtn.innerHTML = '📁 เลือกไฟล์ภาพหรือ PDF';
-        if (sampleBtn) sampleBtn.innerHTML = '⚡ ทดสอบบิลตัวอย่าง (Sample)';
+        if (uploadBtn) uploadBtn.innerHTML = 'เลือกไฟล์ภาพหรือ PDF';
+        if (sampleBtn) sampleBtn.innerHTML = 'ทดสอบบิลตัวอย่าง (Sample)';
         if (deskewLabel) deskewLabel.style.display = 'inline-flex';
 
         switchTab('blocks');
-        setStatus('⚙️ โหมด Custom Pipeline พร้อมใช้งาน', false);
+        setStatus('โหมด Custom Pipeline พร้อมใช้งาน', false);
       }
     }
 
@@ -1549,7 +1547,7 @@ def index():
       // Update filename badges
       const chatFileBadge = document.getElementById('chatocrCurrentFileBadge');
       if (chatFileBadge) {
-        chatFileBadge.innerText = `📄 ${file.name}`;
+        chatFileBadge.innerText = file.name;
       }
 
       // Instant Client-Side Image Preview (0ms delay)
@@ -1575,7 +1573,7 @@ def index():
           customPipelineController.abort();
           customPipelineController = null;
         }
-        setStatus(`📄 โหลด "${file.name}" สำหรับ PP-ChatOCRv4 เรียบร้อย (กดปุ่มสกัดด้านล่างได้ทันที)`, false);
+        setStatus(`โหลด "${file.name}" สำหรับ PP-ChatOCRv4 เรียบร้อย (กดปุ่มสกัดด้านล่างได้ทันที)`, false);
         const chatSelect = document.getElementById('chatocrDocTypeSelect');
         if (chatSelect && chatSelect.value === 'general_receipt') {
           chatSelect.value = 'principle_approval_request';
@@ -1594,7 +1592,7 @@ def index():
       // Update PP-ChatOCR filename badge
       const chatFileBadge = document.getElementById('chatocrCurrentFileBadge');
       if (chatFileBadge) {
-        chatFileBadge.innerText = '⚡ บิลตัวอย่าง (sample_receipt.png)';
+        chatFileBadge.innerText = 'บิลตัวอย่าง (sample_receipt.png)';
       }
 
       // Auto-select general receipt for sample receipt
@@ -1624,9 +1622,9 @@ def index():
           document.getElementById('emptyState').style.display = 'none';
           document.getElementById('pageInfo').innerText = `${data.width}x${data.height} px`;
           zoomReset();
-          setStatus('⚡ โหลดบิลตัวอย่างสำหรับ PP-ChatOCRv4 พร้อมสกัดแล้ว (กดปุ่มสกัดได้ทันที)', false);
+          setStatus('โหลดบิลตัวอย่างสำหรับ PP-ChatOCRv4 พร้อมสกัดแล้ว (กดปุ่มสกัดได้ทันที)', false);
         } catch (err) {
-          setStatus('⚡ โหลดบิลตัวอย่างพร้อมสกัดแล้ว', false);
+          setStatus('โหลดบิลตัวอย่างพร้อมสกัดแล้ว', false);
         }
         return;
       }
@@ -1916,13 +1914,13 @@ def index():
         if (btnCustom) btnCustom.classList.remove('active');
         if (btnChatOCR) btnChatOCR.classList.add('active');
         if (flowBadge) {
-          flowBadge.innerHTML = '💬 โฟลว์: PP-ChatOCRv4 (PaddleX)';
+          flowBadge.innerHTML = 'โฟลว์: PP-ChatOCRv4 (PaddleX)';
           flowBadge.style.background = 'rgba(168, 85, 247, 0.2)';
           flowBadge.style.color = '#d8b4fe';
           flowBadge.style.borderColor = 'rgba(168, 85, 247, 0.4)';
         }
-        if (uploadBtn) uploadBtn.innerHTML = '📁 เลือกไฟล์สำหรับ PP-ChatOCRv4';
-        if (sampleBtn) sampleBtn.innerHTML = '⚡ บิลตัวอย่าง (PP-ChatOCRv4)';
+        if (uploadBtn) uploadBtn.innerHTML = 'เลือกไฟล์สำหรับ PP-ChatOCRv4';
+        if (sampleBtn) sampleBtn.innerHTML = 'บิลตัวอย่าง (PP-ChatOCRv4)';
         if (deskewLabel) deskewLabel.style.display = 'none';
 
         // Abort background custom pipeline if it was running
@@ -1931,19 +1929,19 @@ def index():
           customPipelineController = null;
         }
 
-        setStatus(currentUploadedFile ? `📄 พร้อมสกัดข้อมูลด้วย PP-ChatOCRv4: "${currentUploadedFile.name}" (กดปุ่มสกัดด้านล่าง)` : '💬 PP-ChatOCRv4 พร้อมใช้งาน (เลือกไฟล์แล้วกดปุ่มสกัด)', false);
+        setStatus(currentUploadedFile ? `พร้อมสกัดข้อมูลด้วย PP-ChatOCRv4: "${currentUploadedFile.name}" (กดปุ่มสกัดด้านล่าง)` : 'PP-ChatOCRv4 พร้อมใช้งาน (เลือกไฟล์แล้วกดปุ่มสกัด)', false);
       } else {
         currentFlowMode = 'custom';
         if (btnCustom) btnCustom.classList.add('active');
         if (btnChatOCR) btnChatOCR.classList.remove('active');
         if (flowBadge) {
-          flowBadge.innerHTML = '⚙️ โฟลว์: Custom Pipeline';
+          flowBadge.innerHTML = 'โฟลว์: Custom Pipeline';
           flowBadge.style.background = 'rgba(37, 99, 235, 0.15)';
           flowBadge.style.color = '#93c5fd';
           flowBadge.style.borderColor = 'rgba(37, 99, 235, 0.3)';
         }
-        if (uploadBtn) uploadBtn.innerHTML = '📁 เลือกไฟล์ภาพหรือ PDF';
-        if (sampleBtn) sampleBtn.innerHTML = '⚡ ทดสอบบิลตัวอย่าง (Sample)';
+        if (uploadBtn) uploadBtn.innerHTML = 'เลือกไฟล์ภาพหรือ PDF';
+        if (sampleBtn) sampleBtn.innerHTML = 'ทดสอบบิลตัวอย่าง (Sample)';
         if (deskewLabel) deskewLabel.style.display = 'inline-flex';
       }
     }
@@ -1961,7 +1959,7 @@ def index():
 
         if (data.ollama_online) {
           badge.className = 'badge green';
-          badge.innerText = '🟢 Ollama พร้อมใช้งาน (GPU)';
+          badge.innerText = '● Ollama พร้อมใช้งาน (GPU)';
           if (data.available_models && data.available_models.length > 0) {
             data.available_models.forEach(m => {
               const opt = document.createElement('option');
@@ -1981,7 +1979,7 @@ def index():
           badge.style.color = '#fbbf24';
           badge.style.borderColor = 'rgba(245, 158, 11, 0.4)';
           badge.style.background = 'rgba(245, 158, 11, 0.1)';
-          badge.innerText = '🟠 Ollama Offline (ใช้ Real Snapshot)';
+          badge.innerText = 'Ollama Offline (ใช้ Real Snapshot)';
           const opt = document.createElement('option');
           opt.value = 'qwen2.5:3b (Mock)';
           opt.innerText = 'qwen2.5:3b (Real Snapshot)';
@@ -1996,14 +1994,14 @@ def index():
         if (bmDocSelect) bmDocSelect.innerHTML = '';
         if (data.supported_document_types && data.supported_document_types.length > 0) {
           const officialGroup = document.createElement('optgroup');
-          officialGroup.label = '🏛️ เอกสารเบิกจ่ายราชการ (9 ประเภทหลัก)';
+          officialGroup.label = 'เอกสารเบิกจ่ายราชการ (9 ประเภทหลัก)';
           const suppGroup = document.createElement('optgroup');
-          suppGroup.label = '🧾 เอกสารประกอบภายนอก (หมวดเสริม)';
+          suppGroup.label = 'เอกสารประกอบภายนอก (หมวดเสริม)';
 
           const bmOfficialGroup = document.createElement('optgroup');
-          bmOfficialGroup.label = '🏛️ เอกสารเบิกจ่ายราชการ (9 ประเภทหลัก)';
+          bmOfficialGroup.label = 'เอกสารเบิกจ่ายราชการ (9 ประเภทหลัก)';
           const bmSuppGroup = document.createElement('optgroup');
-          bmSuppGroup.label = '🧾 เอกสารประกอบภายนอก (หมวดเสริม)';
+          bmSuppGroup.label = 'เอกสารประกอบภายนอก (หมวดเสริม)';
 
           data.supported_document_types.forEach((dt, idx) => {
             const opt = document.createElement('option');
@@ -2050,7 +2048,7 @@ def index():
 
       const btn = document.getElementById('btnExtractLLM');
       const originalText = btn.innerText;
-      btn.innerText = '⏳ กำลังประมวลผล...';
+      btn.innerText = 'กำลังประมวลผล...';
       btn.disabled = true;
 
       const modelName = document.getElementById('llmModelSelect').value;
@@ -2109,7 +2107,7 @@ def index():
         modeBadge.className = 'badge green';
         modeBadge.innerText = 'Authentic Local GPU';
       }
-      document.getElementById('resLatencyBadge').innerText = `⏱️ ${(result.latency_ms / 1000).toFixed(2)}s`;
+      document.getElementById('resLatencyBadge').innerText = `${(result.latency_ms / 1000).toFixed(2)}s`;
 
       // Pipeline Latency Breakdown (Component 5)
       const timingBanner = document.getElementById('pipelineTimingsBanner');
@@ -2154,35 +2152,35 @@ def index():
         const badgeEl = document.getElementById('valOverallBadge');
         if (val.status === 'PASSED') {
           badgeEl.className = 'badge green';
-          badgeEl.innerText = '✓ ผ่านการตรวจสอบทั้งหมด (PASSED)';
+          badgeEl.innerText = '[PASSED] ผ่านการตรวจสอบทั้งหมด';
           valStatusBadge.className = 'badge green';
-          valStatusBadge.innerText = '✓ ผ่านเกณฑ์';
+          valStatusBadge.innerText = 'ผ่านเกณฑ์';
         } else if (val.status === 'WARNING') {
           badgeEl.className = 'badge';
           badgeEl.style.color = '#fbbf24';
           badgeEl.style.borderColor = 'rgba(245, 158, 11, 0.4)';
-          badgeEl.innerText = '⚠️ ผ่านแบบมีข้อสังเกต (WARNING)';
+          badgeEl.innerText = '[WARNING] ผ่านแบบมีข้อสังเกต';
           valStatusBadge.className = 'badge';
           valStatusBadge.style.color = '#fbbf24';
           valStatusBadge.style.borderColor = 'rgba(245, 158, 11, 0.4)';
-          valStatusBadge.innerText = '⚠️ มีข้อสังเกต';
+          valStatusBadge.innerText = 'มีข้อสังเกต';
         } else {
           badgeEl.className = 'badge';
           badgeEl.style.color = '#f87171';
           badgeEl.style.borderColor = 'rgba(239, 68, 68, 0.4)';
-          badgeEl.innerText = '❌ ตรวจพบข้อผิดพลาด (ERROR)';
+          badgeEl.innerText = '[ERROR] ตรวจพบข้อผิดพลาด';
           valStatusBadge.className = 'badge';
           valStatusBadge.style.color = '#f87171';
           valStatusBadge.style.borderColor = 'rgba(239, 68, 68, 0.4)';
-          valStatusBadge.innerText = '❌ มีข้อผิดพลาด';
+          valStatusBadge.innerText = 'มีข้อผิดพลาด';
         }
 
         // 1. Date Gate
         const dateDesc = document.getElementById('gateDateDesc');
         if (val.date_report && val.date_report.is_valid) {
-          dateDesc.innerHTML = `<span style="color: #34d399; font-weight: 600;">✓ ${val.date_report.iso_date}</span> <small style="color: var(--text-muted);">(${val.date_report.thai_formatted})</small>`;
+          dateDesc.innerHTML = `<span style="color: #34d399; font-weight: 600;">${val.date_report.iso_date}</span> <small style="color: var(--text-muted);">(${val.date_report.thai_formatted})</small>`;
         } else if (val.date_report && val.date_report.raw_date) {
-          dateDesc.innerHTML = `<span style="color: #fbbf24; font-weight: 600;">⚠️ ${val.date_report.raw_date}</span>`;
+          dateDesc.innerHTML = `<span style="color: #fbbf24; font-weight: 600;">${val.date_report.raw_date}</span>`;
         } else {
           dateDesc.innerHTML = `<span style="color: var(--text-muted);">- ไม่ระบุวันที่ -</span>`;
         }
@@ -2190,9 +2188,9 @@ def index():
         // 2. Tax ID Gate
         const taxDesc = document.getElementById('gateTaxDesc');
         if (val.tax_id_report && val.tax_id_report.is_valid) {
-          taxDesc.innerHTML = `<span style="color: #34d399; font-weight: 600;">✓ ${val.tax_id_report.formatted_id}</span> <small style="color: #94a3b8;">(Mod 11 Checksum ✓)</small>`;
+          taxDesc.innerHTML = `<span style="color: #34d399; font-weight: 600;">${val.tax_id_report.formatted_id}</span> <small style="color: #94a3b8;">(Mod 11 Checksum ผ่าน)</small>`;
         } else if (val.tax_id_report && val.tax_id_report.raw_id) {
-          taxDesc.innerHTML = `<span style="color: #f87171; font-weight: 600;">❌ ${val.tax_id_report.raw_id}</span> <small style="color: #fca5a5;">(${val.tax_id_report.error_message || 'ไม่ผ่าน'})</small>`;
+          taxDesc.innerHTML = `<span style="color: #f87171; font-weight: 600;">${val.tax_id_report.raw_id}</span> <small style="color: #fca5a5;">(${val.tax_id_report.error_message || 'ไม่ผ่าน'})</small>`;
         } else {
           taxDesc.innerHTML = `<span style="color: var(--text-muted);">- ไม่มีระบุในเอกสาร -</span>`;
         }
@@ -2200,9 +2198,9 @@ def index():
         // 3. Math Gate
         const mathDesc = document.getElementById('gateMathDesc');
         if (val.math_report && val.math_report.is_balanced) {
-          mathDesc.innerHTML = `<span style="color: #34d399; font-weight: 600;">✓ ยอดเงินสอดคล้อง</span> <small style="color: var(--text-muted); display: block;">${val.math_report.details || ''}</small>`;
+          mathDesc.innerHTML = `<span style="color: #34d399; font-weight: 600;">[ตรงกัน] ยอดเงินสอดคล้อง</span> <small style="color: var(--text-muted); display: block;">${val.math_report.details || ''}</small>`;
         } else if (val.math_report) {
-          mathDesc.innerHTML = `<span style="color: #f87171; font-weight: 600;">❌ ยอดเงินคลาดเคลื่อน</span> <small style="color: #fca5a5; display: block;">${val.math_report.details || ''}</small>`;
+          mathDesc.innerHTML = `<span style="color: #f87171; font-weight: 600;">[ไม่ตรงกัน] ยอดเงินคลาดเคลื่อน</span> <small style="color: #fca5a5; display: block;">${val.math_report.details || ''}</small>`;
         } else {
           mathDesc.innerHTML = `<span style="color: var(--text-muted);">- ไม่มียอดเงินที่ต้องคำนวณ -</span>`;
         }
@@ -2211,10 +2209,10 @@ def index():
         const policyDesc = document.getElementById('gatePolicyDesc');
         const policyIssues = (val.issues || []).filter(i => i.code === 'MISSING_REQUIRED_FIELD' || i.code === 'PETTY_CASH_EXCEEDS_LIMIT' || i.code === 'EMPTY_EXPENSE_ITEMS');
         if (policyIssues.length === 0) {
-          policyDesc.innerHTML = `<span style="color: #34d399; font-weight: 600;">✓ ครบถ้วนตามระเบียบมหาวิทยาลัย</span>`;
+          policyDesc.innerHTML = `<span style="color: #34d399; font-weight: 600;">ครบถ้วนตามระเบียบมหาวิทยาลัย</span>`;
         } else {
           const hasErr = policyIssues.some(i => i.severity === 'ERROR');
-          policyDesc.innerHTML = `<span style="color: ${hasErr ? '#f87171' : '#fbbf24'}; font-weight: 600;">${hasErr ? '❌ ขาดข้อมูลจำเป็น' : '⚠️ มีเงื่อนไขเตือน'} (${policyIssues.length} จุด)</span>`;
+          policyDesc.innerHTML = `<span style="color: ${hasErr ? '#f87171' : '#fbbf24'}; font-weight: 600;">${hasErr ? '[ไม่ครบ] ขาดข้อมูลจำเป็น' : '[แจ้งเตือน] มีเงื่อนไขเตือน'} (${policyIssues.length} จุด)</span>`;
         }
 
         // Issues List
@@ -2227,7 +2225,7 @@ def index():
             const item = document.createElement('div');
             item.className = issue.severity === 'ERROR' ? 'val-issue-item val-issue-error' : 'val-issue-item val-issue-warning';
             item.innerHTML = `
-              <span style="font-size: 1rem;">${issue.severity === 'ERROR' ? '❌' : '⚠️'}</span>
+              <span style="font-weight: 700; font-size: 0.8rem; color: ${issue.severity === 'ERROR' ? '#f87171' : '#fbbf24'};">[${issue.severity}]</span>
               <div>
                 <b>[${issue.field}]</b> ${issue.message}
               </div>
@@ -2247,10 +2245,10 @@ def index():
       fieldGrid.innerHTML = '';
 
       const fieldLabels = {
-        doc_no: "1. เลขที่เอกสาร",
-        doc_date: "2. วันที่ทำเอกสาร",
-        title: "3. เรื่อง",
-        requester: "4. ผู้ทำการเบิก / หน่วยงาน",
+        doc_no: "เลขที่เอกสาร",
+        doc_date: "วันที่ทำเอกสาร",
+        title: "เรื่อง",
+        requester: "ผู้ทำการเบิก / หน่วยงาน",
         ref_doc_no: "ตามหนังสือเลขที่ (อ้างอิง)",
         ref_memo_no: "แนบท้ายบันทึกเลขที่",
         disbursement_type: "ประเภทการเบิกจ่าย",
@@ -2357,18 +2355,18 @@ def index():
         if (Math.abs(expectedTotal - actualTotal) < 0.05) {
           mathBadge.style.display = 'inline-flex';
           mathBadge.className = 'badge green';
-          mathBadge.innerText = `✓ ตรวจสอบยอดเงินถูกต้อง (Subtotal + VAT = Total: ฿${formatCurrency(actualTotal)})`;
+          mathBadge.innerText = `[ตรวจสอบถูกต้อง] Subtotal + VAT = Total: ฿${formatCurrency(actualTotal)}`;
         } else {
           mathBadge.style.display = 'inline-flex';
           mathBadge.className = 'badge';
           mathBadge.style.color = '#f87171';
           mathBadge.style.borderColor = 'rgba(239, 68, 68, 0.4)';
-          mathBadge.innerText = `⚠️ ยอดระบุ: ฿${formatCurrency(actualTotal)} (ต่างจาก Subtotal + VAT: ฿${formatCurrency(expectedTotal)})`;
+          mathBadge.innerText = `[ยอดไม่ตรงกัน] ระบุ: ฿${formatCurrency(actualTotal)} (ต่างจาก Subtotal + VAT: ฿${formatCurrency(expectedTotal)})`;
         }
       } else if (total) {
         mathBadge.style.display = 'inline-flex';
         mathBadge.className = 'badge green';
-        mathBadge.innerText = `✓ ยอดสุทธิระบุในเอกสาร: ฿${formatCurrency(total)}`;
+        mathBadge.innerText = `ยอดสุทธิระบุในเอกสาร: ฿${formatCurrency(total)}`;
       } else {
         mathBadge.style.display = 'none';
       }
@@ -2505,9 +2503,9 @@ def index():
         chatocrTemplatesMap = {};
 
         const officialGroup = document.createElement('optgroup');
-        officialGroup.label = '🏛️ เอกสารเบิกจ่ายราชการ (9 ประเภทหลัก)';
+        officialGroup.label = 'เอกสารเบิกจ่ายราชการ (9 ประเภทหลัก)';
         const suppGroup = document.createElement('optgroup');
-        suppGroup.label = '🧾 เอกสารประกอบภายนอก (หมวดเสริม)';
+        suppGroup.label = 'เอกสารประกอบภายนอก (หมวดเสริม)';
 
         templates.forEach((tpl) => {
           chatocrTemplatesMap[tpl.id] = tpl;
@@ -2644,9 +2642,9 @@ def index():
       }
 
       // Meta badges
-      document.getElementById('chatocrResDocTypeBadge').innerText = data.document_title || data.document_type || 'receipt';
+      document.getElementById('chatocrResDocTypeBadge').innerText = data.knowledge_payload?.filter_metadata?.document_type_name || data.document_type_name || data.document_title || data.document_type || 'receipt';
       document.getElementById('chatocrResModelBadge').innerText = `${data.model_info?.engine || 'PP-ChatOCRv4'} + ${data.model_info?.llm_model || 'Qwen2.5:3B'}`;
-      document.getElementById('chatocrResLatencyBadge').innerText = `⏱️ ${(data.latency_ms / 1000).toFixed(2)}s`;
+      document.getElementById('chatocrResLatencyBadge').innerText = `${(data.latency_ms / 1000).toFixed(2)}s`;
 
       // Financial Reconciliation Badge & Banner
       const reconcile = data.knowledge_payload?.filter_metadata?.math_reconciliation;
@@ -2662,34 +2660,34 @@ def index():
           recBadge.style.background = '';
           recBadge.style.color = '';
           recBadge.style.border = '';
-          recBadge.innerText = '✅ ตรวจสอบยอดเงินถูกต้อง';
+          recBadge.innerText = '[ถูกต้อง] ตรวจสอบยอดเงินถูกต้อง';
 
           recBanner.style.background = 'rgba(16, 185, 129, 0.12)';
           recBanner.style.border = '1px solid rgba(16, 185, 129, 0.35)';
           recBanner.style.color = '#34d399';
-          recBanner.innerHTML = `<b>✅ ตรวจสอบความถูกต้องของยอดเงิน (Reconciliation Passed):</b> ${reconcile.details || 'ยอดเงินคำนวณตรงกันสมบูรณ์'}`;
+          recBanner.innerHTML = `<b>[ตรวจสอบถูกต้อง] ตรวจสอบความถูกต้องของยอดเงิน (Reconciliation Passed):</b> ${reconcile.details || 'ยอดเงินคำนวณตรงกันสมบูรณ์'}`;
         } else if (reconcile.status === 'discrepancy') {
           recBadge.className = 'badge';
           recBadge.style.background = 'rgba(239, 68, 68, 0.2)';
           recBadge.style.color = '#ef4444';
           recBadge.style.border = '1px solid rgba(239, 68, 68, 0.4)';
-          recBadge.innerText = '⚠️ ยอดเงินไม่ตรงกัน (Discrepancy)';
+          recBadge.innerText = '[ไม่ตรงกัน] ตรวจพบยอดเงินคลาดเคลื่อน (Discrepancy)';
 
           recBanner.style.background = 'rgba(239, 68, 68, 0.12)';
           recBanner.style.border = '1px solid rgba(239, 68, 68, 0.35)';
           recBanner.style.color = '#f87171';
-          recBanner.innerHTML = `<b>⚠️ ตรวจพบความคลาดเคลื่อนของยอดเงิน (Math Discrepancy):</b> ${reconcile.details || 'ยอดคำนวณไม่ตรงกับยอดที่ระบุในเอกสาร'}`;
+          recBanner.innerHTML = `<b>[ยอดไม่ตรงกัน] ตรวจพบความคลาดเคลื่อนของยอดเงิน (Math Discrepancy):</b> ${reconcile.details || 'ยอดคำนวณไม่ตรงกับยอดที่ระบุในเอกสาร'}`;
         } else {
           recBadge.className = 'badge';
           recBadge.style.background = 'rgba(56, 189, 248, 0.15)';
           recBadge.style.color = '#38bdf8';
           recBadge.style.border = '1px solid rgba(56, 189, 248, 0.35)';
-          recBadge.innerText = '🔍 ตรวจสอบผ่าน AI Cross-Check';
+          recBadge.innerText = '[วิเคราะห์ AI] ตรวจสอบผ่าน AI Cross-Check';
 
           recBanner.style.background = 'rgba(56, 189, 248, 0.08)';
           recBanner.style.border = '1px solid rgba(56, 189, 248, 0.25)';
           recBanner.style.color = '#7dd3fc';
-          recBanner.innerHTML = `<b>🔍 การตรวจสอบยอดเงิน (Financial Cross-Check):</b> ${reconcile.details || 'ผ่านการวิเคราะห์เชิงตัวเลขโดย AI'}`;
+          recBanner.innerHTML = `<b>[ตรวจสอบยอดเงิน] การตรวจสอบยอดเงิน (Financial Cross-Check):</b> ${reconcile.details || 'ผ่านการวิเคราะห์เชิงตัวเลขโดย AI'}`;
         }
       } else {
         recBadge.style.display = 'none';
@@ -2710,7 +2708,7 @@ def index():
         item.className = 'chatocr-qa-item' + (isCrossCheck ? ' crosscheck-item' : '');
         item.innerHTML = `
           <div class="chatocr-q-title">
-            <span>${isCrossCheck ? '🔍' : '❓'} [${idx + 1}]</span>
+            <span>[${idx + 1}]</span>
             <span style="${isCrossCheck ? 'color: #38bdf8; font-weight: 600;' : ''}">${q}</span>
             ${isCrossCheck ? '<span class="badge" style="font-size: 0.65rem; background: rgba(56, 189, 248, 0.2); color: #38bdf8; margin-left: auto;">Financial Cross-Check</span>' : ''}
           </div>
@@ -2756,7 +2754,7 @@ def index():
   <div class="modal-overlay" id="benchmarkModal">
     <div class="modal-card">
       <div class="modal-header">
-        <h3>📊 เปรียบเทียบโมเดล AI สกัดข้อมูลทางการเงิน (LLM Benchmarking)</h3>
+        <h3>เปรียบเทียบโมเดล AI สกัดข้อมูลทางการเงิน (LLM Benchmarking)</h3>
         <button class="btn-icon" onclick="closeBenchmarkModal()" style="font-size: 1.1rem;">✕</button>
       </div>
       <div class="modal-body">
@@ -2778,7 +2776,7 @@ def index():
           </div>
           <div style="margin-top: 1rem;">
             <button class="btn" id="btnRunBenchmark" onclick="executeBenchmark()">
-              🚀 เริ่มการทดสอบ (Run Benchmark)
+              เริ่มการทดสอบ (Run Benchmark)
             </button>
           </div>
         </div>
@@ -2790,9 +2788,9 @@ def index():
 
         <div id="bmResultsArea" style="display: none; flex-direction: column; gap: 0.8rem;">
           <div style="display: flex; justify-content: space-between; align-items: center;">
-            <span style="font-size: 0.85rem; font-weight: 600; color: #e2e8f0;">📋 ตารางเปรียบเทียบผลลัพธ์ (Markdown Format)</span>
+            <span style="font-size: 0.85rem; font-weight: 600; color: #e2e8f0;">ตารางเปรียบเทียบผลลัพธ์ (Markdown Format)</span>
             <button class="btn btn-secondary" style="padding: 0.25rem 0.6rem; font-size: 0.75rem;" onclick="copyBenchmarkMarkdown()">
-              📋 คัดลอก Markdown สำหรับสไลด์ / เล่มรายงาน
+              คัดลอก Markdown สำหรับสไลด์ / เล่มรายงาน
             </button>
           </div>
           <div class="code-scroll-container" style="max-height: 260px; background: rgba(0,0,0,0.4); border-radius: 8px; border: 1px solid var(--border);">
@@ -3105,8 +3103,8 @@ async def api_chatocr_chat(
 
 if __name__ == "__main__":
     print("\n" + "=" * 60)
-    print("🚀 Starting Thai Financial Document OCR UI...")
-    print("👉 Open your browser at: http://localhost:8000")
+    print("Starting Thai Financial Document OCR UI...")
+    print("Open your browser at: http://localhost:8000")
     print("=" * 60 + "\n")
     uvicorn.run(app, host="127.0.0.1", port=8000)
 
