@@ -1032,6 +1032,154 @@ def index():
       padding: 0.75rem 0.9rem;
       box-shadow: 0 4px 16px rgba(0, 0, 0, 0.25);
     }
+
+    /* Dashboard & Case Traceability Styles */
+    .dashboard-view {
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+      padding: 0.8rem;
+      flex: 1;
+      min-height: 0;
+      overflow-y: auto;
+    }
+    .dashboard-toolbar {
+      background: rgba(0, 0, 0, 0.35);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 0.6rem 0.85rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 0.6rem;
+      flex-wrap: wrap;
+    }
+    .kpi-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 0.6rem;
+    }
+    @media (max-width: 1024px) {
+      .kpi-grid { grid-template-columns: repeat(2, 1fr); }
+    }
+    .kpi-card {
+      background: rgba(15, 23, 42, 0.8);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 8px;
+      padding: 0.65rem 0.85rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.2rem;
+    }
+    .kpi-title {
+      font-size: 0.68rem;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      font-weight: 600;
+      letter-spacing: 0.03em;
+    }
+    .kpi-value {
+      font-size: 1.25rem;
+      font-weight: 700;
+      color: #f8fafc;
+      line-height: 1.2;
+    }
+    .kpi-sub {
+      font-size: 0.69rem;
+      color: #94a3b8;
+    }
+    .case-card {
+      background: rgba(15, 23, 42, 0.85);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 10px;
+      padding: 0.85rem 1rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.65rem;
+      transition: all 0.2s ease;
+    }
+    .case-card:hover {
+      border-color: rgba(59, 130, 246, 0.45);
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.25);
+    }
+    .case-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 0.5rem;
+      flex-wrap: wrap;
+    }
+    .case-pno-badge {
+      font-size: 0.76rem;
+      font-weight: 700;
+      padding: 0.18rem 0.55rem;
+      border-radius: 6px;
+      background: rgba(59, 130, 246, 0.16);
+      color: #93c5fd;
+      border: 1px solid rgba(59, 130, 246, 0.4);
+      display: inline-flex;
+      align-items: center;
+      gap: 0.3rem;
+    }
+    .progress-bar-wrap {
+      background: rgba(0, 0, 0, 0.4);
+      border-radius: 999px;
+      height: 8px;
+      overflow: hidden;
+      width: 100%;
+      border: 1px solid rgba(255, 255, 255, 0.05);
+    }
+    .progress-bar-fill {
+      height: 100%;
+      border-radius: 999px;
+      transition: width 0.3s ease;
+    }
+    .checklist-row {
+      display: flex;
+      gap: 0.45rem;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+    .checklist-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.3rem;
+      padding: 0.2rem 0.5rem;
+      border-radius: 5px;
+      font-size: 0.69rem;
+      font-weight: 500;
+    }
+    .checklist-pill.ok {
+      background: rgba(16, 185, 129, 0.14);
+      color: #34d399;
+      border: 1px solid rgba(16, 185, 129, 0.3);
+    }
+    .checklist-pill.missing {
+      background: rgba(255, 255, 255, 0.03);
+      color: #64748b;
+      border: 1px dashed rgba(255, 255, 255, 0.12);
+    }
+    .case-doc-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.77rem;
+      margin-top: 0.3rem;
+    }
+    .case-doc-table th {
+      background: rgba(0, 0, 0, 0.35);
+      padding: 0.38rem 0.55rem;
+      color: var(--text-muted);
+      text-align: left;
+      font-weight: 600;
+    }
+    .case-doc-table td {
+      padding: 0.38rem 0.55rem;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+      color: #e2e8f0;
+    }
+    .case-doc-table tr:hover td {
+      background: rgba(255, 255, 255, 0.02);
+    }
   </style>
 </head>
 <body>
@@ -1140,6 +1288,10 @@ def index():
             <span class="badge green" id="chatocrBadge" style="display: none;">Ready</span>
           </button>
           <button class="tab-btn" onclick="switchTab('json')" id="tabBtnJson">Raw API JSON</button>
+          <button class="tab-btn" onclick="switchTab('dashboard')" id="tabBtnDashboard">
+            <span>แดชบอร์ดติดตามเรื่อง (Dossier)</span>
+            <span class="badge" id="dashboardCountBadge" style="background: rgba(59, 130, 246, 0.2); color: #93c5fd;">0 เรื่อง</span>
+          </button>
         </div>
 
         <!-- Tab 1: Scrollable Text Blocks List -->
@@ -1461,6 +1613,24 @@ def index():
               <!-- Financial Reconciliation Banner -->
               <div id="chatocrReconcileBanner" style="display: none; padding: 0.65rem 0.95rem; border-radius: 8px; font-size: 0.82rem; line-height: 1.45; transition: all 0.2s ease;"></div>
 
+              <!-- Case Link Selector: Principle-Centric Dossier Linkage -->
+              <div id="caseLinkSelectorBox" style="background: rgba(15, 23, 42, 0.85); border: 1px solid rgba(59, 130, 246, 0.35); border-radius: 8px; padding: 0.75rem 0.95rem; box-shadow: 0 4px 16px rgba(0, 0, 0, 0.25);">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.45rem; flex-wrap: wrap; gap: 0.35rem;">
+                  <div>
+                    <span style="font-size: 0.84rem; font-weight: 600; color: #93c5fd;">การเชื่อมโยงชุดเรื่องเบิกจ่าย (Principle-Centric Case Dossier Linkage)</span>
+                    <div style="font-size: 0.69rem; color: var(--text-muted);">เลือกชุดเรื่องที่ต้องการนำเอกสารนี้ไปผูกรวม (ยึดเลขที่ขออนุมัติหลักการเป็น Root Reference)</div>
+                  </div>
+                  <span id="caseDossierStatusBadge" class="badge" style="font-size: 0.7rem; background: rgba(59, 130, 246, 0.16); color: #93c5fd; border: 1px solid rgba(59, 130, 246, 0.3);">พร้อมเชื่อมโยง</span>
+                </div>
+                <div style="display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap;">
+                  <select id="caseSelectDropdown" class="search-input" style="flex: 1; min-width: 270px; font-size: 0.82rem; padding: 0.45rem 0.6rem;" onchange="onCaseSelectChange()">
+                    <option value="__new__">[+] สร้างชุดเรื่องใหม่ (New Case Dossier)</option>
+                  </select>
+                  <button class="btn btn-secondary" type="button" onclick="refreshCaseDropdown()" style="padding: 0.4rem 0.75rem; font-size: 0.75rem;" title="รีเฟรชรายการชุดเรื่อง">รีเฟรช</button>
+                </div>
+                <div id="aiCaseHintBox" style="display: none; margin-top: 0.5rem; font-size: 0.76rem; padding: 0.4rem 0.65rem; border-radius: 6px; background: rgba(16, 185, 129, 0.12); border: 1px solid rgba(16, 185, 129, 0.3); color: #34d399;"></div>
+              </div>
+
               <!-- Interactive Field Editor & Live Sync Section -->
               <div class="field-editor-box">
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem; flex-wrap: wrap; gap: 0.4rem;">
@@ -1474,6 +1644,10 @@ def index():
                 </div>
                 
                 <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); gap: 0.65rem; padding: 0.35rem 0;">
+                  <div>
+                    <label style="font-size: 0.72rem; color: #38bdf8; font-weight: 600; display: block; margin-bottom: 0.25rem;">เลขที่เอกสารหลักการต้นเรื่อง (Principle Ref):</label>
+                    <input type="text" id="editPrincipleDocNo" class="search-input" style="width: 100%; font-size: 0.82rem; border-color: rgba(56, 189, 248, 0.4);" placeholder="เช่น อว 0602/1234 หรือว่างไว้" oninput="onFormFieldChange()">
+                  </div>
                   <div>
                     <label style="font-size: 0.72rem; color: #94a3b8; font-weight: 600; display: block; margin-bottom: 0.25rem;">ยอดรวมทั้งสิ้น (Total Amount - บาท):</label>
                     <input type="number" step="0.01" id="editTotalAmount" class="search-input" style="width: 100%; font-weight: 600; color: #38bdf8; font-size: 0.82rem;" oninput="onFormFieldChange()">
@@ -1564,6 +1738,61 @@ def index():
                   </div>
                 </div>
               </div>
+            </div>
+        </div>
+
+        <!-- Tab 6: Principle-Centric Case Dossier Dashboard -->
+        <div class="tab-content" id="tabDashboard">
+          <div class="dashboard-view">
+            <!-- Top Filter & Search Toolbar -->
+            <div class="dashboard-toolbar">
+              <div style="display: flex; gap: 0.6rem; align-items: center; flex: 1; min-width: 280px; flex-wrap: wrap;">
+                <input type="text" id="dashboardSearchInput" class="search-input" style="flex: 1; min-width: 180px; font-size: 0.82rem;" placeholder="ค้นหาเลขที่หลักการ, ชื่อโครงการ, ผู้เบิก, หรือเลขที่บิล..." oninput="filterDashboardCases()">
+                <select id="dashboardStatusFilter" class="search-input" style="width: auto; font-size: 0.82rem;" onchange="filterDashboardCases()">
+                  <option value="ALL">สถานะทั้งหมด</option>
+                  <option value="APPROVED_PRINCIPLE">อนุมัติหลักการแล้ว</option>
+                  <option value="PENDING_APPROVAL">รอดำเนินการเบิกจ่าย</option>
+                  <option value="RECONCILED">เบิกจ่ายเรียบร้อย (ในงบ)</option>
+                  <option value="OVER_BUDGET">เกินวงเงินหลักการ</option>
+                </select>
+              </div>
+              <div style="display: flex; gap: 0.45rem; align-items: center;">
+                <button class="btn btn-secondary" onclick="loadDashboardData()" style="padding: 0.35rem 0.75rem; font-size: 0.78rem;">
+                  รีเฟรชข้อมูล
+                </button>
+              </div>
+            </div>
+
+            <!-- 4 KPI Cards -->
+            <div class="kpi-grid">
+              <div class="kpi-card">
+                <span class="kpi-title">จำนวนชุดเรื่อง (Dossiers)</span>
+                <span class="kpi-value" id="kpiTotalCases" style="color: #60a5fa;">0</span>
+                <span class="kpi-sub">ชุดเรื่องเบิกจ่ายทั้งหมด</span>
+              </div>
+              <div class="kpi-card">
+                <span class="kpi-title">เอกสารทั้งหมดที่จัดเก็บ</span>
+                <span class="kpi-value" id="kpiTotalDocs" style="color: #a78bfa;">0</span>
+                <span class="kpi-sub">ไฟล์ใน PostgreSQL</span>
+              </div>
+              <div class="kpi-card">
+                <span class="kpi-title">งบประมาณหลักการรวม</span>
+                <span class="kpi-value" id="kpiApprovedBudget" style="color: #38bdf8;">฿0.00</span>
+                <span class="kpi-sub">เพดานวงเงินที่อนุมัติ</span>
+              </div>
+              <div class="kpi-card">
+                <span class="kpi-title">ยอดเบิกจริง / คงเหลือ</span>
+                <span class="kpi-value" id="kpiActualSpent" style="color: #34d399;">฿0.00</span>
+                <span class="kpi-sub" id="kpiRemainingBudget" style="color: #94a3b8;">คงเหลือ ฿0.00</span>
+              </div>
+            </div>
+
+            <!-- Dossier Cases List Container -->
+            <div id="dashboardCasesList" style="display: flex; flex-direction: column; gap: 0.85rem;"></div>
+
+            <!-- Empty State -->
+            <div id="dashboardEmptyState" style="display: none; color: var(--text-muted); text-align: center; padding: 3rem; background: rgba(0,0,0,0.2); border-radius: 8px;">
+              ยังไม่มีข้อมูลชุดเรื่องในระบบ หรือไม่พบรายการที่ค้นหา
             </div>
           </div>
         </div>
@@ -1992,6 +2221,10 @@ def index():
       } else if (tabId === 'json') {
         document.getElementById('tabBtnJson').classList.add('active');
         document.getElementById('tabJson').classList.add('active');
+      } else if (tabId === 'dashboard') {
+        document.getElementById('tabBtnDashboard').classList.add('active');
+        document.getElementById('tabDashboard').classList.add('active');
+        loadDashboardData();
       }
 
       // Update flow indicator badge & toolbar
@@ -2016,6 +2249,14 @@ def index():
         }
 
         setStatus(currentUploadedFile ? `พร้อมสกัดข้อมูลด้วย PP-ChatOCRv4: "${currentUploadedFile.name}" (กดปุ่มสกัดด้านล่าง)` : 'PP-ChatOCRv4 พร้อมใช้งาน (เลือกไฟล์แล้วกดปุ่มสกัด)', false);
+      } else if (tabId === 'dashboard') {
+        if (flowBadge) {
+          flowBadge.innerHTML = 'แดชบอร์ดติดตามเรื่อง (Dossier Traceability)';
+          flowBadge.style.background = 'rgba(59, 130, 246, 0.2)';
+          flowBadge.style.color = '#93c5fd';
+          flowBadge.style.borderColor = 'rgba(59, 130, 246, 0.4)';
+        }
+        setStatus('แดชบอร์ดชุดเรื่องเบิกจ่าย (Dossiers) แสดงรายการเอกสารและการกระทบยอดงบประมาณ', false);
       } else {
         currentFlowMode = 'custom';
         if (btnCustom) btnCustom.classList.add('active');
@@ -2492,6 +2733,8 @@ def index():
       loadLLMStatus();
       loadChatOcrTemplates();
       checkDatabaseStatus();
+      loadPrincipleCasesForDropdown();
+      loadDashboardData();
     });
 
     async function rotateCurrentDoc(degrees) {
@@ -2767,12 +3010,16 @@ def index():
       // Trigger initial real-time sync & reconciliation calculation
       onFormFieldChange();
 
+      // Check available cases and trigger smart candidate matching
+      loadPrincipleCasesForDropdown(meta.principle_doc_no, meta.total_amount, meta.vendor_or_requester);
+
       // Check and update database status
       checkDatabaseStatus();
     }
 
     function populateFieldEditor(data) {
       const meta = (data.knowledge_payload && data.knowledge_payload.filter_metadata) || {};
+      const elPrincipleNo = document.getElementById('editPrincipleDocNo');
       const elTotal = document.getElementById('editTotalAmount');
       const elSubtotal = document.getElementById('editSubtotal');
       const elVat = document.getElementById('editVat');
@@ -2782,6 +3029,7 @@ def index():
       const elTaxId = document.getElementById('editTaxId');
       const elDocTitle = document.getElementById('editDocTitle');
 
+      if (elPrincipleNo) elPrincipleNo.value = meta.principle_doc_no || data.principle_doc_no || '';
       if (elTotal) elTotal.value = meta.total_amount != null ? meta.total_amount : '';
       if (elSubtotal) elSubtotal.value = meta.subtotal != null ? meta.subtotal : '';
       if (elVat) elVat.value = meta.vat != null ? meta.vat : '';
@@ -2852,6 +3100,7 @@ def index():
       const meta = currentChatOcrResult.knowledge_payload.filter_metadata;
 
       // 1. Read input values from DOM
+      const principleDocNo = document.getElementById('editPrincipleDocNo')?.value.trim() || null;
       const rawTotal = document.getElementById('editTotalAmount')?.value.trim();
       const rawSubtotal = document.getElementById('editSubtotal')?.value.trim();
       const rawVat = document.getElementById('editVat')?.value.trim();
@@ -2866,6 +3115,7 @@ def index():
       const vat = rawVat !== '' && !isNaN(parseFloat(rawVat)) ? parseFloat(rawVat) : null;
 
       // 2. Synchronize into filter_metadata
+      meta.principle_doc_no = principleDocNo;
       meta.total_amount = totalAmount;
       meta.subtotal = subtotal;
       meta.vat = vat;
@@ -3023,6 +3273,7 @@ def index():
         '- **ชื่อเอกสาร (Document Title):** ' + (meta.document_title || 'เอกสารการเงิน'),
         '- **ประเภทเอกสาร:** ' + (meta.document_type_name || meta.document_type || 'ไม่ระบุ'),
         '- **เลขที่เอกสาร:** ' + (meta.doc_no || meta.document_no || 'ไม่ระบุ'),
+        '- **เลขที่เอกสารหลักการต้นเรื่อง (Principle Ref):** ' + (meta.principle_doc_no || 'ไม่ระบุ'),
         '- **บุคคล/หน่วยงาน/ร้านค้า:** ' + (meta.vendor_or_requester || meta.vendor || 'ไม่ระบุ'),
         '- **วันที่เอกสาร:** ' + (meta.doc_date_iso || meta.date || 'ไม่ระบุ'),
         '- **ยอดเงินรวม:** ' + (meta.total_amount != null ? meta.total_amount.toLocaleString('th-TH', {minimumFractionDigits: 2, maximumFractionDigits: 2}) + ' บาท' : 'ไม่ระบุ'),
@@ -3122,13 +3373,22 @@ def index():
           btn.innerHTML = 'กำลังบันทึกลง Database...';
         }
 
+        const caseSelectVal = document.getElementById('caseSelectDropdown')?.value;
+        const isNewCase = (!caseSelectVal || caseSelectVal === '__new__');
+        const targetRecordId = isNewCase ? null : caseSelectVal;
+        const meta = currentChatOcrResult.knowledge_payload?.filter_metadata || {};
+
         const payload = {
           filename: currentUploadedFile ? currentUploadedFile.name : (currentChatOcrResult.filename || 'sample_receipt.png'),
           document_type: currentChatOcrResult.document_type || document.getElementById('chatocrDocTypeSelect')?.value || 'general_receipt',
-          metadata: currentChatOcrResult.knowledge_payload?.filter_metadata || {},
+          metadata: meta,
           embed_text: currentChatOcrResult.knowledge_payload?.embed_text || '',
           chat_answers: currentChatOcrResult.chat_answers || {},
-          math_reconciliation: currentChatOcrResult.knowledge_payload?.filter_metadata?.math_reconciliation || {}
+          math_reconciliation: meta.math_reconciliation || {},
+          target_record_id: targetRecordId,
+          is_new_case: isNewCase,
+          principle_doc_no: meta.principle_doc_no || null,
+          case_title: meta.document_title || null
         };
 
         const res = await fetch('/api/chatocr/save_to_db', {
@@ -3150,7 +3410,7 @@ def index():
           toast.innerHTML = `
             <b>บันทึกข้อมูลลงฐานข้อมูล PostgreSQL สำเร็จเรียบร้อย!</b><br>
             <span style="font-size: 0.76rem; color: #a7f3d0;">
-              รหัสใบเบิก (Record ID): <code style="background: rgba(0,0,0,0.3); padding: 0.1rem 0.35rem; border-radius: 4px;">${data.record_id}</code> | 
+              ชุดเรื่อง (Case Record ID): <code style="background: rgba(0,0,0,0.3); padding: 0.1rem 0.35rem; border-radius: 4px;">${data.record_id}</code> | 
               รหัสเอกสาร (Doc ID): <code style="background: rgba(0,0,0,0.3); padding: 0.1rem 0.35rem; border-radius: 4px;">${data.document_id}</code>
             </span><br>
             <span style="font-size: 0.72rem; color: #94a3b8;">
@@ -3161,6 +3421,8 @@ def index():
 
         setStatus('บันทึกข้อมูลลงฐานข้อมูล PostgreSQL เรียบร้อยแล้ว!', false);
         await checkDatabaseStatus();
+        await loadPrincipleCasesForDropdown(meta.principle_doc_no, meta.total_amount, meta.vendor_or_requester);
+        await loadDashboardData();
       } catch (err) {
         if (toast) {
           toast.style.display = 'block';
@@ -3176,6 +3438,318 @@ def index():
           btn.innerHTML = origText;
         }
       }
+    }
+
+    /* Principle-Centric Case Linking & Dossier Dashboard Functions */
+    let availablePrincipleCases = [];
+    let dashboardDataCache = null;
+
+    async function loadPrincipleCasesForDropdown(preferredPrincipleNo, amount, vendor) {
+      const select = document.getElementById('caseSelectDropdown');
+      const badge = document.getElementById('caseDossierStatusBadge');
+      const hint = document.getElementById('aiCaseHintBox');
+      if (!select) return;
+
+      try {
+        const res = await fetch('/api/db/cases');
+        if (!res.ok) throw new Error('Failed to fetch cases');
+        availablePrincipleCases = await res.json();
+
+        select.innerHTML = '<option value="__new__">[+] สร้างชุดเรื่องใหม่ (New Case Dossier)</option>';
+        availablePrincipleCases.forEach(c => {
+          const opt = document.createElement('option');
+          opt.value = c.id;
+          opt.innerText = `[ชุดเรื่อง] ${c.principle_doc_no} : ${c.title} (งบ ฿${c.approved_amount.toLocaleString()} | เบิกแล้ว ฿${c.actual_expense.toLocaleString()})`;
+          select.appendChild(opt);
+        });
+
+        // Trigger Smart Case Candidate Matching
+        const docType = currentChatOcrResult?.document_type || document.getElementById('chatocrDocTypeSelect')?.value || '';
+        if (availablePrincipleCases.length > 0 && docType !== 'principle_approval_request') {
+          const matchParams = new URLSearchParams();
+          if (preferredPrincipleNo) matchParams.append('principle_doc_no', preferredPrincipleNo);
+          if (amount) matchParams.append('amount', amount);
+          if (vendor) matchParams.append('vendor', vendor);
+
+          const matchRes = await fetch(`/api/db/match_case?${matchParams.toString()}`);
+          if (matchRes.ok) {
+            const matchData = await matchRes.json();
+            if (matchData.matched_case_id) {
+              select.value = matchData.matched_case_id;
+              if (badge) {
+                badge.innerText = `เชื่อมโยงกับ ${matchData.principle_doc_no || 'ชุดเรื่อง'}`;
+                badge.style.color = '#34d399';
+              }
+              if (hint) {
+                hint.style.display = 'block';
+                hint.innerHTML = `<b>AI แนะนำ (${Math.round(matchData.confidence * 100)}%):</b> ${escapeHtml(matchData.reason)}`;
+              }
+              return;
+            }
+          }
+        }
+
+        if (docType === 'principle_approval_request') {
+          select.value = '__new__';
+          if (badge) {
+            badge.innerText = 'เอกสารหลักการ (สร้างชุดเรื่องใหม่)';
+            badge.style.color = '#93c5fd';
+          }
+          if (hint) hint.style.display = 'none';
+        } else {
+          if (hint) hint.style.display = 'none';
+          if (badge) {
+            badge.innerText = select.value === '__new__' ? 'สร้างชุดเรื่องใหม่' : 'ผูกกับชุดเรื่องที่มี';
+          }
+        }
+      } catch (err) {
+        console.warn('Error loading principle cases:', err);
+      }
+    }
+
+    function onCaseSelectChange() {
+      const select = document.getElementById('caseSelectDropdown');
+      const badge = document.getElementById('caseDossierStatusBadge');
+      const hint = document.getElementById('aiCaseHintBox');
+      if (!select) return;
+
+      if (select.value === '__new__') {
+        if (badge) {
+          badge.innerText = 'สร้างชุดเรื่องใหม่';
+          badge.style.color = '#93c5fd';
+        }
+        if (hint) hint.style.display = 'none';
+      } else {
+        const found = availablePrincipleCases.find(c => c.id === select.value);
+        if (badge) {
+          badge.innerText = found ? `ผูกกับ ${found.principle_doc_no}` : 'ผูกกับชุดเรื่อง';
+          badge.style.color = '#34d399';
+        }
+      }
+    }
+
+    async function refreshCaseDropdown() {
+      const meta = currentChatOcrResult?.knowledge_payload?.filter_metadata || {};
+      await loadPrincipleCasesForDropdown(meta.principle_doc_no, meta.total_amount, meta.vendor_or_requester);
+    }
+
+    async function loadDashboardData() {
+      try {
+        const res = await fetch('/api/db/dashboard');
+        if (!res.ok) throw new Error('Dashboard data request failed');
+        const data = await res.json();
+        dashboardDataCache = data;
+
+        // Update KPI Cards
+        const sum = data.summary || {};
+        const kpiCases = document.getElementById('kpiTotalCases');
+        const kpiDocs = document.getElementById('kpiTotalDocs');
+        const kpiAppr = document.getElementById('kpiApprovedBudget');
+        const kpiActual = document.getElementById('kpiActualSpent');
+        const kpiRem = document.getElementById('kpiRemainingBudget');
+
+        if (kpiCases) kpiCases.innerText = (sum.total_cases || 0).toLocaleString();
+        if (kpiDocs) kpiDocs.innerText = (sum.total_documents || 0).toLocaleString();
+        if (kpiAppr) kpiAppr.innerText = `฿${(sum.total_approved_budget || 0).toLocaleString('th-TH', {minimumFractionDigits: 2})}`;
+        if (kpiActual) kpiActual.innerText = `฿${(sum.total_actual_expense || 0).toLocaleString('th-TH', {minimumFractionDigits: 2})}`;
+        if (kpiRem) kpiRem.innerText = `คงเหลือ ฿${(sum.total_remaining_budget || 0).toLocaleString('th-TH', {minimumFractionDigits: 2})}`;
+
+        // Tab Badge
+        const tabBadge = document.getElementById('dashboardCountBadge');
+        if (tabBadge) tabBadge.innerText = `${sum.total_cases || 0} เรื่อง`;
+
+        renderDashboardCases(data.cases || []);
+      } catch (err) {
+        console.warn('Could not load dashboard data:', err);
+      }
+    }
+
+    function filterDashboardCases() {
+      if (!dashboardDataCache || !dashboardDataCache.cases) return;
+      const q = (document.getElementById('dashboardSearchInput')?.value || '').toLowerCase().trim();
+      const status = document.getElementById('dashboardStatusFilter')?.value || 'ALL';
+
+      const filtered = dashboardDataCache.cases.filter(c => {
+        const matchStatus = (status === 'ALL' || c.status === status);
+        if (!matchStatus) return false;
+
+        if (!q) return true;
+        const inPno = (c.principle_doc_no || '').toLowerCase().includes(q);
+        const inTitle = (c.title || '').toLowerCase().includes(q);
+        const inReceiver = (c.receiver_name || '').toLowerCase().includes(q);
+        const inDocs = (c.documents || []).some(d => 
+          (d.doc_no || '').toLowerCase().includes(q) ||
+          (d.filename || '').toLowerCase().includes(q) ||
+          (d.party_name || '').toLowerCase().includes(q)
+        );
+        return inPno || inTitle || inReceiver || inDocs;
+      });
+
+      renderDashboardCases(filtered);
+    }
+
+    function renderDashboardCases(cases) {
+      const container = document.getElementById('dashboardCasesList');
+      const emptyState = document.getElementById('dashboardEmptyState');
+      if (!container) return;
+
+      container.innerHTML = '';
+      if (!cases || cases.length === 0) {
+        if (emptyState) emptyState.style.display = 'block';
+        return;
+      }
+      if (emptyState) emptyState.style.display = 'none';
+
+      cases.forEach((c, idx) => {
+        const card = document.createElement('div');
+        card.className = 'case-card';
+
+        // Budget calculations
+        const approved = c.approved_amount || 0;
+        const actual = c.actual_expense || 0;
+        const remaining = c.remaining_amount != null ? c.remaining_amount : (approved - actual);
+        const pct = approved > 0 ? Math.min(100, Math.round((actual / approved) * 100)) : (actual > 0 ? 100 : 0);
+        const isOverBudget = actual > approved && approved > 0;
+        const barColor = isOverBudget ? 'linear-gradient(90deg, #ef4444, #f87171)' : 'linear-gradient(90deg, #3b82f6, #10b981)';
+
+        // Status badge
+        let statusBadgeHtml = '';
+        if (c.status === 'APPROVED_PRINCIPLE') {
+          statusBadgeHtml = '<span class="badge" style="background: rgba(59, 130, 246, 0.15); color: #93c5fd; border-color: rgba(59, 130, 246, 0.35);">อนุมัติหลักการแล้ว</span>';
+        } else if (c.status === 'RECONCILED') {
+          statusBadgeHtml = '<span class="badge green">เบิกจ่ายเรียบร้อย (ในงบ)</span>';
+        } else if (c.status === 'OVER_BUDGET') {
+          statusBadgeHtml = '<span class="badge" style="background: rgba(239, 68, 68, 0.18); color: #f87171; border-color: rgba(239, 68, 68, 0.4);">เกินวงเงินหลักการ</span>';
+        } else {
+          statusBadgeHtml = '<span class="badge" style="background: rgba(245, 158, 11, 0.15); color: #fbbf24; border-color: rgba(245, 158, 11, 0.35);">รอดำเนินการเบิกจ่าย</span>';
+        }
+
+        // Checklist HTML
+        const chk = c.checklist || {};
+        const chkPrinciple = chk.has_principle ? '<span class="checklist-pill ok">[1] ขออนุมัติหลักการ</span>' : '<span class="checklist-pill missing">[1] ขออนุมัติหลักการ</span>';
+        const chkProcurement = chk.has_procurement ? '<span class="checklist-pill ok">[2] จัดหา/จัดจ้าง</span>' : '<span class="checklist-pill missing">[2] จัดหา/จัดจ้าง</span>';
+        const chkReceipt = chk.has_receipt ? '<span class="checklist-pill ok">[3] ใบเสร็จ/ใบสำคัญ</span>' : '<span class="checklist-pill missing">[3] ใบเสร็จ/ใบสำคัญ</span>';
+        const chkDisbursement = chk.has_disbursement ? '<span class="checklist-pill ok">[4] ขออนุมัติเบิกจ่าย</span>' : '<span class="checklist-pill missing">[4] ขออนุมัติเบิกจ่าย</span>';
+
+        // Child documents rows
+        let docsRowsHtml = '';
+        (c.documents || []).forEach((d, docIdx) => {
+          const recStatusHtml = d.reconciliation_status === 'passed'
+            ? '<span class="badge green" style="font-size: 0.65rem;">ตรงกัน</span>'
+            : (d.reconciliation_status === 'discrepancy'
+              ? '<span class="badge" style="background: rgba(239,68,68,0.2); color: #f87171; font-size: 0.65rem;">คลาดเคลื่อน</span>'
+              : '<span class="badge" style="font-size: 0.65rem; color: #94a3b8;">ยังไม่ตรวจ</span>');
+
+          docsRowsHtml += `
+            <tr>
+              <td style="color: var(--text-dim); text-align: center;">${docIdx + 1}</td>
+              <td><span class="badge" style="font-size: 0.67rem; background: rgba(255,255,255,0.06);">${escapeHtml(d.document_type_name || d.document_type)}</span></td>
+              <td style="font-weight: 500; color: #93c5fd;">${escapeHtml(d.doc_no || '-')}</td>
+              <td>${escapeHtml(d.doc_date_iso || '-')}</td>
+              <td>${escapeHtml(d.party_name || '-')}</td>
+              <td style="text-align: right; font-weight: 600; color: #f1f5f9;">฿${(d.total_amount || 0).toLocaleString('th-TH', {minimumFractionDigits: 2})}</td>
+              <td style="text-align: center;">${recStatusHtml}</td>
+              <td style="text-align: center;">
+                <button class="btn btn-secondary" style="padding: 0.15rem 0.45rem; font-size: 0.68rem;" onclick="openDocDetailModal('${c.record_id}', '${d.document_id}')">
+                  ดูข้อมูล (Detail)
+                </button>
+              </td>
+            </tr>
+          `;
+        });
+
+        card.innerHTML = `
+          <div class="case-header">
+            <div style="display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap;">
+              <span class="case-pno-badge">หลักการ: ${escapeHtml(c.principle_doc_no)}</span>
+              <h3 style="font-size: 0.92rem; font-weight: 600; color: #f8fafc;">${escapeHtml(c.title)}</h3>
+            </div>
+            <div style="display: flex; align-items: center; gap: 0.45rem;">
+              ${statusBadgeHtml}
+              <span class="badge" style="font-size: 0.72rem; color: var(--text-muted);">${(c.documents || []).length} เอกสารในชุด</span>
+            </div>
+          </div>
+
+          <!-- Budget Progress Bar -->
+          <div style="background: rgba(0,0,0,0.25); padding: 0.55rem 0.75rem; border-radius: 8px; border: 1px solid rgba(255,255,255,0.04);">
+            <div style="display: flex; justify-content: space-between; font-size: 0.74rem; margin-bottom: 0.35rem;">
+              <span style="color: var(--text-muted);">
+                เบิกจ่ายแล้ว: <b style="color: ${isOverBudget ? '#f87171' : '#34d399'};">฿${actual.toLocaleString('th-TH', {minimumFractionDigits: 2})}</b> / วงเงินหลักการ: <b>฿${approved.toLocaleString('th-TH', {minimumFractionDigits: 2})}</b> (${pct}%)
+              </span>
+              <span style="color: ${remaining >= 0 ? '#94a3b8' : '#f87171'}; font-weight: 500;">
+                ${remaining >= 0 ? 'คงเหลือเบิกได้: ฿' + remaining.toLocaleString('th-TH', {minimumFractionDigits: 2}) : 'เกินวงเงิน: ฿' + Math.abs(remaining).toLocaleString('th-TH', {minimumFractionDigits: 2})}
+              </span>
+            </div>
+            <div class="progress-bar-wrap">
+              <div class="progress-bar-fill" style="width: ${pct}%; background: ${barColor};"></div>
+            </div>
+          </div>
+
+          <!-- Document Traceability Checklist -->
+          <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.4rem; padding-top: 0.1rem;">
+            <div style="font-size: 0.72rem; color: var(--text-muted); font-weight: 600;">ความครบถ้วนของเอกสาร (Traceability Checklist):</div>
+            <div class="checklist-row">
+              ${chkPrinciple}
+              ${chkProcurement}
+              ${chkReceipt}
+              ${chkDisbursement}
+            </div>
+          </div>
+
+          <!-- Attached Documents Table -->
+          <div style="overflow-x: auto;">
+            <table class="case-doc-table">
+              <thead>
+                <tr>
+                  <th style="width: 36px; text-align: center;">#</th>
+                  <th>ประเภทเอกสาร</th>
+                  <th>เลขที่เอกสาร</th>
+                  <th>วันที่</th>
+                  <th>ร้านค้า / ผู้เบิก</th>
+                  <th style="text-align: right;">จำนวนเงิน</th>
+                  <th style="text-align: center;">กระทบยอด</th>
+                  <th style="text-align: center;">การจัดการ</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${docsRowsHtml || '<tr><td colspan="8" style="text-align: center; color: var(--text-muted); padding: 1rem;">ยังไม่มีเอกสารแนบในชุดเรื่องนี้</td></tr>'}
+              </tbody>
+            </table>
+          </div>
+        `;
+
+        container.appendChild(card);
+      });
+    }
+
+    function openDocDetailModal(caseId, docId) {
+      if (!dashboardDataCache || !dashboardDataCache.cases) return;
+      const targetCase = dashboardDataCache.cases.find(c => c.record_id === caseId);
+      if (!targetCase) return;
+      const doc = (targetCase.documents || []).find(d => d.document_id === docId);
+      if (!doc) return;
+
+      document.getElementById('docDetailModalTitle').innerText = `รายละเอียด: ${doc.filename} [${doc.document_type_name || doc.document_type}]`;
+
+      const header = document.getElementById('docDetailMetaHeader');
+      header.innerHTML = `
+        <span class="case-pno-badge">หลักการ: ${escapeHtml(targetCase.principle_doc_no)}</span>
+        <span class="badge" style="color: #93c5fd;">เลขที่: ${escapeHtml(doc.doc_no || '-')}</span>
+        <span class="badge">วันที่: ${escapeHtml(doc.doc_date_iso || '-')}</span>
+        <span class="badge green">ยอดเงิน: ฿${(doc.total_amount || 0).toLocaleString('th-TH', {minimumFractionDigits: 2})}</span>
+        <span class="badge">${escapeHtml(doc.party_name || '-')}</span>
+      `;
+
+      const raw = doc.extracted_data || {};
+      const embedText = raw.embed_text || '';
+      document.getElementById('docDetailEmbedText').innerText = embedText || 'ไม่มี Embed Text';
+      document.getElementById('docDetailJsonView').innerText = JSON.stringify(raw, null, 2);
+
+      document.getElementById('docDetailModal').classList.add('active');
+    }
+
+    function closeDocDetailModal() {
+      document.getElementById('docDetailModal').classList.remove('active');
     }
 
     function copyChatOcrAnswersJson() {
@@ -3250,6 +3824,31 @@ def index():
       </div>
       <div class="modal-footer">
         <button class="btn btn-secondary" onclick="closeBenchmarkModal()">ปิดหน้าต่าง</button>
+      </div>
+  <!-- Document Detail Modal Dialog -->
+  <div class="modal-overlay" id="docDetailModal">
+    <div class="modal-card" style="max-width: 820px; width: 92%;">
+      <div class="modal-header">
+        <h3 id="docDetailModalTitle">รายละเอียดเอกสารในชุดเรื่อง</h3>
+        <button class="btn-icon" onclick="closeDocDetailModal()" style="font-size: 1.1rem;">✕</button>
+      </div>
+      <div class="modal-body" style="display: flex; flex-direction: column; gap: 0.85rem; max-height: 70vh; overflow-y: auto;">
+        <div id="docDetailMetaHeader" style="display: flex; gap: 0.4rem; flex-wrap: wrap; align-items: center;"></div>
+        <div>
+          <span style="font-size: 0.78rem; font-weight: 600; color: #34d399;">Natural Language Embed Text (Vector Knowledge):</span>
+          <div class="code-scroll-container" style="max-height: 200px; background: rgba(0,0,0,0.4); border-radius: 6px; padding: 0.65rem; margin-top: 0.3rem;">
+            <pre id="docDetailEmbedText" style="margin: 0; font-size: 0.75rem; white-space: pre-wrap; color: #e2e8f0;"></pre>
+          </div>
+        </div>
+        <div>
+          <span style="font-size: 0.78rem; font-weight: 600; color: #60a5fa;">Raw Extracted JSON Data (PostgreSQL JSONB):</span>
+          <div class="code-scroll-container" style="max-height: 220px; background: rgba(0,0,0,0.4); border-radius: 6px; padding: 0.65rem; margin-top: 0.3rem;">
+            <pre id="docDetailJsonView" style="margin: 0; font-size: 0.75rem; color: #93c5fd; white-space: pre-wrap;"></pre>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" onclick="closeDocDetailModal()">ปิดหน้าต่าง</button>
       </div>
     </div>
   </div>
@@ -3551,7 +4150,14 @@ async def api_chatocr_chat(
         return JSONResponse({"error": str(e)}, status_code=500)
 
 
-from src.db import check_db_status, save_disbursement_document, get_recent_saved_documents
+from src.db import (
+    check_db_status,
+    save_disbursement_document,
+    get_recent_saved_documents,
+    get_available_principle_cases,
+    find_smart_case_match,
+    get_dossier_dashboard_data,
+)
 
 
 class ChatOcrSaveDbPayload(BaseModel):
@@ -3561,6 +4167,10 @@ class ChatOcrSaveDbPayload(BaseModel):
     embed_text: Optional[str] = ""
     chat_answers: Optional[dict] = {}
     math_reconciliation: Optional[dict] = {}
+    target_record_id: Optional[str] = None
+    is_new_case: Optional[bool] = False
+    principle_doc_no: Optional[str] = None
+    case_title: Optional[str] = None
 
 
 @app.get("/api/db/status", tags=["PostgreSQL Database"])
@@ -3569,9 +4179,36 @@ async def api_db_status():
     return await run_in_threadpool(check_db_status)
 
 
+@app.get("/api/db/cases", tags=["PostgreSQL Database"])
+async def api_db_cases():
+    """Fetch available principle cases / dossiers for document linking."""
+    return await run_in_threadpool(get_available_principle_cases)
+
+
+@app.get("/api/db/match_case", tags=["PostgreSQL Database"])
+async def api_db_match_case(
+    amount: Optional[float] = None,
+    vendor: Optional[str] = None,
+    principle_doc_no: Optional[str] = None
+):
+    """Smart candidate matching for linking document to existing dossier."""
+    return await run_in_threadpool(
+        find_smart_case_match,
+        amount=amount,
+        vendor=vendor,
+        principle_doc_no=principle_doc_no
+    )
+
+
+@app.get("/api/db/dashboard", tags=["PostgreSQL Database"])
+async def api_db_dashboard():
+    """Fetch dossier-grouped cases, budget tracking, and document traceability."""
+    return await run_in_threadpool(get_dossier_dashboard_data)
+
+
 @app.post("/api/chatocr/save_to_db", tags=["PostgreSQL Database"])
 async def api_chatocr_save_to_db(payload: ChatOcrSaveDbPayload):
-    """Save verified/edited document and metadata into PostgreSQL database container."""
+    """Save verified/edited document and metadata into PostgreSQL database container with case linking."""
     try:
         res = await run_in_threadpool(
             save_disbursement_document,
@@ -3580,7 +4217,11 @@ async def api_chatocr_save_to_db(payload: ChatOcrSaveDbPayload):
             metadata=payload.metadata or {},
             embed_text=payload.embed_text or "",
             chat_answers=payload.chat_answers or {},
-            math_reconciliation=payload.math_reconciliation or {}
+            math_reconciliation=payload.math_reconciliation or {},
+            target_record_id=payload.target_record_id,
+            is_new_case=payload.is_new_case or False,
+            principle_doc_no=payload.principle_doc_no,
+            case_title=payload.case_title
         )
         return res
     except Exception as e:
@@ -3593,6 +4234,7 @@ async def api_chatocr_save_to_db(payload: ChatOcrSaveDbPayload):
 async def api_db_recent(limit: int = 10):
     """Fetch recent saved reimbursement documents from PostgreSQL."""
     return await run_in_threadpool(get_recent_saved_documents, limit=limit)
+
 
 
 if __name__ == "__main__":

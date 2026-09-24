@@ -81,6 +81,7 @@ PP_CHATOCR_TEMPLATES: Dict[str, Dict[str, Any]] = {
             "เลขที่เอกสาร",
             "วันที่ทำเอกสาร",
             "เรื่อง",
+            "ที่มาของรายการนี้มาจากหลักการเลขที่เท่าไหร่หรืออ้างถึงบันทึกหลักการเลขที่",
             "รายละเอียดค่าใช้จ่ายและสูตรคำนวณ",
             "ยอดรวมเงินที่ขอเบิก",
             "ประเภทของการเบิกจ่าย (เงินสดย่อย หรือ ทดรองจ่าย)",
@@ -170,6 +171,7 @@ PP_CHATOCR_TEMPLATES: Dict[str, Dict[str, Any]] = {
             "เลขที่เอกสาร",
             "วันที่ทำเอกสาร",
             "เรื่อง",
+            "อ้างถึงบันทึกขออนุมัติหลักการเลขที่หรือเลขที่เอกสารอ้างอิง",
             "เหตุผลความจำเป็นที่ต้องจัดหา",
             "รายละเอียดของพัสดุ",
             "วงเงินงบประมาณที่ใช้ทั้งหมด",
@@ -422,6 +424,7 @@ class PPChatOCREngine:
         2. filter_metadata: Exact key-value dictionary for metadata filtering.
         """
         doc_no = None
+        principle_doc_no = None
         vendor_or_requester = None
         vendor_tax_id = None
         doc_date_str = None
@@ -443,8 +446,17 @@ class PPChatOCREngine:
                     cross_check_text = val.strip()
                 continue
 
+            # Principle Document Reference (เลขอ้างอิงหลักการ)
+            if any(term in k_lower for term in ["หลักการ", "ที่มาของรายการ", "อ้างถึงบันทึก", "ตามหนังสือขออนุมัติหลักการ"]):
+                if not principle_doc_no:
+                    memo_m = re.search(r"(?:อว|ที่\s*อว)?\s*[\d\.\w\/-]+", val)
+                    if memo_m and len(memo_m.group(0).strip()) > 3:
+                        principle_doc_no = memo_m.group(0).strip()
+                    else:
+                        principle_doc_no = val.strip()
+
             # 1. Document No
-            if any(term in k_lower for term in ["เลขที่", "doc_no", "no."]):
+            if any(term in k_lower for term in ["เลขที่", "doc_no", "no."]) and not any(term in k_lower for term in ["หลักการ", "อ้างถึง", "ผู้เสียภาษี"]):
                 if not doc_no:
                     doc_no = val.strip()
 
@@ -624,17 +636,29 @@ class PPChatOCREngine:
         }
         status_thai = status_thai_map.get(reconcile_status, reconcile_status)
 
+        # Principle doc no resolution
+        if document_type == "principle_approval_request":
+            principle_doc_no = doc_no or principle_doc_no
+        elif not principle_doc_no:
+            memo_match = re.search(r"(?:อว|ที่\s*อว)\s*[\d\.\w\/-]+", all_text_corpus)
+            if memo_match and len(memo_match.group(0).strip()) > 3:
+                principle_doc_no = memo_match.group(0).strip()
+
         # Build Clean Embed Text
         md_lines = [
             f"# เอกสารการเงิน: {source_filename}",
             f"- **ชื่อเอกสาร (Document Title):** {source_filename}",
             f"- **ประเภทเอกสาร:** {doc_title}",
             f"- **เลขที่เอกสาร:** {doc_no or 'ไม่ระบุ'}",
+        ]
+        if principle_doc_no:
+            md_lines.append(f"- **อ้างอิงเอกสารหลักการเลขที่:** {principle_doc_no}")
+        md_lines.extend([
             f"- **บุคคล/หน่วยงาน/ร้านค้า:** {vendor_or_requester or 'ไม่ระบุ'}",
             f"- **วันที่เอกสาร:** {doc_date_str or 'ไม่ระบุ'}" + (f" (ISO: {doc_date_iso})" if doc_date_iso else ""),
             f"- **ยอดเงินรวม:** {f'{total_amount:,.2f} บาท' if total_amount is not None else 'ไม่ระบุ'}",
             f"- **การตรวจสอบความถูกต้องของยอดเงิน (Reconciliation):** {status_thai} - {reconcile_details}",
-        ]
+        ])
         if subtotal is not None:
             md_lines.append(f"- **ยอดรวมก่อนภาษี (Subtotal):** {subtotal:,.2f} บาท")
         if vat_amount is not None:
@@ -650,6 +674,7 @@ class PPChatOCREngine:
         embed_text = "\n".join(md_lines)
 
         filter_metadata = {
+            "principle_doc_no": principle_doc_no,
             "document_type": document_type,
             "document_title": source_filename,
             "document_type_name": doc_title,
