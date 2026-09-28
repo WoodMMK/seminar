@@ -96,7 +96,7 @@ class ThaiPerceptionEngine:
         use_doc_orientation_classify: bool = False,
         use_textline_orientation: bool = False,
         unclip_ratio: float = 2.35,
-        limit_side_len: int = 2400,
+        limit_side_len: int = 1600,
         box_thresh: float = 0.6,
         device: str = "cpu"
     ):

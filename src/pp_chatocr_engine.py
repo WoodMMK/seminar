@@ -41,21 +41,23 @@ PP_CHATOCR_TEMPLATES: Dict[str, Dict[str, Any]] = {
         "group": "official_reimbursement",
         "group_title": "เอกสารเบิกจ่ายราชการ (9 ประเภทหลัก)",
         "keys": [
-            "เลขที่เอกสารหรือเลขที่หนังสือ",
+            "เลขที่เอกสาร",
             "วันที่ทำเอกสาร",
             "เรื่อง",
-            "ผู้ทำการเบิกหรือหน่วยงานที่ขอ",
-            "รายละเอียดค่าใช้จ่ายและสูตรคำนวณ (แจกแจงรายการ เช่น 600 บาท x 2 คน หรือรายการย่อยทั้งหมด)",
-            "ยอดรวมเงินงบประมาณที่ขออนุมัติ",
-            "การตรวจสอบความถูกต้องของยอดเงิน (Cross-check: ให้คำนวณผลคูณและผลรวมรายการย่อยทั้งหมด เช่น 600 x 2 = 1,200 บาท ว่าตรงกับยอดรวมงบประมาณหรือไม่ หากไม่ตรงให้แจ้งว่าไม่ตรงกันพร้อมระบุผลต่าง)"
+            "ผู้ทำการเบิก (คน หรือ ภาควิชา)",
+            "รายละเอียดค่าใช้จ่าย (เบิกอะไรบ้าง และเท่าไหร่บ้าง)",
+            "ยอดรวม"
         ],
         "system_prompt": (
-            "คุณเป็นผู้เชี่ยวชาญการสกัดข้อมูลเอกสารราชการและการเงิน หน้าที่ของคุณคือสกัดข้อมูลจากบันทึกข้อความ 'ขออนุมัติหลักการ' "
-            "โดยอ้างอิงจากข้อความในเอกสารอย่างเคร่งครัด สกัดเลขที่หนังสือ (สังเกตข้อความระบุ 'ที่' หรือ 'ที่ อว' เช่น ที่ อว 78.101/...) วันที่ เรื่อง ผู้ขออนุมัติ รายการค่าใช้จ่าย และยอดรวมเงินงบประมาณ\n"
-            "ข้อกำหนดสำคัญในการตรวจสอบตัวเลข (Strict Math Cross-check): ให้ค้นหาตัวเลขการคูณและรายการย่อยทั้งหมดในเนื้อหาอย่างละเอียด เช่น '600 บาท จำนวน 2 คน' (600 x 2 = 1,200 บาท) "
-            "แล้วคำนวณผลลัพธ์จริงเพื่อเปรียบเทียบกับยอดรวมงบประมาณที่ขออนุมัติ หากยอดที่คำนวณได้ไม่ตรงกับยอดรวมงบประมาณที่ระบุในเอกสาร (เช่น คำนวณได้ 1,200 บาท แต่เอกสารระบุ 1,800 บาท) "
-            "คุณต้องแจ้งเตือนอย่างชัดเจนว่า 'ตรวจพบยอดเงินไม่ตรงกัน (Discrepancy): คำนวณได้ 1,200 บาท แต่ระบุยอดรวม 1,800 บาท (ต่างกัน 600 บาท)' "
-            "ห้ามตอบว่าไม่มีรายการย่อยหากในข้อความมีตัวเลขอัตราหรือจำนวนปรากฏอยู่ หากไม่มีข้อมูลระบุชัดเจนให้ตอบว่า 'ไม่มีระบุ'"
+            "คุณเป็นผู้เชี่ยวชาญการสกัดข้อมูลเอกสารราชการ หน้าที่ของคุณคือสกัดข้อมูลจากบันทึกข้อความ 'ขออนุมัติหลักการ' "
+            "โดยอ้างอิงจากข้อความในเอกสารอย่างเคร่งครัด สกัด: "
+            "1. เลขที่เอกสาร (สังเกตข้อความระบุ 'ที่' หรือ 'ที่ อว' เช่น ที่ อว 78.101/...) "
+            "2. วันที่ทำเอกสาร "
+            "3. เรื่อง "
+            "4. ผู้ทำการเบิก (อาจเป็นชื่อบุคคล หรือชื่อภาควิชา) "
+            "5. รายละเอียดค่าใช้จ่าย (แจกแจงรายการว่าเบิกอะไรบ้าง และรายการละเท่าไหร่บ้าง) "
+            "6. ยอดรวม "
+            "หากไม่มีข้อมูลระบุชัดเจนให้ตอบว่า 'ไม่มีระบุ'"
         )
     },
     "principle_approval_granted": {
@@ -63,14 +65,15 @@ PP_CHATOCR_TEMPLATES: Dict[str, Dict[str, Any]] = {
         "group": "official_reimbursement",
         "group_title": "เอกสารเบิกจ่ายราชการ (9 ประเภทหลัก)",
         "keys": [
-            "ตามหนังสือขออนุมัติหลักการเลขที่",
-            "รายละเอียดการอนุมัติ",
-            "ยอดรวมเงินที่ได้รับการอนุมัติ",
-            "การตรวจสอบความถูกต้องของยอดเงิน (Cross-check: ยอดรวมเงินอนุมัติตรงตามที่ระบุในเนื้อความหรือไม่)"
+            "รายละเอียดการอนุมัติ (อนุมัติอะไรบ้าง เท่าไหร่บ้าง)",
+            "ยอดรวมที่อนุมัติ",
+            "ตามหนังสือขออนุมัติหลักการเลขที่ (ถ้ามี)"
         ],
         "system_prompt": (
-            "สกัดข้อมูลจาก 'เอกสารอนุมัติหลักการ' โดยดึงเลขที่หนังสือเดิมที่อ้างอิงถึง รายการที่อนุมัติ และยอดเงินที่อนุมัติทั้งหมด "
-            "พร้อมทั้งตรวจสอบความถูกต้องของยอดเงินที่อนุมัติ หากไม่มีระบุให้ตอบว่า 'ไม่มีระบุ'"
+            "สกัดข้อมูลจาก 'เอกสารอนุมัติหลักการ' ระบุ: "
+            "1. รายละเอียดการอนุมัติ (อนุมัติรายการอะไรบ้าง และเท่าไหร่บ้าง) "
+            "2. ยอดรวมที่อนุมัติ "
+            "3. ตามหนังสือขออนุมัติหลักการเลขที่เดิมที่อ้างอิงถึง หากไม่มีระบุให้ตอบว่า 'ไม่มีระบุ'"
         )
     },
     "disbursement_approval_request": {
@@ -81,16 +84,16 @@ PP_CHATOCR_TEMPLATES: Dict[str, Dict[str, Any]] = {
             "เลขที่เอกสาร",
             "วันที่ทำเอกสาร",
             "เรื่อง",
-            "ที่มาของรายการนี้มาจากหลักการเลขที่เท่าไหร่หรืออ้างถึงบันทึกหลักการเลขที่",
-            "รายละเอียดค่าใช้จ่ายและสูตรคำนวณ",
-            "ยอดรวมเงินที่ขอเบิก",
-            "ประเภทของการเบิกจ่าย (เงินสดย่อย หรือ ทดรองจ่าย)",
-            "การตรวจสอบความถูกต้องของยอดเงิน (Cross-check: รวมรายการค่าใช้จ่ายย่อยตรงกับยอดรวมเงินที่ขอเบิกหรือไม่)"
+            "รายละเอียดค่าใช้จ่าย (เบิกอะไรบ้าง และเท่าไหร่บ้าง)",
+            "ยอดรวม",
+            "ประเภทของการเบิกจ่าย (เงินสดย่อย / ทดรองจ่าย)",
+            "อ้างถึงบันทึกหลักการเลขที่ (ถ้ามี)"
         ],
         "system_prompt": (
-            "สกัดข้อมูลจากบันทึกข้อความ 'ขออนุมัติเบิกจ่าย' ระบุเลขที่ วันที่ เรื่อง รายละเอียดค่าใช้จ่าย ยอดรวม "
-            "และระบุว่าเป็นการเบิกจ่ายประเภทใด พร้อมคำนวณตรวจสอบว่าผลรวมรายการค่าใช้จ่ายย่อยตรงกับยอดรวมเงินที่ขอเบิกหรือไม่ "
-            "หากไม่ตรงกันให้แจ้งเตือนผลต่างชัดเจน หากไม่มีระบุให้ตอบว่า 'ไม่มีระบุ'"
+            "สกัดข้อมูลจากบันทึกข้อความ 'ขออนุมัติเบิกจ่าย' ระบุ: "
+            "1. เลขที่เอกสาร 2. วันที่ทำเอกสาร 3. เรื่อง 4. รายละเอียดค่าใช้จ่าย (เบิกอะไรบ้าง และเท่าไหร่บ้าง) "
+            "5. ยอดรวม 6. ประเภทของการเบิกจ่าย (ระบุชัดเจนว่าเป็น เงินสดย่อย หรือ ทดรองจ่าย) "
+            "พร้อมระบุเลขที่หลักการเดิมที่อ้างอิงถึง หากไม่มีระบุให้ตอบว่า 'ไม่มีระบุ'"
         )
     },
     "advance_payment_request_1": {
@@ -99,16 +102,17 @@ PP_CHATOCR_TEMPLATES: Dict[str, Dict[str, Any]] = {
         "group_title": "เอกสารเบิกจ่ายราชการ (9 ประเภทหลัก)",
         "keys": [
             "เลขที่เอกสาร",
-            "ผู้ทำการเบิกหรือผู้ยืมเงิน",
-            "ยอดเงินรวมที่ขอยืม",
-            "ตามหนังสืออนุมัติเบิกจ่ายเลขที่",
-            "รายละเอียดตามประเภทค่าใช้จ่าย",
-            "โอนเงินไปที่ใด (ธนาคารหรือเลขบัญชี)",
-            "การตรวจสอบความถูกต้องของยอดเงิน (Cross-check: รวมรายการค่าใช้จ่ายย่อยตรงกับยอดเงินที่ขอยืมหรือไม่)"
+            "ใครเป็นคนเบิก",
+            "ยอดรวม",
+            "ตามหนังสืออนุมัติเบิกจ่าย เลขที่อะไร",
+            "รายละเอียด (ดึงข้อมูลตามประเภทค่าใช้จ่าย)",
+            "โอนเงินไปที่ใด"
         ],
         "system_prompt": (
-            "สกัดข้อมูลจากแบบเบิกเงินทดรองจ่าย (แบบที่ 1) ระบุชื่อผู้เบิก ยอดเงินยืม เลขที่หนังสืออ้างอิง ช่องทางโอนเงิน "
-            "และคำนวณตรวจสอบว่ารายการค่าใช้จ่ายย่อยรวมกันได้ตรงกับยอดเงินรวมที่ขอยืมหรือไม่ หากไม่มีระบุให้ตอบว่า 'ไม่มีระบุ'"
+            "สกัดข้อมูลจากแบบเบิกเงินทดรองจ่าย (แบบที่ 1) ระบุ: "
+            "1. เลขที่เอกสาร 2. ใครเป็นคนเบิก 3. ยอดรวม 4. ตามหนังสืออนุมัติเบิกจ่าย เลขที่อะไร "
+            "5. รายละเอียดค่าใช้จ่าย (แจกแจงตามประเภทของค่าใช้จ่าย) 6. โอนเงินไปที่ใด (ธนาคารหรือเลขที่บัญชี) "
+            "หากไม่มีระบุให้ตอบว่า 'ไม่มีระบุ'"
         )
     },
     "advance_payment_request_2": {
@@ -119,16 +123,17 @@ PP_CHATOCR_TEMPLATES: Dict[str, Dict[str, Any]] = {
             "เลขที่เอกสาร",
             "วันที่ส่งเอกสาร",
             "วันที่ขอรับเงิน",
-            "ผู้ทำการเบิก",
-            "ยอดเงินรวม",
-            "ตามหนังสืออนุมัติหลักการเลขที่",
-            "รายละเอียดค่าใช้จ่าย",
-            "โอนเงินไปที่ใด",
-            "การตรวจสอบความถูกต้องของยอดเงิน (Cross-check: รวมรายการค่าใช้จ่ายย่อยตรงกับยอดเงินรวมหรือไม่)"
+            "ใครเป็นคนเบิก",
+            "ยอดรวม",
+            "ตามหนังสืออนุมัติหลักการ เลขที่อะไร",
+            "รายละเอียด",
+            "โอนเงินไปที่ใด"
         ],
         "system_prompt": (
-            "สกัดข้อมูลจากแบบเบิกเงินทดรองจ่าย (แบบที่ 2 - รับเงิน/เคลียร์เงิน) ระบุวันที่ส่ง วันที่ขอรับเงิน ผู้เบิก ยอดเงินรวม "
-            "บัญชีปลายทาง และคำนวณตรวจสอบความถูกต้องของรายการค่าใช้จ่ายย่อยเทียบกับยอดรวม หากไม่มีระบุให้ตอบว่า 'ไม่มีระบุ'"
+            "สกัดข้อมูลจากแบบเบิกเงินทดรองจ่าย (แบบที่ 2 - รับเงิน/เคลียร์เงิน) ระบุ: "
+            "1. เลขที่เอกสาร 2. วันที่ส่งเอกสาร 3. วันที่ขอรับเงิน 4. ใครเป็นคนเบิก 5. ยอดรวม "
+            "6. ตามหนังสืออนุมัติหลักการ เลขที่อะไร 7. รายละเอียดค่าใช้จ่าย 8. โอนเงินไปที่ใด "
+            "หากไม่มีระบุให้ตอบว่า 'ไม่มีระบุ'"
         )
     },
     "receipt_substitute": {
@@ -136,15 +141,15 @@ PP_CHATOCR_TEMPLATES: Dict[str, Dict[str, Any]] = {
         "group": "official_reimbursement",
         "group_title": "เอกสารเบิกจ่ายราชการ (9 ประเภทหลัก)",
         "keys": [
-            "วันเดือนปีที่จ่ายเงิน",
+            "วัน/เดือน/ปี",
             "รายละเอียดของรายการการเบิก",
-            "ยอดเงินรวมทั้งสิ้น",
-            "ผู้จ่ายเงินหรือผู้รับรองการจ่าย",
-            "การตรวจสอบความถูกต้องของยอดเงิน (Cross-check: รวมรายการค่าใช้จ่ายย่อยตรงกับยอดรวมทั้งสิ้นหรือไม่)"
+            "ยอดรวม",
+            "ผู้จ่ายเงิน"
         ],
         "system_prompt": (
-            "สกัดข้อมูลจากใบแทนใบเสร็จรับเงิน หรือใบสำคัญรับเงิน ระบุวันเดือนปี รายการการเบิก ยอดเงินรวม ชื่อผู้จ่ายเงิน "
-            "และคำนวณตรวจสอบว่ายอดเงินรายการย่อยรวมกันได้ตรงกับยอดรวมทั้งสิ้นหรือไม่ หากไม่มีระบุให้ตอบว่า 'ไม่มีระบุ'"
+            "สกัดข้อมูลจากใบแทนใบเสร็จรับเงิน หรือใบสำคัญรับเงิน ระบุ: "
+            "1. วัน/เดือน/ปี 2. รายละเอียดของรายการการเบิก 3. ยอดรวม 4. ผู้จ่ายเงิน (ชื่อผู้จ่ายหรือผู้รับรอง) "
+            "หากไม่มีระบุให้ตอบว่า 'ไม่มีระบุ'"
         )
     },
     "parcel_inspection": {
@@ -153,34 +158,34 @@ PP_CHATOCR_TEMPLATES: Dict[str, Dict[str, Any]] = {
         "group_title": "เอกสารเบิกจ่ายราชการ (9 ประเภทหลัก)",
         "keys": [
             "เลขที่เอกสาร",
-            "รายชื่อผู้ตรวจรับพัสดุหรือคณะกรรมการ",
+            "ผู้ตรวจรับพัสดุ",
             "วันที่ตรวจรับพัสดุ",
-            "ตามใบสั่งซื้อหรือสัญญาเลขที่",
-            "การตรวจสอบความถูกต้อง (Cross-check: ตรวจรับถูกต้องครบถ้วนตามสัญญาหรือไม่)"
+            "ตามใบสั่งซื้อหรือสัญญาเลขที่"
         ],
         "system_prompt": (
-            "สกัดข้อมูลจากใบตรวจรับพัสดุ ระบุเลขที่เอกสาร รายชื่อคณะกรรมการตรวจรับพัสดุ วันที่ตรวจรับ เลขที่สัญญา "
-            "และตรวจสอบผลการตรวจรับว่าถูกต้องครบถ้วนตามสัญญาหรือไม่ หากไม่มีระบุให้ตอบว่า 'ไม่มีระบุ'"
+            "สกัดข้อมูลจากใบตรวจรับพัสดุ ระบุ: "
+            "1. เลขที่เอกสาร 2. ผู้ตรวจรับพัสดุ (รายชื่อผู้ตรวจรับหรือคณะกรรมการ) 3. วันที่ตรวจรับพัสดุ 4. ตามใบสั่งซื้อหรือสัญญาเลขที่ "
+            "หากไม่มีระบุให้ตอบว่า 'ไม่มีระบุ'"
         )
     },
     "procurement_approval_request": {
-        "title": "ขออนุมัติจัดหาพัสดุ",
+        "title": "ขออนุมัติหาพัสดุ (ขออนุมัติจัดหาพัสดุ)",
         "group": "official_reimbursement",
         "group_title": "เอกสารเบิกจ่ายราชการ (9 ประเภทหลัก)",
         "keys": [
             "เลขที่เอกสาร",
             "วันที่ทำเอกสาร",
             "เรื่อง",
-            "อ้างถึงบันทึกขออนุมัติหลักการเลขที่หรือเลขที่เอกสารอ้างอิง",
-            "เหตุผลความจำเป็นที่ต้องจัดหา",
+            "เหตุผลที่ต้องจัดหา",
             "รายละเอียดของพัสดุ",
-            "วงเงินงบประมาณที่ใช้ทั้งหมด",
+            "วงเงินที่ใช้ทั้งหมด",
             "เวลาที่ต้องใช้พัสดุ",
-            "การตรวจสอบความถูกต้องของยอดเงิน (Cross-check: รวมรายการพัสดุย่อยตรงกับวงเงินงบประมาณหรือไม่)"
+            "อ้างถึงบันทึกขออนุมัติหลักการเลขที่ (ถ้ามี)"
         ],
         "system_prompt": (
-            "สกัดข้อมูลจากบันทึกขออนุมัติจัดหาพัสดุ ระบุเลขที่ วันที่ เรื่อง เหตุผล รายการพัสดุ วงเงินงบประมาณ "
-            "กำหนดเวลาที่ต้องใช้พัสดุ และตรวจสอบความถูกต้องของวงเงินรวมเทียบกับรายการพัสดุ หากไม่มีระบุให้ตอบว่า 'ไม่มีระบุ'"
+            "สกัดข้อมูลจากบันทึกข้อความ 'ขออนุมัติจัดหาพัสดุ' ระบุ: "
+            "1. เลขที่เอกสาร 2. วันที่ทำเอกสาร 3. เรื่อง 4. เหตุผลที่ต้องจัดหา 5. รายละเอียดของพัสดุ "
+            "6. วงเงินที่ใช้ทั้งหมด 7. เวลาที่ต้องใช้พัสดุ 8. เลขที่หลักการเดิมที่อ้างอิงถึง หากไม่มีระบุให้ตอบว่า 'ไม่มีระบุ'"
         )
     },
     "procurement_attachment": {
@@ -188,14 +193,14 @@ PP_CHATOCR_TEMPLATES: Dict[str, Dict[str, Any]] = {
         "group": "official_reimbursement",
         "group_title": "เอกสารเบิกจ่ายราชการ (9 ประเภทหลัก)",
         "keys": [
-            "แนบท้ายบันทึกเอกสารเลขที่",
+            "แนบท้ายบันทึกเอกสารเลขอะไร",
             "รายละเอียดพัสดุหรือรายการเปรียบเทียบราคา",
-            "ยอดรวมงบประมาณ",
-            "การตรวจสอบความถูกต้องของยอดเงิน (Cross-check: รายการพัสดุหรือราคาเปรียบเทียบรวมกันได้ตรงกับยอดรวมงบประมาณหรือไม่)"
+            "ยอดรวม"
         ],
         "system_prompt": (
-            "สกัดข้อมูลจากเอกสารประกอบการขออนุมัติจัดหา ระบุเลขที่แนบท้ายบันทึก รายละเอียดพัสดุ ยอดรวม "
-            "และตรวจสอบผลรวมราคาพัสดุเทียบกับงบประมาณ หากไม่มีระบุให้ตอบว่า 'ไม่มีระบุ'"
+            "สกัดข้อมูลจากเอกสารประกอบการขออนุมัติจัดหา ระบุ: "
+            "1. แนบท้ายบันทึกเอกสารเลขอะไร 2. รายละเอียดพัสดุหรือเปรียบเทียบราคา 3. ยอดรวม "
+            "หากไม่มีระบุให้ตอบว่า 'ไม่มีระบุ'"
         )
     },
     "general_receipt": {
@@ -284,9 +289,9 @@ class PPChatOCREngine:
             # causing numbers like "อว 78.101/334" to turn into garbled "DEE/IOT'8L CO"
             cfg['SubPipelines']['LayoutParser']['SubPipelines']['GeneralOCR']['use_textline_orientation'] = False
 
-            # Upgrade detector to PP-OCRv6_medium_det with high resolution limit for superior Thai text boundary detection
+            # Upgrade detector to PP-OCRv6_medium_det with optimal CPU resolution limit (1600px)
             cfg['SubPipelines']['LayoutParser']['SubPipelines']['GeneralOCR']['SubModules']['TextDetection']['model_name'] = 'PP-OCRv6_medium_det'
-            cfg['SubPipelines']['LayoutParser']['SubPipelines']['GeneralOCR']['SubModules']['TextDetection']['limit_side_len'] = 2400
+            cfg['SubPipelines']['LayoutParser']['SubPipelines']['GeneralOCR']['SubModules']['TextDetection']['limit_side_len'] = 1600
 
             # Thai OCR recognition model
             cfg['SubPipelines']['LayoutParser']['SubPipelines']['GeneralOCR']['SubModules']['TextRecognition']['model_name'] = 'th_PP-OCRv5_mobile_rec'
@@ -302,17 +307,40 @@ class PPChatOCREngine:
             self._pipeline = create_pipeline(config=cfg, device="cpu", pp_option=pp_opt)
         return self._pipeline
 
-    def visual_predict(self, image_path: Union[str, Path], use_cache: bool = True) -> Dict[str, Any]:
+    def visual_predict(self, image_path: Union[str, Path], use_cache: bool = True, max_side_limit: int = 1600) -> Dict[str, Any]:
         """
         Run layout analysis and OCR perception on the document image.
         Caches results by image path to enable instant multi-turn chatting.
+        Automatically scales images down to max_side_limit (default 1600px) to maximize CPU speed.
         """
-        img_str = str(Path(image_path).resolve())
+        from PIL import Image
+        img_p = Path(image_path).resolve()
+        img_str = str(img_p)
         if use_cache and img_str in self._visual_cache:
             return self._visual_cache[img_str]
 
+        # Automatic CPU-friendly resolution normalization
+        target_eval_path = img_str
+        temp_scaled_path = None
+        try:
+            with Image.open(img_p) as pil_im:
+                w, h = pil_im.size
+                max_side = max(w, h)
+                if max_side > max_side_limit:
+                    scale = max_side_limit / float(max_side)
+                    new_w = int(round(w * scale))
+                    new_h = int(round(h * scale))
+                    scaled_im = pil_im.resize((new_w, new_h), Image.Resampling.LANCZOS)
+                    cache_dir = img_p.parent / ".scaled_cache"
+                    cache_dir.mkdir(parents=True, exist_ok=True)
+                    temp_scaled_path = cache_dir / f"scaled_{max_side_limit}_{img_p.name}"
+                    scaled_im.save(temp_scaled_path)
+                    target_eval_path = str(temp_scaled_path)
+        except Exception:
+            target_eval_path = img_str
+
         pipeline = self.get_pipeline()
-        raw_res_list = list(pipeline.visual_predict(img_str))
+        raw_res_list = list(pipeline.visual_predict(target_eval_path))
         if not raw_res_list:
             raise RuntimeError(f"Visual prediction returned empty results for {image_path}")
 
@@ -368,15 +396,22 @@ class PPChatOCREngine:
         
         chat_answers = chat_raw.get("chat_res", {})
 
-        # Step 3: Extract OCR text lines for context
+        # Step 3: Extract OCR text lines for context & inspection
         ocr_text_lines = []
         normal_texts = sub_vi.get("normal_text_dict", {})
         if isinstance(normal_texts, dict):
             for block in normal_texts.values():
                 if isinstance(block, list):
-                    ocr_text_lines.extend(str(item) for item in block)
+                    for item in block:
+                        for line in str(item).split("\n"):
+                            l_strip = line.strip()
+                            if l_strip:
+                                ocr_text_lines.append(l_strip)
                 elif isinstance(block, str):
-                    ocr_text_lines.append(block)
+                    for line in block.split("\n"):
+                        l_strip = line.strip()
+                        if l_strip:
+                            ocr_text_lines.append(l_strip)
 
         # Step 4: Generate Knowledge Payload
         knowledge_payload = self._build_knowledge_payload(
@@ -400,6 +435,9 @@ class PPChatOCREngine:
             "chat_answers": chat_answers,
             "knowledge_payload": knowledge_payload,
             "ocr_text_snippet": " ".join(ocr_text_lines[:20]),
+            "ocr_full_text": "\n".join(ocr_text_lines),
+            "ocr_text_lines": ocr_text_lines,
+            "ocr_line_count": len(ocr_text_lines),
             "latency_ms": latency_ms,
             "model_info": {
                 "engine": "PaddleX PP-ChatOCRv4-doc",
@@ -446,8 +484,8 @@ class PPChatOCREngine:
                     cross_check_text = val.strip()
                 continue
 
-            # Principle Document Reference (เลขอ้างอิงหลักการ)
-            if any(term in k_lower for term in ["หลักการ", "ที่มาของรายการ", "อ้างถึงบันทึก", "ตามหนังสือขออนุมัติหลักการ"]):
+            # Principle Document Reference (เลขอ้างอิงหลักการ / เอกสารอ้างอิงเดิม)
+            if any(term in k_lower for term in ["หลักการ", "ที่มาของรายการ", "อ้างถึงบันทึก", "ตามหนังสือขออนุมัติหลักการ", "ตามหนังสืออนุมัติหลักการ", "ตามหนังสืออนุมัติเบิกจ่าย", "แนบท้ายบันทึกเอกสาร"]):
                 if not principle_doc_no:
                     memo_m = re.search(r"(?:อว|ที่\s*อว)?\s*[\d\.\w\/-]+", val)
                     if memo_m and len(memo_m.group(0).strip()) > 3:
@@ -455,13 +493,13 @@ class PPChatOCREngine:
                     else:
                         principle_doc_no = val.strip()
 
-            # 1. Document No
-            if any(term in k_lower for term in ["เลขที่", "doc_no", "no."]) and not any(term in k_lower for term in ["หลักการ", "อ้างถึง", "ผู้เสียภาษี"]):
+            # 1. Document No (เลขที่เอกสาร)
+            if any(term in k_lower for term in ["เลขที่", "doc_no", "no."]) and not any(term in k_lower for term in ["หลักการ", "อ้างถึง", "ผู้เสียภาษี", "ตามหนังสือ", "แนบท้าย"]):
                 if not doc_no:
                     doc_no = val.strip()
 
-            # 2. Requester or Vendor
-            if any(term in k_lower for term in ["ผู้ทำการเบิก", "ผู้ยืม", "ผู้ขอ", "ร้านค้า", "บริษัท", "ผู้ขาย", "requester", "vendor"]):
+            # 2. Requester, Approver, Vendor or Officer (ผู้เบิก / ใครเป็นคนเบิก / ผู้จ่ายเงิน / ผู้ตรวจรับ)
+            if any(term in k_lower for term in ["ผู้ทำการเบิก", "ใครเป็นคนเบิก", "ผู้ยืม", "ผู้ขอ", "ร้านค้า", "บริษัท", "ผู้ขาย", "ผู้จ่ายเงิน", "ผู้ตรวจรับพัสดุ", "requester", "vendor"]):
                 if not vendor_or_requester:
                     vendor_or_requester = val.strip()
 
@@ -470,8 +508,8 @@ class PPChatOCREngine:
                 tax_match = re.search(r"\d{13}", val.replace("-", "").replace(" ", ""))
                 vendor_tax_id = tax_match.group(0) if tax_match else val.strip()
 
-            # 4. Date
-            if any(term in k_lower for term in ["วันที่", "date", "วันเดือนปี"]):
+            # 4. Date (วันที่ทำเอกสาร / วันที่ส่งเอกสาร / วัน/เดือน/ปี)
+            if any(term in k_lower for term in ["วันที่", "date", "วันเดือนปี", "วัน/เดือน/ปี", "วันที่ทำเอกสาร", "วันที่ส่งเอกสาร"]):
                 if not doc_date_str:
                     doc_date_str = val.strip()
 
@@ -493,8 +531,8 @@ class PPChatOCREngine:
                     except ValueError:
                         pass
 
-            # 5. Total Amount (ยอดรวม / ยอดเงินสุทธิ / งบประมาณ)
-            if any(term in k_lower for term in ["ยอดรวมทั้งสิ้น", "ยอดเงินทั้งสิ้น", "ยอดรวมเงิน", "ยอดเงินรวม", "รวมทั้งสิ้น", "total amount", "total", "สุทธิ", "ขอยืม", "ขอเบิก", "วงเงินงบประมาณ", "งบประมาณที่ขออนุมัติ"]) and not any(term in k_lower for term in ["ก่อนภาษี", "subtotal"]):
+            # 5. Total Amount (ยอดรวม / ยอดรวมที่อนุมัติ / วงเงินที่ใช้ทั้งหมด)
+            if any(term in k_lower for term in ["ยอดรวม", "ยอดรวมทั้งสิ้น", "ยอดเงินทั้งสิ้น", "ยอดรวมเงิน", "ยอดเงินรวม", "รวมทั้งสิ้น", "total amount", "total", "สุทธิ", "ขอยืม", "ขอเบิก", "วงเงินงบประมาณ", "งบประมาณที่ขออนุมัติ", "วงเงินที่ใช้ทั้งหมด", "ยอดรวมที่อนุมัติ"]) and not any(term in k_lower for term in ["ก่อนภาษี", "subtotal"]):
                 amt_match = re.search(r"[\d,]+(?:\.\d{1,2})?", val)
                 if amt_match:
                     try:
@@ -521,8 +559,8 @@ class PPChatOCREngine:
         all_text_corpus = " ".join([str(v) for v in chat_answers.values()] + ocr_text_lines[:40])
         formula_matches = []
 
-        # Pattern 1: 600 x 2 or 600 * 2 or 600.00 x 2
-        for m in re.finditer(r"([\d,]+(?:\.\d{1,2})?)\s*(?:บาท|.-)?\s*(?:x|\*|คูณ|\@)\s*([\d,]+(?:\.\d{1,2})?)", all_text_corpus, re.IGNORECASE):
+        # Pattern 1: 600 x 2 or 600 * 2 or 600.00 x 2 or 20 × 135
+        for m in re.finditer(r"([\d,]+(?:\.\d{1,2})?)\s*(?:บาท|.-)?\s*(?:x|\*|คูณ|\@|\u00d7)\s*([\d,]+(?:\.\d{1,2})?)", all_text_corpus, re.IGNORECASE):
             try:
                 n1 = float(m.group(1).replace(",", ""))
                 n2 = float(m.group(2).replace(",", ""))

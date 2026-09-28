@@ -1,0 +1,74 @@
+%% =====================================================================
+%% Thai Financial Document OCR & Case Traceability System
+%% Database Entity Relationship Diagram (ERD) - PostgreSQL Schema
+%% Paired with: docs/database_schema.sql
+%% =====================================================================
+%%
+%% How to render:
+%% 1. Open in Antigravity / VS Code Mermaid Preview Extension, OR
+%% 2. Open https://mermaid.live or https://app.diagrams.net (Draw.io -> Insert Mermaid)
+%% =====================================================================
+
+erDiagram
+    USERS ||--o{ DISBURSEMENT_RECORDS : "ดูแล/สร้าง case (1:N)"
+    USERS ||--o{ WORK_LOGS : "ตรวจสอบ (1:N)"
+    DISBURSEMENT_RECORDS ||--o{ DOCUMENTS : "มีหลายเอกสารที่เกี่ยวข้อง (1:N)"
+    DISBURSEMENT_RECORDS ||--o{ EXPENSE_ITEMS : "รวมรายการใช้จ่ายย่อย (1:N)"
+    DISBURSEMENT_RECORDS ||--o{ WORK_LOGS : "เก็บประวัติการทำงานในระบบ (1:N)"
+    DOCUMENTS ||--o{ EXPENSE_ITEMS : "แตกเป็นรายการค่าใช้จ่าย (1:N)"
+
+    USERS {
+        uuid id PK "รหัสผู้ใช้งาน (UUID)"
+        varchar username "ชื่อบัญชีผู้ใช้งาน"
+        varchar email "อีเมล"
+        varchar role "บทบาท (officer, auditor, admin)"
+        timestamptz created_at "วันที่สร้างบัญชี"
+    }
+
+    DISBURSEMENT_RECORDS {
+        uuid id PK "Case ID (UUID)"
+        uuid user_id FK "เจ้าหน้าที่ผู้รับผิดชอบ Case"
+        varchar principle_doc_no "เลขที่ขออนุมัติหลักการ (เช่น อว 78.101/20271)"
+        varchar title "ชื่อชุดเรื่อง / โครงการ"
+        varchar record_type "หมวดหมู่เอกสาร"
+        varchar receiver_name "ผู้ขอเบิก"
+        numeric approved_amount "งบประมาณหลักการที่อนุมัติ (บาท)"
+        numeric actual_expense "ยอดเบิกจ่ายจริงสะสมในชุดเรื่อง (บาท)"
+        varchar status "สถานะชุดเรื่อง"
+        timestamptz request_date "วันที่ทำเอกสารต้นเรื่อง"
+        due_date timestamptz "กำหนดครบกำหนดเบิกจ่าย"
+        created_at timestamptz "วันที่เพิ่ม Case ในระบบ"
+        updated_at timestamptz "วันที่อัปเดต Case ล่าสุด"
+    }
+
+    DOCUMENTS {
+        uuid id PK "Document ID (UUID)"
+        uuid record_id FK "Case ID ที่เอกสารนี้สังกัด (disbursement_records.id)"
+        varchar filename "ชื่อไฟล์เอกสารต้นฉบับ"
+        varchar s3_path "path ที่จัดเก็บไฟล์"
+        varchar document_type "ประเภทเอกสาร (1 ใน 10 ประเภท)"
+        varchar classified_step "สถานะการตรวจสอบ (EXTRACTED_VERIFIED)"
+        jsonb extracted_data "ข้อมูลทั้งหมดที่ AI สกัดได้ในรูป JSONB"
+        timestamptz uploaded_at "วันที่อัปโหลดเอกสาร"
+    }
+
+    EXPENSE_ITEMS {
+        uuid id PK "รหัสรายการค่าใช้จ่ายย่อย (UUID)"
+        uuid record_id FK "Case ID ที่สังกัด (disbursement_records.id)"
+        uuid document_id FK "เอกสารต้นทางของรายการนี้ (documents.id)"
+        varchar item_name "ชื่อรายการค่าใช้จ่าย"
+        integer quantity "จำนวนชิ้นหรือจำนวนคน"
+        numeric unit_price "ราคาต่อหน่วย (บาท)"
+        numeric total_amount "จำนวนเงินรวมรายการนี้ (บาท)"
+        varchar expense_type "หมวดประเภทค่าใช้จ่าย"
+    }
+
+    WORK_LOGS {
+        uuid id PK "รหัสประวัติการทำงาน (UUID)"
+        uuid record_id FK "รหัส Case ที่ถูกตรวจสอบ (disbursement_records.id)"
+        uuid changed_by FK "user ที่แก้ไข (users.id)"
+        varchar previous_status "สถานะเดิมก่อนแก้ไข"
+        varchar new_status "สถานะใหม่หลังอนุมัติ"
+        text notes "หมายเหตุการตรวจสอบหรือเหตุผล"
+        timestamptz created_at "เวลาที่ทำการบันทึกประวัติ"
+    }

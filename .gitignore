@@ -217,3 +217,17 @@ ProjectProposal.pdf
 tests/output/
 output/
 scratch/
+
+# AI Models & Checkpoints (downloaded on demand)
+models/
+*.bin
+*.pth
+*.pt
+*.onnx
+*.pdparams
+*.pdopt
+*.pdmodel
+*.safetensors
+.paddleocr/
+.paddlex/
+.ollama/

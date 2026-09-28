@@ -415,7 +415,8 @@ class LLMExtractor:
             "stream": False,
             "options": {
                 "temperature": float(temperature),
-                "top_p": 0.1
+                "top_p": 0.1,
+                "num_gpu": 0
             }
         }
 

@@ -35,7 +35,7 @@ class DocumentPage:
 class DocumentIngestion:
     """Document loader and preprocessor for PDFs and images."""
 
-    def __init__(self, target_dpi: int = 200):
+    def __init__(self, target_dpi: int = 150):
         self.target_dpi = target_dpi
         # Standard PDF point size is 72 points per inch
         self.render_scale = target_dpi / 72.0
@@ -69,8 +69,8 @@ class DocumentIngestion:
             return self._load_image(raw_bytes)
 
     @staticmethod
-    def normalize_resolution(pil_image: Image.Image, max_dim_limit: int = 2400) -> Image.Image:
-        """Scale down oversized images (> 2400px) proportionally to prevent OCR detection clipping and coordinate shift."""
+    def normalize_resolution(pil_image: Image.Image, max_dim_limit: int = 1600) -> Image.Image:
+        """Scale down oversized images (> 1600px) proportionally to prevent OCR detection clipping, save CPU compute and coordinate shift."""
         w, h = pil_image.size
         max_side = max(w, h)
         if max_side > max_dim_limit:

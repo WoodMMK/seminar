@@ -47,13 +47,13 @@ class DocumentProcessingPipeline:
         llm_extractor: Optional[LLMExtractor] = None,
         validator: Optional[FinancialDocumentValidator] = None,
     ):
-        self.ingestor = ingestor or DocumentIngestion(target_dpi=200)
+        self.ingestor = ingestor or DocumentIngestion(target_dpi=150)
         self.ocr_engine = ocr_engine or ThaiPerceptionEngine(
             device="cpu",
             use_doc_unwarping=False,
             use_doc_orientation_classify=False,
             use_textline_orientation=False,
-            limit_side_len=2400,
+            limit_side_len=1600,
         )
         self.llm_extractor = llm_extractor or LLMExtractor(default_model="qwen2.5:3b")
         self.validator = validator or FinancialDocumentValidator(petty_cash_threshold=10000.0)
