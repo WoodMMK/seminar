@@ -19,6 +19,9 @@ SubModules:
     use_textline_orientation: false
 
   # 2. Text Recognition Module (Configured with Thai pre-trained weights)
+  # Performance Note: On CPU, batch_size=1 (sequential) is ~2x faster than batch_size>=4
+  # because sequential avoids zero-padding overhead on dynamic-width Thai text lines.
+  # On GPU (CUDA), batch_size=8 or 16 can be configured for parallel throughput.
   TextRecognition:
     module_name: text_recognition
     model_name: th_PP-OCRv5_mobile_rec

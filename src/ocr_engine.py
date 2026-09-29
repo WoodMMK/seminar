@@ -98,6 +98,9 @@ class ThaiPerceptionEngine:
         unclip_ratio: float = 2.35,
         limit_side_len: int = 1600,
         box_thresh: float = 0.6,
+        rec_batch_size: int = 1,
+        expand_box_top_ratio: float = 0.0,
+        expand_box_bottom_ratio: float = 0.0,
         device: str = "cpu"
     ):
         self.rec_model_name = rec_model_name
@@ -108,8 +111,18 @@ class ThaiPerceptionEngine:
         self.unclip_ratio = unclip_ratio
         self.limit_side_len = limit_side_len
         self.box_thresh = box_thresh
+        self.rec_batch_size = rec_batch_size
+        self.expand_box_top_ratio = expand_box_top_ratio
+        self.expand_box_bottom_ratio = expand_box_bottom_ratio
         self.device = device
         self._ocr = None
+
+        if self.expand_box_top_ratio > 0.0 or self.expand_box_bottom_ratio > 0.0:
+            try:
+                from src.pp_chatocr_engine import configure_box_vertical_expansion
+                configure_box_vertical_expansion(self.expand_box_top_ratio, self.expand_box_bottom_ratio)
+            except Exception:
+                pass
 
     def _get_ocr_instance(self):
         """Lazy load PaddleOCR instance to optimize startup time and memory."""
@@ -117,6 +130,7 @@ class ThaiPerceptionEngine:
             from paddleocr import PaddleOCR
             self._ocr = PaddleOCR(
                 text_recognition_model_name=self.rec_model_name,
+                text_recognition_batch_size=self.rec_batch_size,
                 enable_mkldnn=self.enable_mkldnn,
                 use_doc_unwarping=self.use_doc_unwarping,
                 use_doc_orientation_classify=self.use_doc_orientation_classify,

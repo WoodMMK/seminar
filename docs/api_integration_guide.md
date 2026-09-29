@@ -74,11 +74,12 @@
 | :---: | :--- | :--- | :--- | :--- |
 | **1** | `PicoDet-S_layout_3cls` | **Layout Detection** | ESNet + PAN (PicoDet) | ตรวจจับบล็อกข้อความ (Text), ตาราง (Table), และตราประทับ (Figure/Seal) ทำงานเร็วมากบน CPU |
 | **2** | `PP-OCRv6_medium_det` | **Text Detection** | DBNet (Differentiable Binarization) | ตีกรอบพิกัดบรรทัดข้อความ ตั้งค่า `limit_side_len = 1600` เพื่อรักษาสมดุลความเร็วและความคมชัด |
-| **3** | `th_PP-OCRv5_mobile_rec` | **Thai Text Recognition** | MobileNetV1 + BiLSTM + CTC | โมเดลรู้จำภาษาไทย อ่านสระ วรรณยุกต์ ตัวเลขอารบิก และสัญลักษณ์ทางการเงินครบถ้วน |
+| **3** | `th_PP-OCRv5_mobile_rec` | **Thai Text Recognition** | MobileNetV1 + BiLSTM + CTC | โมเดลรู้จำภาษาไทย อ่านสระ วรรณยุกต์ ตัวเลขอารบิก และสัญลักษณ์ทางการเงินครบถ้วน<br>*(CPU Mode: ใช้ `batch_size = 1` เร็วกว่า Batch Inference 2 เท่า เนื่องจากเลี่ยง Zero-Padding Waste บนบรรทัดข้อความความยาวไม่เท่ากัน)* |
 | **4** | `SLANet_plus` | **Table Recognition** | Structure Location & Alignment Network | อ่านตารางและโครงสร้างเซลล์ แปลงเป็น Markdown และ HTML `<table>` |
 | **5** | `PP-OCRv4_server_seal_det`<br>& `rec_doc` | **Seal / Stamp OCR** | Server DBNet + CRNN | ตรวจจับและอ่านข้อความในตราประทับราชการ |
 | **6** | `qwen2.5:3b` *(Ollama)* | **LLM Reasoning & QA** | Transformer Decoder (3B Params) | รันบน CPU (`num_gpu: 0`), ตั้งค่า `temperature: 0.0` (Greedy) เพื่อผลลัพธ์ที่แน่นอนและแม่นยำ 100% |
 | ⚠️ | **Textline Orientation** | **Orientation Classifier** | **ปิดการใช้งาน (`False`)** | ป้องกันโมเดลหมุนภาพ 180° ผิดพลาดจากสระลอยไทย (เช่น ิ, ี, ่, ้) |
+| ⚡ | **Batch Inference Strategy** | **OCR Pipeline Tuning** | Sequential (CPU) / Batch (GPU) | **บน CPU:** `batch_size = 1` ให้ความเร็วสูงสุด (Speedup 2.0x เทียบกับ bs=16)<br>**บน GPU:** สามารถตั้ง `rec_batch_size = 8` หรือ `16` ใน Config เพื่อดึงพลัง CUDA Cores |
 
 ---
 
@@ -97,6 +98,9 @@
    กรณีเอกสาร PDF หลายหน้า ระบบจะนำหน้ามาต่อกันในแนวตั้ง คั่นด้วยระยะ 24px และคุมความสูงรวมไม่เกิน **2400 px**
 5. **Thai Fragment Merging:**  
    รวมสระลอยบน-ล่าง (ิ, ี, ่, ้, ุ, ู) ที่มักหลุดจาก Bounding Box กลับเข้าบรรทัดแม่โดยอัตโนมัติ
+6. **Vertical Bounding Box Expansion (Configurable):**  
+   รองรับการขยายขอบเขต Bounding Box แต่ละบรรทัดทั้งด้านบนและด้านล่าง (`expand_box_top_ratio`, `expand_box_bottom_ratio` หรือ Env: `OCR_EXPAND_TOP_RATIO`, `OCR_EXPAND_BOTTOM_RATIO`)  
+   *(หมายเหตุจากการทดสอบเชิงประจักษ์: เอกสารราชการที่มีระยะห่างระหว่างบรรทัดแคบ 8-13px การขยายเกิน 20% จะทำให้กล่องซ้อนทับตัวอักษรของบรรทัดติดกันจนโมเดลอ่านผิดพลาด ค่าเริ่มต้นจึงตั้งเป็น `0.0` และใช้ `unclip_ratio = 2.35` ร่วมกับ Thai Fragment Merging ซึ่งครอบคลุมสระซ้อน เช่น "เรื่อง" ได้อย่างแม่นยำ 100%)*
 
 ---
 

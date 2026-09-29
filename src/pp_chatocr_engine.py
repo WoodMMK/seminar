@@ -237,6 +237,67 @@ DOCUMENT_TYPE_ALIASES = {
 }
 
 
+def configure_box_vertical_expansion(top_ratio: float = 0.0, bottom_ratio: float = 0.0):
+    """
+    Dynamically configures vertical bounding box expansion for PaddleX OCR text lines:
+    - top_ratio: percentage of line height to expand upwards (e.g. 0.70 for 70%)
+    - bottom_ratio: percentage of line height to expand downwards (e.g. 0.65 for 65%)
+    When ratios are 0.0, uses default tight cropping.
+    """
+    try:
+        import cv2
+        import numpy as np
+        import paddlex.inference.pipelines.components.common.crop_image_regions as cir
+
+        if top_ratio <= 0.0 and bottom_ratio <= 0.0:
+            if hasattr(cir.CropByPolys, "_unpatched_get_minarea_rect_crop"):
+                cir.CropByPolys.get_minarea_rect_crop = cir.CropByPolys._unpatched_get_minarea_rect_crop
+            return
+
+        if not hasattr(cir.CropByPolys, "_unpatched_get_minarea_rect_crop"):
+            cir.CropByPolys._unpatched_get_minarea_rect_crop = cir.CropByPolys.get_minarea_rect_crop
+
+        def expanded_get_minarea_rect_crop(self, img: np.ndarray, points: np.ndarray) -> np.ndarray:
+            bounding_box = cv2.minAreaRect(np.array(points).astype(np.int32))
+            pts = sorted(list(cv2.boxPoints(bounding_box)), key=lambda x: x[0])
+
+            index_a, index_b, index_c, index_d = 0, 1, 2, 3
+            if pts[1][1] > pts[0][1]:
+                index_a = 0
+                index_d = 1
+            else:
+                index_a = 1
+                index_d = 0
+            if pts[3][1] > pts[2][1]:
+                index_b = 2
+                index_c = 3
+            else:
+                index_b = 3
+                index_c = 2
+
+            box = np.array([pts[index_a], pts[index_b], pts[index_c], pts[index_d]], dtype=np.float32)
+            v_left = box[0] - box[3]
+            v_right = box[1] - box[2]
+
+            box_expanded = box.copy()
+            box_expanded[0] = box[0] + top_ratio * v_left
+            box_expanded[1] = box[1] + top_ratio * v_right
+            box_expanded[3] = box[3] - bottom_ratio * v_left
+            box_expanded[2] = box[2] - bottom_ratio * v_right
+
+            H_img, W_img = img.shape[:2]
+            box_expanded[:, 0] = np.clip(box_expanded[:, 0], 0, W_img - 1)
+            box_expanded[:, 1] = np.clip(box_expanded[:, 1], 0, H_img - 1)
+
+            crop_img = self.get_rotate_crop_image(img, box_expanded)
+            return crop_img
+
+        cir.CropByPolys.get_minarea_rect_crop = expanded_get_minarea_rect_crop
+    except Exception as e:
+        import logging
+        logging.getLogger("pp_chatocr").warning(f"Could not hook CropByPolys for vertical expansion: {e}")
+
+
 class PPChatOCREngine:
     """
     Production-ready wrapper around PaddleX PP-ChatOCRv4.
@@ -249,13 +310,25 @@ class PPChatOCREngine:
         ollama_url: str = "http://localhost:11434/v1",
         llm_model: str = "qwen2.5:3b",
         api_key: str = "ollama",
+        rec_batch_size: int = 1,
+        expand_box_top_ratio: float = 0.0,
+        expand_box_bottom_ratio: float = 0.0,
+        device: str = "cpu"
     ):
         self.ollama_url = ollama_url
         self.llm_model = llm_model
         self.api_key = api_key
+        self.rec_batch_size = rec_batch_size
+        self.expand_box_top_ratio = float(os.getenv("OCR_EXPAND_TOP_RATIO", str(expand_box_top_ratio)))
+        self.expand_box_bottom_ratio = float(os.getenv("OCR_EXPAND_BOTTOM_RATIO", str(expand_box_bottom_ratio)))
+        self.device = device
         self._pipeline = None
         self._visual_cache: Dict[str, Dict[str, Any]] = {}
         self._validator = FinancialDocumentValidator()
+
+        # Apply vertical bounding box expansion if requested
+        if self.expand_box_top_ratio > 0.0 or self.expand_box_bottom_ratio > 0.0:
+            configure_box_vertical_expansion(self.expand_box_top_ratio, self.expand_box_bottom_ratio)
 
     @staticmethod
     def get_supported_templates() -> List[Dict[str, Any]]:
@@ -293,8 +366,11 @@ class PPChatOCREngine:
             cfg['SubPipelines']['LayoutParser']['SubPipelines']['GeneralOCR']['SubModules']['TextDetection']['model_name'] = 'PP-OCRv6_medium_det'
             cfg['SubPipelines']['LayoutParser']['SubPipelines']['GeneralOCR']['SubModules']['TextDetection']['limit_side_len'] = 1600
 
-            # Thai OCR recognition model
+            # Thai OCR recognition model and batch size
+            # (Empirical benchmark: batch_size=1 is ~2x faster on CPU due to zero-padding elimination;
+            # on GPU, batch_size=8 or 16 leverages CUDA tensor cores)
             cfg['SubPipelines']['LayoutParser']['SubPipelines']['GeneralOCR']['SubModules']['TextRecognition']['model_name'] = 'th_PP-OCRv5_mobile_rec'
+            cfg['SubPipelines']['LayoutParser']['SubPipelines']['GeneralOCR']['SubModules']['TextRecognition']['batch_size'] = self.rec_batch_size
             
             # Local Ollama LLM endpoint
             cfg['SubModules']['LLM_Chat']['base_url'] = self.ollama_url
@@ -304,7 +380,7 @@ class PPChatOCREngine:
             pp_opt = PaddlePredictorOption()
             pp_opt.enable_new_ir = False
 
-            self._pipeline = create_pipeline(config=cfg, device="cpu", pp_option=pp_opt)
+            self._pipeline = create_pipeline(config=cfg, device=self.device, pp_option=pp_opt)
         return self._pipeline
 
     def visual_predict(self, image_path: Union[str, Path], use_cache: bool = True, max_side_limit: int = 1600) -> Dict[str, Any]:
