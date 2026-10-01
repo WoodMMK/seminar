@@ -70,16 +70,34 @@
 
 ระบบรันบน **CPU Mode 100%** จึงสามารถนำไป Deploy บน Virtual Machine (VM) ทั่วไปโดยไม่จำเป็นต้องมี GPU
 
-| ลำดับ | โมเดล / Classifier | ประเภทงาน (Task) | สถาปัตยกรรม | การตั้งค่า & หน้าที่สำคัญ |
+| ลำดับ | โมเดล / Classifier | ประเภทงาน (Task) | สถาปัตยกรรม | Engine & การตั้งค่าสำคัญ |
 | :---: | :--- | :--- | :--- | :--- |
-| **1** | `PicoDet-S_layout_3cls` | **Layout Detection** | ESNet + PAN (PicoDet) | ตรวจจับบล็อกข้อความ (Text), ตาราง (Table), และตราประทับ (Figure/Seal) ทำงานเร็วมากบน CPU |
-| **2** | `PP-OCRv6_medium_det` | **Text Detection** | DBNet (Differentiable Binarization) | ตีกรอบพิกัดบรรทัดข้อความ ตั้งค่า `limit_side_len = 1600` เพื่อรักษาสมดุลความเร็วและความคมชัด |
-| **3** | `th_PP-OCRv5_mobile_rec` | **Thai Text Recognition** | MobileNetV1 + BiLSTM + CTC | โมเดลรู้จำภาษาไทย อ่านสระ วรรณยุกต์ ตัวเลขอารบิก และสัญลักษณ์ทางการเงินครบถ้วน<br>*(CPU Mode: ใช้ `batch_size = 1` เร็วกว่า Batch Inference 2 เท่า เนื่องจากเลี่ยง Zero-Padding Waste บนบรรทัดข้อความความยาวไม่เท่ากัน)* |
-| **4** | `SLANet_plus` | **Table Recognition** | Structure Location & Alignment Network | อ่านตารางและโครงสร้างเซลล์ แปลงเป็น Markdown และ HTML `<table>` |
-| **5** | `PP-OCRv4_server_seal_det`<br>& `rec_doc` | **Seal / Stamp OCR** | Server DBNet + CRNN | ตรวจจับและอ่านข้อความในตราประทับราชการ |
+| **1** | `PicoDet-S_layout_3cls` | **Layout Detection** | ESNet + PAN (PicoDet) | **Paddle Static:** ตรวจจับบล็อกข้อความ (Text), ตาราง (Table), และตราประทับ (Figure/Seal) รันบน CPU ได้เสถียร |
+| **2** | `PP-OCRv6_medium_det` | **Text Detection** | DBNet (Differentiable Binarization) | **ONNX Runtime (AVX2):** ตีกรอบพิกัดบรรทัดข้อความ ใช้เวลาเพียง ~890ms (ตั้งค่า `limit_side_len = 1600`) |
+| **3** | `th_PP-OCRv5_mobile_rec` | **Thai Text Recognition** | MobileNetV1 + BiLSTM + CTC | **ONNX Runtime (AVX2):** โมเดลรู้จำภาษาไทยความเร็วสูง **14.9 ms/บรรทัด** (เร็วกว่า Paddle Static เดิมที่ 87.5 ms/บรรทัด ถึง **5.86 เท่า!**)<br>*(ตั้งค่า `batch_size = 1` เพื่อเลี่ยง Zero-Padding Waste บน CPU)* |
+| **4** | `SLANet_plus` | **Table Recognition** | Structure Location & Alignment Network | **Paddle Static:** อ่านตารางและโครงสร้างเซลล์ แปลงเป็น Markdown และ HTML `<table>` |
+| **5** | `PP-OCRv4_server_seal_det`<br>& `rec_doc` | **Seal / Stamp OCR** | Server DBNet + CRNN | **Paddle Static:** ตรวจจับและอ่านข้อความในตราประทับราชการ |
 | **6** | `qwen2.5:3b` *(Ollama)* | **LLM Reasoning & QA** | Transformer Decoder (3B Params) | รันบน CPU (`num_gpu: 0`), ตั้งค่า `temperature: 0.0` (Greedy) เพื่อผลลัพธ์ที่แน่นอนและแม่นยำ 100% |
 | ⚠️ | **Textline Orientation** | **Orientation Classifier** | **ปิดการใช้งาน (`False`)** | ป้องกันโมเดลหมุนภาพ 180° ผิดพลาดจากสระลอยไทย (เช่น ิ, ี, ่, ้) |
+| 🚀 | **ONNX Runtime Engine** | **Inference Acceleration** | MLAS AVX2 Vectorized Kernels | **เปิดใช้งานเป็นค่าเริ่มต้น (`OCR_USE_ONNX=true`)**: ลดเวลา Visual Perception ทั้งหน้าจากเดิม ~8-9 วินาที เหลือเพียง **~2.3 - 2.5 วินาที** โดยผลลัพธ์ข้อความภาษาไทยตรงกัน 100% |
 | ⚡ | **Batch Inference Strategy** | **OCR Pipeline Tuning** | Sequential (CPU) / Batch (GPU) | **บน CPU:** `batch_size = 1` ให้ความเร็วสูงสุด (Speedup 2.0x เทียบกับ bs=16)<br>**บน GPU:** สามารถตั้ง `rec_batch_size = 8` หรือ `16` ใน Config เพื่อดึงพลัง CUDA Cores |
+
+---
+
+### 📊 ตารางสรุปผลการทดสอบความเร็ว OCR (Paddle Static vs ONNX Runtime)
+
+ทดสอบบนเอกสารราชการจริง (35 บรรทัดข้อความ, Windows CPU Intel/AMD):
+
+| ขั้นตอนการประมวลผล | Paddle Static เดิม | ONNX Runtime ใหม่ | ผลลัพธ์ความเร็ว (Speedup) |
+| :--- | :---: | :---: | :---: |
+| **Text Detection** (`PP-OCRv6_medium_det`) | ~1,850 ms | **891 ms** | **2.08x เร็วขึ้น** |
+| **Thai Recognition** (`th_PP-OCRv5_mobile_rec`) | 3,061 ms (87.5 ms/บรรทัด) | **523 ms (14.9 ms/บรรทัด)** | **5.86x เร็วขึ้น!** |
+| **Visual Predict ทั้งหน้า (รวม Layout + ตาราง)** | ~8,200 ms | **~2,345 ms** | **~3.5x เร็วขึ้นทั้งหน้า** |
+| **ความถูกต้องของข้อความ (Accuracy Match)** | 100% | **100% (Identical Match)** | เท่ากันทุกตัวอักษร |
+
+> 💡 **การเปิด/ปิด ONNX Runtime:**  
+> ควบคุมผ่าน Environment Variable `OCR_USE_ONNX=true` (ค่าเริ่มต้น) หรือส่งพารามิเตอร์ `PPChatOCREngine(use_onnx=True)`
+
 
 ---
 

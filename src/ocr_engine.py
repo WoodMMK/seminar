@@ -101,8 +101,10 @@ class ThaiPerceptionEngine:
         rec_batch_size: int = 1,
         expand_box_top_ratio: float = 0.0,
         expand_box_bottom_ratio: float = 0.0,
+        use_onnx: Optional[bool] = None,
         device: str = "cpu"
     ):
+        import os
         self.rec_model_name = rec_model_name
         self.enable_mkldnn = enable_mkldnn
         self.use_doc_unwarping = use_doc_unwarping
@@ -114,6 +116,7 @@ class ThaiPerceptionEngine:
         self.rec_batch_size = rec_batch_size
         self.expand_box_top_ratio = expand_box_top_ratio
         self.expand_box_bottom_ratio = expand_box_bottom_ratio
+        self.use_onnx = os.getenv("OCR_USE_ONNX", "true").lower() in ("1", "true", "yes") if use_onnx is None else use_onnx
         self.device = device
         self._ocr = None
 
