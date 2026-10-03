@@ -212,6 +212,7 @@ DxDiag.txt
 ProjectProposal.pdf
 แผนการพัฒนาโมเดลจำแนกและสกัดข้อมูลเอกสาร.md
 แผน*.md
+datasets/
 
 # Test and runtime outputs
 tests/output/

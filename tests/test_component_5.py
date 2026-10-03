@@ -8,6 +8,7 @@ import sys
 from pathlib import Path
 import io
 import unittest
+from unittest.mock import patch
 from PIL import Image, ImageDraw
 from fastapi.testclient import TestClient
 
@@ -22,7 +23,8 @@ from src.schemas import (
     ValidationSeverity,
     FullPipelineResult,
     BenchmarkReport,
-    HealthCheckResponse
+    HealthCheckResponse,
+    TypeDirectedExtractionResult
 )
 
 
@@ -65,14 +67,32 @@ class TestComponent5(unittest.TestCase):
         self.assertIn("component_4_validator", health.components)
         self.assertEqual(health.components["component_4_validator"]["status"], "READY")
 
-    def test_pipeline_end_to_end_process(self):
+    @patch("src.llm_extractor.LLMExtractor.extract")
+    def test_pipeline_end_to_end_process(self, mock_extract):
         """Verify single-call pipeline execution with stage timing."""
+        mock_extract.return_value = TypeDirectedExtractionResult(
+            document_type="general_receipt",
+            document_type_name_th="ใบเสร็จรับเงินทั่วไป",
+            fields={
+                "merchant_name": "บริษัท ตัวอย่าง จำกัด",
+                "tax_id": "0105558098761",
+                "date": "15 มกราคม 2567",
+                "subtotal": 1000.0,
+                "vat_amount": 0.0,
+                "total_amount": 1000.0
+            },
+            raw_response="{}",
+            thinking_process="",
+            model_used="qwen2.5:3b",
+            latency_seconds=0.1,
+            is_mock=False
+        )
+
         pipeline = DocumentProcessingPipeline()
         result = pipeline.process(
             file_bytes=self.sample_bytes,
             filename="test_receipt.png",
             document_type=DocumentType.GENERAL_RECEIPT.value,
-            force_mock=True
         )
         
         self.assertIsInstance(result, FullPipelineResult)
@@ -150,14 +170,32 @@ class TestComponent5(unittest.TestCase):
         self.assertIn("math_report", data)
         self.assertTrue(data["math_report"]["is_balanced"])
 
-    def test_api_v1_extract_multipart(self):
+    @patch("src.llm_extractor.LLMExtractor.extract")
+    def test_api_v1_extract_multipart(self, mock_extract):
         """Test POST /api/v1/extract multipart file upload."""
+        mock_extract.return_value = TypeDirectedExtractionResult(
+            document_type="general_receipt",
+            document_type_name_th="ใบเสร็จรับเงินทั่วไป",
+            fields={
+                "merchant_name": "บริษัท ตัวอย่าง จำกัด",
+                "tax_id": "0105558098761",
+                "date": "15 มกราคม 2567",
+                "subtotal": 1000.0,
+                "vat_amount": 0.0,
+                "total_amount": 1000.0
+            },
+            raw_response="{}",
+            thinking_process="",
+            model_used="qwen2.5:3b",
+            latency_seconds=0.1,
+            is_mock=False
+        )
+
         files = {
             "file": ("sample_receipt.png", self.sample_bytes, "image/png")
         }
         data = {
             "document_type": "general_receipt",
-            "force_mock": "true",
             "temperature": "0.0"
         }
         
@@ -175,7 +213,6 @@ class TestComponent5(unittest.TestCase):
         """Test POST /api/v1/benchmark with snapshot mock baseline."""
         payload = {
             "document_type": "general_receipt",
-            "force_mock": True,
             "temperature": 0.0,
             "models": ["qwen2.5:3b"]
         }

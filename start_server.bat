@@ -1,6 +1,6 @@
 @echo off
 chcp 65001 > nul
-title Thai Financial Document OCR Server
+title Thai Financial Document OCR & Extraction Server
 
 echo ============================================================
 echo   Starting Thai Financial Document OCR & Extraction System
@@ -8,6 +8,26 @@ echo ============================================================
 echo.
 
 cd /d "%~dp0"
+
+:: 0. Hardware Acceleration & GPU Auto-Detection
+echo [Hardware Setup] Detecting GPU Acceleration...
+where nvidia-smi >nul 2>&1
+if %errorlevel% equ 0 (
+    for /f "tokens=*" %%g in ('nvidia-smi --query-gpu=name,memory.total --format=csv,noheader 2^>nul') do (
+        echo       [OK] NVIDIA GPU Detected: %%g
+    )
+    :: Configure Ollama and Inference Engines to utilize GPU
+    set OLLAMA_NUM_GPU=-1
+    set OLLAMA_FLASH_ATTENTION=1
+    set OCR_DEVICE=gpu
+    echo       [OK] GPU Acceleration Active (OLLAMA_NUM_GPU=-1, FlashAttention Enabled)
+) else (
+    echo       [INFO] No dedicated NVIDIA GPU tool (nvidia-smi) found in PATH.
+    echo       [INFO] Running in Adaptive Mode (OLLAMA_NUM_GPU=-1 auto-detects Metal/ROCm/Vulkan or falls back to CPU).
+    set OLLAMA_NUM_GPU=-1
+    set OCR_DEVICE=cpu
+)
+echo.
 
 :: 1. Check & Start PostgreSQL Docker Container
 echo [1/3] Checking PostgreSQL Docker container...
@@ -19,7 +39,7 @@ if "%DOCKER_RUNNING%"=="" (
     docker start expense-reimbursement-postgres > nul 2>&1
     if errorlevel 1 (
         echo       [!] Warning: Could not start Docker container 'expense-reimbursement-postgres'.
-        echo           Please make sure Docker Desktop is running.
+        echo           Please make sure Docker Desktop is running if you need database features.
     ) else (
         echo       [OK] Docker container started successfully.
     )
@@ -32,9 +52,15 @@ echo.
 echo [2/3] Checking Ollama Service (Port 11434)...
 netstat -ano | findstr :11434 > nul
 if errorlevel 1 (
-    echo       Ollama is not running. Starting Ollama in background...
+    echo       Ollama is not running. Starting Ollama with GPU acceleration...
+    where ollama >nul 2>&1
+    if errorlevel 1 (
+        if exist "%LOCALAPPDATA%\Programs\Ollama\ollama.exe" (
+            set "PATH=%LOCALAPPDATA%\Programs\Ollama;%PATH%"
+        )
+    )
     start "" ollama serve
-    timeout /t 3 /nobreak > nul
+    timeout /t 4 /nobreak > nul
     echo       [OK] Ollama started.
 ) else (
     echo       [OK] Ollama is already running.
@@ -54,6 +80,7 @@ echo.
 echo ============================================================
 echo   Server is running at: http://localhost:8000
 echo   Swagger API Docs at:  http://localhost:8000/docs
+echo   Ollama LLM Host at:   http://localhost:11434 (GPU: %OLLAMA_NUM_GPU%)
 echo   Press Ctrl + C in this window to stop the server.
 echo ============================================================
 echo.

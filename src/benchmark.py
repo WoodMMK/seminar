@@ -76,30 +76,33 @@ class ModelBenchmarker:
 
         results: List[ModelBenchmarkResult] = []
 
-        # 1. Baseline Benchmark: Snapshot Mock
+        # 1. Baseline Benchmark
         if include_mock_baseline:
             t0 = time.perf_counter()
-            mock_res = self.extractor.extract(
-                ocr_markdown=ocr_markdown,
-                document_type=document_type,
-                force_mock=True,
-            )
-            mock_val = self.validator.validate(mock_res)
-            latency = mock_res.latency_ms or round((time.perf_counter() - t0) * 1000, 2)
-
-            results.append(
-                ModelBenchmarkResult(
-                    model_name=f"{mock_res.model_used}",
-                    latency_ms=latency,
-                    is_mock=True,
-                    extracted_field_count=len(mock_res.fields or {}),
-                    validation_status=mock_val.status,
-                    is_valid=mock_val.is_valid,
-                    total_amount_extracted=mock_res.total_amount,
-                    math_balanced=mock_val.math_report.is_balanced if mock_val.math_report else False,
-                    has_thinking_trace=bool(mock_res.thinking_process),
+            try:
+                base_res = self.extractor.extract(
+                    ocr_markdown=ocr_markdown,
+                    document_type=document_type,
+                    model_name=self.extractor.default_model,
                 )
-            )
+                base_val = self.validator.validate(base_res)
+                latency = base_res.latency_ms or round((time.perf_counter() - t0) * 1000, 2)
+
+                results.append(
+                    ModelBenchmarkResult(
+                        model_name=f"{base_res.model_used} (Baseline)",
+                        latency_ms=latency,
+                        is_mock=False,
+                        extracted_field_count=len(base_res.fields or {}),
+                        validation_status=base_val.status,
+                        is_valid=base_val.is_valid,
+                        total_amount_extracted=base_res.total_amount,
+                        math_balanced=base_val.math_report.is_balanced if base_val.math_report else False,
+                        has_thinking_trace=bool(base_res.thinking_process),
+                    )
+                )
+            except Exception:
+                pass
 
         # 2. Live Local LLM Evaluation
         for model in test_models:

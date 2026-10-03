@@ -313,7 +313,6 @@ class BenchmarkRequest(BaseModel):
     document_type: str = Field(default="general_receipt", description="ประเภทเอกสารที่จะทดสอบ")
     models: List[str] = Field(default_factory=lambda: ["qwen2.5:3b"], description="รายชื่อโมเดลที่ต้องการเปรียบเทียบ")
     temperature: float = Field(default=0.0, description="อุณหภูมิที่ใช้ในการทดสอบ")
-    force_mock: bool = Field(default=False, description="บังคับใช้ Mock Snapshot เพื่อเปรียบเทียบความเร็วพื้นฐาน")
 
 
 class BenchmarkReport(BaseModel):

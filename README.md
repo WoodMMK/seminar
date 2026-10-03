@@ -19,10 +19,35 @@
 👉 **ดับเบิ้ลคลิกที่ไฟล์:** `start_server.bat`
 
 > **สิ่งที่ `start_server.bat` ทำให้อัตโนมัติ:**
-> 1. ตรวจสอบและสั่งเปิด **PostgreSQL Docker Container** (`expense-reimbursement-postgres`)
-> 2. ตรวจสอบและสั่งเปิด **Ollama Local LLM** (Port 11434 ในโหมด CPU)
-> 3. เปิด **FastAPI Headless Backend Server** ด้วย Python Environment ใน `.venv`
-> 4. เด้งเปิดหน้าเว็บเบราว์เซอร์ไปที่ **Swagger UI (`http://localhost:8000/docs`)** ให้อัตโนมัติ เพื่อทดสอบเรียก API ได้ทันที
+> 1. ตรวจจับการมีอยู่ของ **Hardware GPU (NVIDIA CUDA / ROCm / Metal)** และเปิดใช้งาน `OLLAMA_NUM_GPU=-1` พร้อม `FlashAttention` ให้อัตโนมัติ (หากไม่มี GPU จะสลับรันโหมด CPU ได้อย่างราบรื่น)
+> 2. ตรวจสอบและสั่งเปิด **PostgreSQL Docker Container** (`expense-reimbursement-postgres`)
+> 3. ตรวจสอบและสั่งเปิด **Ollama Local LLM** (Port 11434 พร้อมตั้งค่าโหลดขึ้น VRAM ของ GPU เต็มประสิทธิภาพ)
+> 4. เปิด **FastAPI Headless Backend Server** ด้วย Python Environment ใน `.venv`
+> 5. เด้งเปิดหน้าเว็บเบราว์เซอร์ไปที่ **Swagger UI (`http://localhost:8000/docs`)** ให้อัตโนมัติ เพื่อทดสอบเรียก API ได้ทันที
+
+---
+
+## ⚡ การประมวลผลผ่าน GPU (Hardware & GPU Acceleration)
+
+ระบบออกแบบมาให้ **Plug-and-Play สำหรับทุกคนในทีม**:
+* **เครื่องที่มี GPU (NVIDIA GeForce/RTX, AMD, Apple Silicon):**
+  เมื่อรัน `start_server.bat` หรือยิง API ระบบจะส่งพารามิเตอร์ `num_gpu: -1` ไปยัง Ollama ซึ่งเป็นการสั่งให้ **Offload เลเยอร์ทั้งหมดของโมเดล (100% Layers) ขึ้น VRAM ของ GPU** ทันที ทำให้ประมวลผลสกัดข้อมูลได้เร็วในระดับเสี้ยววินาที (< 1-2 วินาที)
+* **เครื่องที่ไม่มี GPU (CPU Only):**
+  Ollama และ ONNX Perception Engine จะตรวจจับและ Fallback กลับมาประมวลผลบน CPU อัตโนมัติ โดยไม่ต้องแก้ไขโค้ดหรือคอนฟิกใดๆ
+
+#### วิธีตรวจสอบว่าโมเดลกำลังรันบน GPU หรือไม่:
+เปิด Terminal และพิมพ์:
+```bash
+ollama ps
+```
+ผลลัพธ์จะแสดงคอลัมน์ `PROCESSOR` เช่น `100% GPU` (หรือ `100% CPU` หากเครื่องไม่มี GPU)
+
+#### การปรับแต่งตัวแปรสภาพแวดล้อม (Environment Variables):
+| ตัวแปร (Variable) | ค่าเริ่มต้น (Default) | คำอธิบาย |
+| :--- | :---: | :--- |
+| `OLLAMA_NUM_GPU` | `-1` | จำนวนเลเยอร์ที่ส่งไป GPU (`-1` = โหลดทุกเลเยอร์ขึ้น GPU ทั้งหมด, `0` = บังคับใช้เฉพาะ CPU) |
+| `OCR_DEVICE` | `cpu` / `gpu` | เลือกรันโมเดล OCR ด้วย CPU หรือ GPU |
+| `OCR_USE_ONNX` | `true` | เปิดใช้งาน ONNX Runtime สำหรับ Text Detection & Recognition ความเร็วสูง |
 
 ---
 
@@ -58,7 +83,7 @@ ollama serve
 | **ReDoc API Documentation** | [http://localhost:8000/redoc](http://localhost:8000/redoc) | เอกสาร API สเปก ReDoc ฉบับอ่านง่าย |
 | **API Root Status** | [http://localhost:8000](http://localhost:8000) | ข้อมูลสรุปสถานะบริการและรายการ Endpoints (JSON) |
 | **Health Check Probe** | [http://localhost:8000/health](http://localhost:8000/health) | Liveness Probe คืนค่า `{"status": "ok"}` |
-| **Local LLM (Ollama)** | `http://localhost:11434` | โมเดล Local `qwen2.5:3b` (CPU Mode, Privacy 100% On-Premises) |
+| **Local LLM (Ollama)** | `http://localhost:11434` | โมเดล Local `qwen2.5:3b` (Adaptive GPU/CPU Mode, Privacy 100% On-Premises) |
 | **PostgreSQL Database** | `localhost:5432` | ฐานข้อมูลชุดเรื่อง `expense_reimbursement_db` (User: `postgres`, Pass: `112233`) |
 
 ---

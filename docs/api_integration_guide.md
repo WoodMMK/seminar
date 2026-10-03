@@ -51,7 +51,8 @@
 │     - Seal Detection: PP-OCRv4_server_seal_det                         │
 │     - Orientation: Disabled (use_textline_orientation=False)           │
 │                                                                        │
-│  3. Type-Directed LLM Reasoning (Ollama: qwen2.5:3b @ CPU Mode)       │
+│  3. Type-Directed LLM Reasoning (Ollama: qwen2.5:3b @ GPU/CPU Adaptive)  │
+│     - Automatic GPU Acceleration (num_gpu: -1 offloads 100% layers to VRAM)    │
 │     - 10 Automated Document Templates & Targeted Prompts               │
 │     - Mathematical Cross-check (Subtotal + VAT = Total / Formula Check)│
 │                                                                        │
@@ -68,16 +69,16 @@
 
 ## 🤖 2. รายชื่อโมเดล AI และ Classifiers ที่ใช้ในระบบ
 
-ระบบรันบน **CPU Mode 100%** จึงสามารถนำไป Deploy บน Virtual Machine (VM) ทั่วไปโดยไม่จำเป็นต้องมี GPU
+ระบบรองรับสถาปัตยกรรม **Adaptive Hardware (GPU & CPU)**: หากเครื่องเซิร์ฟเวอร์มี GPU (NVIDIA CUDA, Apple Metal, หรือ AMD ROCm) ระบบจะดึง GPU มาเร่งความเร็วประมวลผล Local LLM และ OCR ให้อัตโนมัติทันที และหากไม่มี GPU ระบบจะ Fallback รันบน CPU ได้อย่างราบรื่นโดยไม่ต้องแก้โค้ด
 
 | ลำดับ | โมเดล / Classifier | ประเภทงาน (Task) | สถาปัตยกรรม | Engine & การตั้งค่าสำคัญ |
 | :---: | :--- | :--- | :--- | :--- |
-| **1** | `PicoDet-S_layout_3cls` | **Layout Detection** | ESNet + PAN (PicoDet) | **Paddle Static:** ตรวจจับบล็อกข้อความ (Text), ตาราง (Table), และตราประทับ (Figure/Seal) รันบน CPU ได้เสถียร |
-| **2** | `PP-OCRv6_medium_det` | **Text Detection** | DBNet (Differentiable Binarization) | **ONNX Runtime (AVX2):** ตีกรอบพิกัดบรรทัดข้อความ ใช้เวลาเพียง ~890ms (ตั้งค่า `limit_side_len = 1600`) |
-| **3** | `th_PP-OCRv5_mobile_rec` | **Thai Text Recognition** | MobileNetV1 + BiLSTM + CTC | **ONNX Runtime (AVX2):** โมเดลรู้จำภาษาไทยความเร็วสูง **14.9 ms/บรรทัด** (เร็วกว่า Paddle Static เดิมที่ 87.5 ms/บรรทัด ถึง **5.86 เท่า!**)<br>*(ตั้งค่า `batch_size = 1` เพื่อเลี่ยง Zero-Padding Waste บน CPU)* |
+| **1** | `PicoDet-S_layout_3cls` | **Layout Detection** | ESNet + PAN (PicoDet) | **Paddle Static / ONNX:** ตรวจจับบล็อกข้อความ (Text), ตาราง (Table), และตราประทับ (Figure/Seal) รันได้เสถียรทั้ง GPU และ CPU |
+| **2** | `PP-OCRv6_medium_det` | **Text Detection** | DBNet (Differentiable Binarization) | **ONNX Runtime (GPU/AVX2):** ตีกรอบพิกัดบรรทัดข้อความ ใช้เวลาเพียง ~200ms - 800ms (ตั้งค่า `limit_side_len = 1200`) |
+| **3** | `th_PP-OCRv5_mobile_rec` | **Thai Text Recognition** | MobileNetV1 + BiLSTM + CTC | **ONNX Runtime:** โมเดลรู้จำภาษาไทยความเร็วสูง **~14.9 ms/บรรทัด**<br>*(พร้อมระบบตรวจจับและลบจุดไข่ปลา `clean_dotted_lines_from_image` อัตโนมัติ เพื่อป้องกันจุดกวน Bounding Box)* |
 | **4** | `SLANet_plus` | **Table Recognition** | Structure Location & Alignment Network | **Paddle Static:** อ่านตารางและโครงสร้างเซลล์ แปลงเป็น Markdown และ HTML `<table>` |
 | **5** | `PP-OCRv4_server_seal_det`<br>& `rec_doc` | **Seal / Stamp OCR** | Server DBNet + CRNN | **Paddle Static:** ตรวจจับและอ่านข้อความในตราประทับราชการ |
-| **6** | `qwen2.5:3b` *(Ollama)* | **LLM Reasoning & QA** | Transformer Decoder (3B Params) | รันบน CPU (`num_gpu: 0`), ตั้งค่า `temperature: 0.0` (Greedy) เพื่อผลลัพธ์ที่แน่นอนและแม่นยำ 100% |
+| **6** | `qwen2.5:3b` *(Ollama)* | **LLM Reasoning & QA** | Transformer Decoder (3B Params) | **GPU Accelerated (`num_gpu: -1`):** โหลดทุก Layer ขึ้น GPU VRAM อัตโนมัติ (หรือสลับรัน CPU อัตโนมัติหากไม่มี GPU), ตั้งค่า `temperature: 0.0` (Greedy) เพื่อผลลัพธ์ที่แน่นอนและแม่นยำ 100% |
 | ⚠️ | **Textline Orientation** | **Orientation Classifier** | **ปิดการใช้งาน (`False`)** | ป้องกันโมเดลหมุนภาพ 180° ผิดพลาดจากสระลอยไทย (เช่น ิ, ี, ่, ้) |
 | 🚀 | **ONNX Runtime Engine** | **Inference Acceleration** | MLAS AVX2 Vectorized Kernels | **เปิดใช้งานเป็นค่าเริ่มต้น (`OCR_USE_ONNX=true`)**: ลดเวลา Visual Perception ทั้งหน้าจากเดิม ~8-9 วินาที เหลือเพียง **~2.3 - 2.5 วินาที** โดยผลลัพธ์ข้อความภาษาไทยตรงกัน 100% |
 | ⚡ | **Batch Inference Strategy** | **OCR Pipeline Tuning** | Sequential (CPU) / Batch (GPU) | **บน CPU:** `batch_size = 1` ให้ความเร็วสูงสุด (Speedup 2.0x เทียบกับ bs=16)<br>**บน GPU:** สามารถตั้ง `rec_batch_size = 8` หรือ `16` ใน Config เพื่อดึงพลัง CUDA Cores |

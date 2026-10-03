@@ -34,22 +34,22 @@ PROMPT_CONFIGS: Dict[str, Dict[str, Any]] = {
         "instructions": (
             "คุณกำลังวิเคราะห์เนื้อหา OCR ของ 'เอกสารขออนุมัติหลักการ' สำหรับการใช้จ่ายงบประมาณ\n"
             "กรุณาสกัดข้อมูลเฉพาะเจาะจงดังต่อไปนี้:\n"
-            "1. doc_no: เลขที่เอกสาร (เช่น อว 78.03/1234)\n"
-            "2. doc_date: วันที่ทำเอกสาร\n"
-            "3. title: เรื่อง (เช่น ขออนุมัติจัดโครงการ...)\n"
-            "4. requester: ผู้ทำการเบิก (ระบุชื่อบุคคล หรือชื่อภาควิชา/งาน)\n"
+            "1. doc_no: เลขที่เอกสาร (เช่น อว 78.03/1234 หรือ ไม่มีระบุในเอกสาร)\n"
+            "2. doc_date: วันที่ทำเอกสาร (หรือ ไม่มีระบุในเอกสาร)\n"
+            "3. title: เรื่อง (เช่น ขออนุมัติจัดโครงการ... หรือ ไม่มีระบุในเอกสาร)\n"
+            "4. requester: ผู้ขออนุมัติหลักการ (ระบุชื่อบุคคล หรือชื่อภาควิชา/หน่วยงาน หรือ ไม่มีระบุในเอกสาร)\n"
             "5. expense_items: รายละเอียดค่าใช้จ่าย (เบิกอะไรบ้าง และเท่าไหร่บ้าง) เป็น List ของ {item_no, description, quantity, unit, unit_price, total_price}\n"
-            "6. total_amount: ยอดรวมเงินงบประมาณที่ขออนุมัติ (ตัวเลข Float)"
+            "6. total_amount: ยอดรวมเงินงบประมาณที่ขออนุมัติ (ตัวเลข Float หรือ null หากไม่มีระบุ)"
         ),
         "json_schema": {
-            "doc_no": "เลขที่เอกสาร",
-            "doc_date": "วันที่ทำเอกสาร",
-            "title": "เรื่อง",
-            "requester": "ผู้ทำการเบิก (บุคคล หรือ ภาควิชา)",
+            "doc_no": "<เลขที่เอกสารจริงจากข้อความ OCR หรือ ไม่มีระบุในเอกสาร>",
+            "doc_date": "<วันที่ทำเอกสารจากข้อความ OCR หรือ ไม่มีระบุในเอกสาร>",
+            "title": "<เรื่อง หรือ ไม่มีระบุในเอกสาร>",
+            "requester": "<ผู้ขออนุมัติหลักการ หรือ ไม่มีระบุในเอกสาร>",
             "expense_items": [
-                {"item_no": 1, "description": "ชื่อรายการค่าใช้จ่าย", "quantity": 1.0, "unit": "ชุด", "unit_price": 1000.0, "total_price": 1000.0}
+                {"item_no": 1, "description": "<รายการค่าใช้จ่าย>", "quantity": 1.0, "unit": "<หน่วยนับ>", "unit_price": 0.0, "total_price": 0.0}
             ],
-            "total_amount": 1000.0
+            "total_amount": 0.0
         }
     },
     DocumentType.PRINCIPLE_APPROVAL_GRANTED.value: {
@@ -57,16 +57,16 @@ PROMPT_CONFIGS: Dict[str, Dict[str, Any]] = {
         "instructions": (
             "คุณกำลังวิเคราะห์เนื้อหา OCR ของ 'เอกสารอนุมัติหลักการ'\n"
             "กรุณาสกัดข้อมูลเฉพาะเจาะจงดังต่อไปนี้:\n"
-            "1. ref_doc_no: ตามหนังสือขออนุมัติหลักการเลขที่ (ถ้ามีระบุ)\n"
+            "1. ref_doc_no: ตามหนังสือขออนุมัติหลักการเลขที่ (ถ้ามีระบุ หรือ ไม่มีระบุในเอกสาร)\n"
             "2. approval_items: รายละเอียดการอนุมัติ (อนุมัติรายการใดบ้าง และเท่าไหร่บ้าง)\n"
-            "3. total_approved_amount: ยอดรวมเงินที่ได้รับการอนุมัติ (ตัวเลข Float)"
+            "3. total_approved_amount: ยอดรวมเงินที่ได้รับการอนุมัติ (ตัวเลข Float หรือ null หากไม่มีระบุ)"
         ),
         "json_schema": {
-            "ref_doc_no": "เลขที่หนังสือเดิมที่อ้างถึง",
+            "ref_doc_no": "<เลขที่หนังสือเดิมที่อ้างถึง หรือ ไม่มีระบุในเอกสาร>",
             "approval_items": [
-                {"item_no": 1, "description": "รายการที่อนุมัติ", "quantity": 1.0, "unit": "รายการ", "unit_price": 5000.0, "total_price": 5000.0}
+                {"item_no": 1, "description": "<รายการที่อนุมัติ>", "quantity": 1.0, "unit": "<หน่วยนับ>", "unit_price": 0.0, "total_price": 0.0}
             ],
-            "total_approved_amount": 5000.0
+            "total_approved_amount": 0.0
         }
     },
     DocumentType.DISBURSEMENT_APPROVAL_REQUEST.value: {
@@ -74,45 +74,45 @@ PROMPT_CONFIGS: Dict[str, Dict[str, Any]] = {
         "instructions": (
             "คุณกำลังวิเคราะห์เนื้อหา OCR ของบันทึกข้อความ 'ขออนุมัติเบิกจ่าย'\n"
             "กรุณาสกัดข้อมูลเฉพาะเจาะจงดังต่อไปนี้:\n"
-            "1. doc_no: เลขที่เอกสาร\n"
-            "2. doc_date: วันที่ทำเอกสาร\n"
-            "3. title: เรื่อง\n"
+            "1. doc_no: เลขที่เอกสาร (เช่น ที่ อว 78.101/20290 หรือ ไม่มีระบุในเอกสาร)\n"
+            "2. doc_date: วันที่ทำเอกสาร (หรือ ไม่มีระบุในเอกสาร)\n"
+            "3. title: เรื่อง (หรือ ไม่มีระบุในเอกสาร)\n"
             "4. expense_items: รายละเอียดค่าใช้จ่าย (เบิกอะไรบ้าง และเท่าไหร่บ้าง)\n"
-            "5. total_amount: ยอดรวม\n"
-            "6. disbursement_type: ประเภทของการเบิกจ่าย (ระบุเป็น 'เงินสดย่อย' หรือ 'ทดรองจ่าย')"
+            "5. total_amount: ยอดรวมเงินที่ขออนุมัติเบิกจ่าย (ตัวเลข Float หรือ null หากไม่มีระบุ)\n"
+            "6. disbursement_type: ประเภทของการเบิกจ่าย (ระบุเป็น 'เงินสดย่อย' หรือ 'ทดรองจ่าย' หรือ ไม่มีระบุในเอกสาร)"
         ),
         "json_schema": {
-            "doc_no": "เลขที่เอกสาร",
-            "doc_date": "วันที่ทำเอกสาร",
-            "title": "เรื่อง",
+            "doc_no": "<เลขที่เอกสารจริงจากข้อความ OCR หรือ ไม่มีระบุในเอกสาร>",
+            "doc_date": "<วันที่ทำเอกสารจากข้อความ OCR หรือ ไม่มีระบุในเอกสาร>",
+            "title": "<เรื่อง หรือ ไม่มีระบุในเอกสาร>",
             "expense_items": [
-                {"item_no": 1, "description": "รายการเบิกจ่าย", "quantity": 1.0, "unit": "รายการ", "unit_price": 2500.0, "total_price": 2500.0}
+                {"item_no": 1, "description": "<รายการเบิกจ่าย>", "quantity": 1.0, "unit": "<หน่วยนับ>", "unit_price": 0.0, "total_price": 0.0}
             ],
-            "total_amount": 2500.0,
-            "disbursement_type": "เงินสดย่อย หรือ ทดรองจ่าย"
+            "total_amount": 0.0,
+            "disbursement_type": "<เงินสดย่อย หรือ ทดรองจ่าย หรือ ไม่มีระบุในเอกสาร>"
         }
     },
     DocumentType.ADVANCE_PAYMENT_REQUEST_1.value: {
-        "title": "4. แบบเบิกเงินทดรองจ่าย (แบบที่ 1)",
+        "title": "4. แบบเบิกเงินทดรองจ่าย (แบบที่ 1 - สัญญายืมเงิน/เบิก)",
         "instructions": (
             "คุณกำลังวิเคราะห์เนื้อหา OCR ของ 'แบบเบิกเงินทดรองจ่าย (แบบที่ 1)'\n"
             "กรุณาสกัดข้อมูลเฉพาะเจาะจงดังต่อไปนี้:\n"
-            "1. doc_no: เลขที่เอกสาร\n"
-            "2. requester: ใครเป็นคนเบิก (ชื่อ-นามสกุล, ตำแหน่ง)\n"
-            "3. total_amount: ยอดรวม\n"
-            "4. ref_doc_no: ตามหนังสืออนุมัติเบิกจ่าย เลขที่อะไร\n"
+            "1. doc_no: เลขที่เอกสาร (เช่น จปม เลขที่ B262/2568 หรือ ไม่มีระบุในเอกสาร)\n"
+            "2. requester: ใครเป็นคนเบิก (ชื่อ-นามสกุล, ตำแหน่ง ของผู้ขอเบิกเงิน ห้ามตอบชื่อหัวหน้าภาควิชาหรือผู้ตรวจรับ)\n"
+            "3. total_amount: ยอดรวมเงินทดรองจ่ายที่ขอเบิก (ตัวเลข Float เช่น 2100.0 ห้ามตอบ null หากมีตัวเลขในเอกสาร)\n"
+            "4. ref_doc_no: ตามหนังสืออนุมัติเบิกจ่าย เลขที่อะไร (เช่น อว 78.101/20290)\n"
             "5. expense_items: รายละเอียดตามประเภทค่าใช้จ่าย\n"
-            "6. transfer_destination: โอนเงินไปที่ใด (ชื่อธนาคาร, เลขที่บัญชี หรือชื่อบัญชีผู้รับโอน)"
+            "6. transfer_destination: โอนเงินไปที่ใด (ชื่อธนาคาร, เลขที่บัญชี, ชื่อบัญชีผู้รับโอน)"
         ),
         "json_schema": {
-            "doc_no": "เลขที่เอกสาร",
-            "requester": "ชื่อผู้เบิก",
-            "total_amount": 12000.0,
-            "ref_doc_no": "ตามหนังสืออนุมัติเบิกจ่าย เลขที่...",
+            "doc_no": "<เลขที่เอกสารจริงจากข้อความ OCR เช่น B262/2568 หรือ ไม่มีระบุในเอกสาร>",
+            "requester": "<ชื่อ-นามสกุลของผู้ขอเบิกเงินจริงจากเอกสาร หรือ ไม่มีระบุในเอกสาร>",
+            "total_amount": 0.0,
+            "ref_doc_no": "<เลขที่หนังสืออนุมัติที่อ้างอิงถึง หรือ ไม่มีระบุในเอกสาร>",
             "expense_items": [
-                {"item_no": 1, "description": "ค่าใช้จ่ายย่อย", "quantity": 1.0, "unit": "งาน", "unit_price": 12000.0, "total_price": 12000.0}
+                {"item_no": 1, "description": "<รายละเอียดค่าใช้จ่าย>", "quantity": 1.0, "unit": "<หน่วยนับ>", "unit_price": 0.0, "total_price": 0.0}
             ],
-            "transfer_destination": "ธนาคาร... เลขที่บัญชี..."
+            "transfer_destination": "<ธนาคาร เลขที่บัญชี ชื่อบัญชี หรือ ไม่มีระบุในเอกสาร>"
         }
     },
     DocumentType.ADVANCE_PAYMENT_REQUEST_2.value: {
@@ -121,25 +121,25 @@ PROMPT_CONFIGS: Dict[str, Dict[str, Any]] = {
             "คุณกำลังวิเคราะห์เนื้อหา OCR ของ 'แบบเบิกเงินทดรองจ่าย (แบบที่ 2)'\n"
             "กรุณาสกัดข้อมูลเฉพาะเจาะจงดังต่อไปนี้:\n"
             "1. doc_no: เลขที่เอกสาร\n"
-            "2. submission_date: วันที่ส่งเอกสาร\n"
-            "3. claim_date: วันที่ขอรับเงิน\n"
-            "4. requester: ใครเป็นคนเบิก\n"
-            "5. total_amount: ยอดรวม\n"
-            "6. ref_doc_no: ตามหนังสืออนุมัติหลักการ เลขที่อะไร\n"
+            "2. submission_date: วันที่ส่งเอกสาร (หรือ ไม่มีระบุในเอกสาร)\n"
+            "3. claim_date: วันที่ขอรับเงิน (หรือ ไม่มีระบุในเอกสาร)\n"
+            "4. requester: ใครเป็นคนเบิก (ชื่อผู้ขอรับเงิน)\n"
+            "5. total_amount: ยอดรวมเงิน (ตัวเลข Float)\n"
+            "6. ref_doc_no: ตามหนังสืออนุมัติหลักการ เลขที่อะไร (หรือ ไม่มีระบุในเอกสาร)\n"
             "7. expense_items: รายละเอียดค่าใช้จ่าย\n"
-            "8. transfer_destination: โอนเงินไปที่ใด"
+            "8. transfer_destination: โอนเงินไปที่ใด (หรือ ไม่มีระบุในเอกสาร)"
         ),
         "json_schema": {
-            "doc_no": "เลขที่เอกสาร",
-            "submission_date": "วันที่ส่งเอกสาร",
-            "claim_date": "วันที่ขอรับเงิน",
-            "requester": "ชื่อผู้เบิก",
-            "total_amount": 8500.0,
-            "ref_doc_no": "ตามหนังสืออนุมัติหลักการ เลขที่...",
+            "doc_no": "<เลขที่เอกสารจริงจากข้อความ OCR หรือ ไม่มีระบุในเอกสาร>",
+            "submission_date": "<วันที่ส่งเอกสาร หรือ ไม่มีระบุในเอกสาร>",
+            "claim_date": "<วันที่ขอรับเงิน หรือ ไม่มีระบุในเอกสาร>",
+            "requester": "<ชื่อผู้เบิกจริงจากเอกสาร หรือ ไม่มีระบุในเอกสาร>",
+            "total_amount": 0.0,
+            "ref_doc_no": "<เลขที่หนังสืออ้างอิง หรือ ไม่มีระบุในเอกสาร>",
             "expense_items": [
-                {"item_no": 1, "description": "รายการ", "quantity": 1.0, "unit": "ครั้ง", "unit_price": 8500.0, "total_price": 8500.0}
+                {"item_no": 1, "description": "<รายการค่าใช้จ่าย>", "quantity": 1.0, "unit": "<หน่วยนับ>", "unit_price": 0.0, "total_price": 0.0}
             ],
-            "transfer_destination": "บัญชีธนาคาร..."
+            "transfer_destination": "<บัญชีธนาคาร หรือ ไม่มีระบุในเอกสาร>"
         }
     },
     DocumentType.RECEIPT_SUBSTITUTE.value: {
@@ -147,18 +147,18 @@ PROMPT_CONFIGS: Dict[str, Dict[str, Any]] = {
         "instructions": (
             "คุณกำลังวิเคราะห์เนื้อหา OCR ของ 'ใบแทนใบเสร็จ' หรือ 'ใบสำคัญรับเงิน'\n"
             "กรุณาสกัดข้อมูลเฉพาะเจาะจงดังต่อไปนี้:\n"
-            "1. doc_date: วัน/เดือน/ปี ที่จ่ายเงิน\n"
+            "1. doc_date: วัน/เดือน/ปี ที่จ่ายเงิน (หรือ ไม่มีระบุในเอกสาร)\n"
             "2. expense_items: รายละเอียดของรายการการเบิก (สินค้า/บริการ และยอดเงิน)\n"
-            "3. total_amount: ยอดรวม\n"
-            "4. payer: ผู้จ่ายเงิน (หรือผู้รับรองการจ่าย)"
+            "3. total_amount: ยอดรวม (ตัวเลข Float)\n"
+            "4. payer: ผู้จ่ายเงิน (หรือผู้รับรองการจ่าย หรือ ไม่มีระบุในเอกสาร)"
         ),
         "json_schema": {
-            "doc_date": "วัน/เดือน/ปี",
+            "doc_date": "<วัน/เดือน/ปี หรือ ไม่มีระบุในเอกสาร>",
             "expense_items": [
-                {"item_no": 1, "description": "ค่าจ้างเหมา...", "quantity": 1.0, "unit": "ครั้ง", "unit_price": 1500.0, "total_price": 1500.0}
+                {"item_no": 1, "description": "<รายการค่าใช้จ่าย>", "quantity": 1.0, "unit": "<หน่วยนับ>", "unit_price": 0.0, "total_price": 0.0}
             ],
-            "total_amount": 1500.0,
-            "payer": "ชื่อผู้จ่ายเงิน"
+            "total_amount": 0.0,
+            "payer": "<ชื่อผู้จ่ายเงิน หรือ ไม่มีระบุในเอกสาร>"
         }
     },
     DocumentType.PARCEL_INSPECTION.value: {
@@ -166,16 +166,16 @@ PROMPT_CONFIGS: Dict[str, Dict[str, Any]] = {
         "instructions": (
             "คุณกำลังวิเคราะห์เนื้อหา OCR ของ 'ใบตรวจรับพัสดุ'\n"
             "กรุณาสกัดข้อมูลเฉพาะเจาะจงดังต่อไปนี้:\n"
-            "1. doc_no: เลขที่เอกสาร (เช่น บพ. ...)\n"
+            "1. doc_no: เลขที่เอกสาร (เช่น บพ. ... หรือ ไม่มีระบุในเอกสาร)\n"
             "2. inspectors: ผู้ตรวจรับพัสดุ (ระบุรายชื่อคณะกรรมการตรวจรับพัสดุ หรือผู้ตรวจรับ)\n"
-            "3. inspection_date: วันที่ตรวจรับพัสดุ\n"
-            "4. ref_doc_no: ตามใบสั่งซื้อ/สัญญาเลขที่ (ถ้ามี)"
+            "3. inspection_date: วันที่ตรวจรับพัสดุ (หรือ ไม่มีระบุในเอกสาร)\n"
+            "4. ref_doc_no: ตามใบสั่งซื้อ/สัญญาเลขที่ (ถ้ามี หรือ ไม่มีระบุในเอกสาร)"
         ),
         "json_schema": {
-            "doc_no": "เลขที่เอกสาร",
-            "inspectors": "ชื่อคณะกรรมการหรือผู้ตรวจรับพัสดุ",
-            "inspection_date": "วันที่ตรวจรับ",
-            "ref_doc_no": "เลขที่ใบสั่งซื้อหรือสัญญา"
+            "doc_no": "<เลขที่เอกสารจริง หรือ ไม่มีระบุในเอกสาร>",
+            "inspectors": "<ชื่อคณะกรรมการหรือผู้ตรวจรับพัสดุ หรือ ไม่มีระบุในเอกสาร>",
+            "inspection_date": "<วันที่ตรวจรับ หรือ ไม่มีระบุในเอกสาร>",
+            "ref_doc_no": "<เลขที่ใบสั่งซื้อหรือสัญญา หรือ ไม่มีระบุในเอกสาร>"
         }
     },
     DocumentType.PROCUREMENT_APPROVAL_REQUEST.value: {
@@ -183,24 +183,24 @@ PROMPT_CONFIGS: Dict[str, Dict[str, Any]] = {
         "instructions": (
             "คุณกำลังวิเคราะห์เนื้อหา OCR ของบันทึก 'ขออนุมัติจัดหาพัสดุ'\n"
             "กรุณาสกัดข้อมูลเฉพาะเจาะจงดังต่อไปนี้:\n"
-            "1. doc_no: เลขที่เอกสาร\n"
-            "2. doc_date: วันที่ทำเอกสาร\n"
-            "3. title: เรื่อง (เช่น ขออนุมัติจัดซื้อครุภัณฑ์...)\n"
-            "4. procurement_reason: เหตุผลความจำเป็นที่ต้องจัดหา\n"
+            "1. doc_no: เลขที่เอกสาร (หรือ ไม่มีระบุในเอกสาร)\n"
+            "2. doc_date: วันที่ทำเอกสาร (หรือ ไม่มีระบุในเอกสาร)\n"
+            "3. title: เรื่อง (หรือ ไม่มีระบุในเอกสาร)\n"
+            "4. procurement_reason: เหตุผลความจำเป็นที่ต้องจัดหา (หรือ ไม่มีระบุในเอกสาร)\n"
             "5. item_details: รายละเอียดของพัสดุ (รายการ, จำนวน, หน่วย, ราคาประมาณการ)\n"
             "6. total_budget: วงเงินงบประมาณที่ใช้ทั้งหมด (ตัวเลข Float)\n"
-            "7. required_date: เวลาที่ต้องใช้พัสดุ (เช่น ภายใน 30 วัน, ภายในวันที่...)"
+            "7. required_date: เวลาที่ต้องใช้พัสดุ (หรือ ไม่มีระบุในเอกสาร)"
         ),
         "json_schema": {
-            "doc_no": "เลขที่เอกสาร",
-            "doc_date": "วันที่ทำเอกสาร",
-            "title": "เรื่อง",
-            "procurement_reason": "เหตุผลที่ต้องจัดหา",
+            "doc_no": "<เลขที่เอกสารจริง หรือ ไม่มีระบุในเอกสาร>",
+            "doc_date": "<วันที่ทำเอกสาร หรือ ไม่มีระบุในเอกสาร>",
+            "title": "<เรื่อง หรือ ไม่มีระบุในเอกสาร>",
+            "procurement_reason": "<เหตุผลที่ต้องจัดหา หรือ ไม่มีระบุในเอกสาร>",
             "item_details": [
-                {"item_no": 1, "description": "ชื่อรายการพัสดุ", "quantity": 1.0, "unit": "เครื่อง", "unit_price": 35000.0, "total_price": 35000.0}
+                {"item_no": 1, "description": "<ชื่อรายการพัสดุ>", "quantity": 1.0, "unit": "<หน่วยนับ>", "unit_price": 0.0, "total_price": 0.0}
             ],
-            "total_budget": 35000.0,
-            "required_date": "เวลาที่ต้องใช้พัสดุ"
+            "total_budget": 0.0,
+            "required_date": "<เวลาที่ต้องใช้พัสดุ หรือ ไม่มีระบุในเอกสาร>"
         }
     },
     DocumentType.PROCUREMENT_ATTACHMENT.value: {
@@ -208,16 +208,16 @@ PROMPT_CONFIGS: Dict[str, Dict[str, Any]] = {
         "instructions": (
             "คุณกำลังวิเคราะห์เนื้อหา OCR ของ 'เอกสารประกอบการขออนุมัติจัดหา'\n"
             "กรุณาสกัดข้อมูลเฉพาะเจาะจงดังต่อไปนี้:\n"
-            "1. ref_memo_no: แนบท้ายบันทึกเอกสารเลขอะไร (เช่น แนบท้ายบันทึกข้อความ ที่ อว ...)\n"
+            "1. ref_memo_no: แนบท้ายบันทึกเอกสารเลขอะไร (เช่น แนบท้ายบันทึกข้อความ ที่ อว ... หรือ ไม่มีระบุในเอกสาร)\n"
             "2. expense_items: รายละเอียดพัสดุ/รายการตารางเปรียบเทียบราคา\n"
-            "3. total_amount: ยอดรวม (ตัวเลข Float)"
+            "3. total_amount: ยอดรวม (ตัวเลข Float หรือ null หากไม่มีระบุ)"
         ),
         "json_schema": {
-            "ref_memo_no": "แนบท้ายบันทึกเอกสารเลขที่...",
+            "ref_memo_no": "<แนบท้ายบันทึกเอกสารเลขที่... หรือ ไม่มีระบุในเอกสาร>",
             "expense_items": [
-                {"item_no": 1, "description": "รายการพัสดุ", "quantity": 1.0, "unit": "ชุด", "unit_price": 4500.0, "total_price": 4500.0}
+                {"item_no": 1, "description": "<รายการพัสดุ>", "quantity": 1.0, "unit": "<หน่วยนับ>", "unit_price": 0.0, "total_price": 0.0}
             ],
-            "total_amount": 4500.0
+            "total_amount": 0.0
         }
     },
     DocumentType.GENERAL_RECEIPT.value: {
@@ -225,79 +225,97 @@ PROMPT_CONFIGS: Dict[str, Dict[str, Any]] = {
         "instructions": (
             "คุณกำลังวิเคราะห์เนื้อหา OCR ของ 'ใบเสร็จรับเงิน / ใบกำกับภาษี / บิลเงินสด / ใบสั่งซื้อ'\n"
             "กรุณาสกัดข้อมูลเฉพาะเจาะจงดังต่อไปนี้ โดยยึดข้อมูลตามที่ปรากฏในเอกสาร 100%:\n"
-            "1. vendor_name: ชื่อร้านค้า บริษัท หรือแบรนด์ผู้ขาย (ต้องเป็นชื่อเฉพาะของร้าน เช่น 'Pimploen\'s Shop' ห้ามตอบคำที่เป็นเพียงหัวข้อกำกับ เช่น 'ร้านค้าผู้ให้บริการ', 'ข้อมูลร้านค้า', 'ผู้ขาย')\n"
+            "1. vendor_name: ชื่อร้านค้า บริษัท หรือแบรนด์ผู้ขายจริง (ห้ามตอบคำที่เป็นเพียงหัวข้อกำกับ เช่น 'ร้านค้าผู้ให้บริการ', 'ผู้ขาย')\n"
             "2. vendor_tax_id: เลขประจำตัวผู้เสียภาษี 13 หลักของผู้ขาย (หากไม่มีให้ใส่ 'ไม่มีระบุในเอกสาร')\n"
             "3. vendor_branch: สาขา (หากไม่มีให้ใส่ 'ไม่มีระบุในเอกสาร')\n"
             "4. vendor_address: ที่อยู่ร้านค้า (หากไม่มีให้ใส่ 'ไม่มีระบุในเอกสาร')\n"
-            "5. customer_name: ชื่อผู้ซื้อหรือชื่อลูกค้าที่พิมพ์ปรากฏบนเอกสาร (ต้องดึงชื่อบุคคลหรือลูกค้าจริง เช่น 'น้องพาเพลิน' ห้ามตอบคำที่เป็นเพียงหัวข้อกำกับ เช่น 'รายละเอียดลูกค้า', 'รายละเอียดลูกค้าคนสำคัญ', 'ข้อมูลผู้ซื้อ' หากไม่มีให้ใส่ 'ไม่มีระบุในเอกสาร')\n"
+            "5. customer_name: ชื่อผู้ซื้อหรือชื่อลูกค้าจริง (ห้ามตอบคำที่เป็นเพียงหัวข้อกำกับ เช่น 'รายละเอียดลูกค้าคนสำคัญ')\n"
             "6. customer_tax_id: เลขประจำตัวผู้เสียภาษีของผู้ซื้อ (หากไม่มีให้ใส่ 'ไม่มีระบุในเอกสาร')\n"
-            "7. invoice_no: เลขที่ใบเสร็จ เลขที่บิล หรือเลขที่เอกสาร\n"
-            "8. doc_date: วันที่บนเอกสาร\n"
-            "9. line_items: รายการสินค้า/บริการ ทั้งหมด [item_no, description, quantity, unit, unit_price, total_price] รวมถึงค่าจัดส่งหรือส่วนลด (ถ้ามีระบุในบิล)\n"
-            "10. subtotal: ยอดรวมราคาสินค้าก่อนหักส่วนลดหรือก่อนภาษี (เช่น 'ทั้งหมด', 'รวมเป็นเงิน') หากไม่มีให้ใส่ null\n"
+            "7. invoice_no: เลขที่ใบเสร็จ เลขที่บิล หรือเลขที่เอกสาร (หากไม่มีให้ใส่ 'ไม่มีระบุในเอกสาร')\n"
+            "8. doc_date: วันที่บนเอกสาร (หากไม่มีให้ใส่ 'ไม่มีระบุในเอกสาร')\n"
+            "9. line_items: รายการสินค้า/บริการ ทั้งหมด [item_no, description, quantity, unit, unit_price, total_price]\n"
+            "10. subtotal: ยอดรวมราคาสินค้าก่อนหักส่วนลดหรือก่อนภาษี (ตัวเลข float หรือ null หากไม่มีระบุ)\n"
             "11. vat: ยอดภาษีมูลค่าเพิ่ม (สกัดเฉพาะเมื่อเอกสารมีพิมพ์ระบุคำว่า 'ภาษีมูลค่าเพิ่ม' หรือ 'VAT' เท่านั้น หากไม่มีการกล่าวถึงภาษีในเอกสาร ให้ใส่เป็น null โดยเด็ดขาด ห้ามคำนวณ 7% เอง)\n"
-            "12. total_amount: ยอดเงินรวมสุทธิที่ต้องชำระจริงตามที่ระบุบนเอกสาร (เช่น 'รวมราคาสุทธิ', 'ยอดชำระ', 'รวมทั้งสิ้น') ให้ดึงตัวเลขจากเอกสารโดยตรง ห้ามบวกเลขภาษีเพิ่มเอง"
+            "12. total_amount: ยอดเงินรวมสุทธิที่ต้องชำระจริงตามที่ระบุบนเอกสาร (ตัวเลข float หรือ null หากไม่มีระบุ)"
         ),
         "json_schema": {
-            "vendor_name": "ชื่อร้านค้าจริง (ห้ามตอบคำว่า ร้านค้าผู้ให้บริการ)",
+            "vendor_name": "<ชื่อร้านค้าจริง หรือ ไม่มีระบุในเอกสาร>",
             "vendor_tax_id": "ไม่มีระบุในเอกสาร",
             "vendor_branch": "ไม่มีระบุในเอกสาร",
             "vendor_address": "ไม่มีระบุในเอกสาร",
-            "customer_name": "ชื่อลูกค้าจริง (ห้ามตอบคำว่า รายละเอียดลูกค้าคนสำคัญ)",
+            "customer_name": "<ชื่อลูกค้าจริง หรือ ไม่มีระบุในเอกสาร>",
             "customer_tax_id": "ไม่มีระบุในเอกสาร",
-            "invoice_no": "เลขที่เอกสาร",
-            "doc_date": "วันที่",
+            "invoice_no": "<เลขที่เอกสาร หรือ ไม่มีระบุในเอกสาร>",
+            "doc_date": "<วันที่ หรือ ไม่มีระบุในเอกสาร>",
             "line_items": [
-                {"item_no": 1, "description": "ชื่อรายการสินค้าหรือบริการ", "quantity": 1.0, "unit": "ชิ้น", "unit_price": 490.0, "total_price": 490.0}
+                {"item_no": 1, "description": "<ชื่อรายการสินค้าหรือบริการ>", "quantity": 1.0, "unit": "<หน่วยนับ>", "unit_price": 0.0, "total_price": 0.0}
             ],
-            "subtotal": 490.0,
+            "subtotal": 0.0,
             "vat": None,
-            "total_amount": 570.0
+            "total_amount": 0.0
         }
     }
 }
 
 
+DATA_EXTRACTOR_BASE_TEMPLATE = """# SYSTEM PROMPT: Enterprise-Grade Financial & Official Document Data Extractor
+
+## PART 1: CORE OPERATING DIRECTIVES & GENERAL DATA EXTRACTION STANDARDS
+You are an expert, deterministic Information Extraction Engine specialized in Thai official government memos, university financial workflows, reimbursement forms, and tax receipts.
+Your objective is to extract structured JSON data from OCR-transcribed document text with maximum precision, strict zero-hallucination compliance, and robust tolerance to optical scanning imperfections.
+
+### 1. STRICT ZERO-HALLUCINATION & FACTUAL FIDELITY MANDATE
+- **Ground-Truth Bound**: Extract ONLY facts, names, figures, and dates that explicitly exist in the OCR text.
+- **Forbidden Hallucinations**: Never fabricate missing values. Never output prompt template example names (e.g., 'สมชาย', 'บริษัท ตัวอย่าง จำกัด') or arbitrary sample numbers.
+- **Deterministic Missing Value Policy**:
+  - Missing text fields: `"ไม่มีระบุในเอกสาร"`
+  - Missing numeric/financial fields: `null` (never invent 0.0 unless the text explicitly states 0.0 or ฟรี)
+  - Missing date fields: `"ไม่มีระบุในเอกสาร"` or `null`
+  - Missing list/array fields: `[]` (empty list)
+  - Never guess, invent, or extrapolate.
+
+### 2. OCR ROBUSTNESS, THAI PHONETIC INTERPRETATION & CANONICAL SPELLING
+- **LLM Semantic Disambiguation**: Raw OCR text inevitably contains missing vowels, dropped tone marks, or merged words due to paper scanning conditions (e.g. 'เบกเงน' means 'เบิกเงิน', 'ทดรองจาย' means 'ทดรองจ่าย', 'ชาระเงน' means 'ชำระเงิน', 'เจาหนาที่บรหารงาน' means 'เจ้าหน้าที่บริหารงาน', 'ตอนรบคณะ' means 'ต้อนรับคณะ', 'คณบดีี' means 'คณบดี', 'ถปม เลขที่' means 'จปม. เลขที่'). You MUST use your semantic understanding of Thai language, government terminology, and contextual clues to output clean, correctly spelled canonical Thai text.
+- **Names & Titles**: Normalize official titles and personal names to standard Thai orthography (e.g. 'นางสาว', 'นาย', 'ผศ.ดร.', 'รศ.ดร.'). Clean minor OCR typos in recognized names based on surrounding context.
+- **Document Numbers**: Extract the clean identifier without stray prefixes or OCR artifacts (e.g. from 'จปม เลขที่ B262/2568' extract 'B262/2568'; from 'ที่ อว 78.101/334' extract 'อว 78.101/334').
+- **Label vs Value Disambiguation**: Do NOT capture descriptive labels (e.g., 'ข้าพเจ้า', 'ผู้ขอเบิก', 'ชื่อผู้รับเงิน', 'ผู้ขาย', 'ร้านค้าผู้ให้บริการ', 'รายละเอียดลูกค้า') as the actual names. Extract the entity that appears immediately following the label.
+
+### 3. THAI GOVERNMENT REIMBURSEMENT ENTITY RULES
+- **Primary Document ID (`doc_no`) vs Referenced ID (`ref_doc_no` / `ref_memo_no`)**:
+  - `doc_no`: The document's own identifier (e.g. 'เลขที่ B262/2568', 'จปม. เลขที่...', 'ที่ อว 78.101/...').
+  - `ref_doc_no`: Any prior letter or approval being referenced or cited (e.g., 'ตามหนังสืออนุมัติเบิกจ่าย เลขที่...', 'อ้างถึง...').
+- **Requester (`requester`) vs Authorizing Signatures**:
+  - `requester`: The person filing the claim / requesting funds (usually introduced by 'ข้าพเจ้า...', 'ผู้ขอเบิก...').
+  - Do NOT confuse the requester with department heads, deans, treasurers, committee members, or inspectors signing approval sections at the bottom (e.g. 'หัวหน้าภาควิชา', 'คณบดี', 'ประธานกรรมการ').
+- **Currency & Amount Cross-Verification**:
+  - When the document provides both numerical figures and Thai textual currency in parentheses (e.g. '210000 บาท (สองพันหนึ่งร้อยบาทถ้วน)' or '2,100.00 บาท'), cross-verify with the spelled-out Thai words. 'สองพันหนึ่งร้อยบาท' verifies that the true amount is 2,100.00, not 210,000!
+  - Numeric fields must be extracted as clean numbers (Float, e.g. 2100.0), without commas or currency suffixes.
+- **Tax & VAT Rule**:
+  - Only record VAT when explicit words such as 'ภาษีมูลค่าเพิ่ม' or 'VAT' appear with an associated amount. Do NOT calculate 7% manually. If not stated, return `null`.
+
+### 4. DATE FORMATTING
+- Maintain Thai calendar years (BE, e.g. 2568, 2569) as printed on official documents. Remove accidental OCR punctuation inside dates (e.g. '14.สิงหาคม.2568' -> '14 สิงหาคม 2568').
+"""
+
+
 def build_system_prompt_for_type(doc_type: str) -> str:
-    """Construct a targeted system prompt for the specified document type."""
+    """
+    Constructs a two-stage composite system prompt:
+    1. Base Data Extractor Template (enterprise directives, zero-hallucination, OCR robustness, Thai government entity rules)
+    2. Document-Specific Directives & JSON Schema for the target document type.
+    """
     config = PROMPT_CONFIGS.get(doc_type, PROMPT_CONFIGS[DocumentType.GENERAL_RECEIPT.value])
     schema_example = json.dumps(config["json_schema"], ensure_ascii=False, indent=2)
 
-    return f"""คุณคือผู้เชี่ยวชาญด้านการสกัดข้อมูลเอกสารการเงินและเอกสารราชการ (Document Information Extraction AI)
+    return f"""{DATA_EXTRACTOR_BASE_TEMPLATE}
 
-ประเภทเอกสารเป้าหมาย: {config['title']}
+## PART 2: DOCUMENT-SPECIFIC EXTRACTION INSTRUCTIONS
+**Target Document**: {config['title']}
 
 {config['instructions']}
 
-กฎเหล็กสำคัญอย่างยิ่งในการแยกแยะ 'หัวข้อกำกับ' (Label/Header) ออกจาก 'ชื่อจริง' (Actual Name):
-1. **ห้ามนำคำที่เป็นเพียงหัวข้อกำกับมาตอบเป็นชื่อเด็ดขาด**:
-   - คำทั่วไป เช่น 'ร้านค้าผู้ให้บริการ', 'ผู้ให้บริการ', 'ข้อมูลร้านค้า', 'ผู้ขาย', 'ชื่อร้าน' เป็นเพียงคำกำกับหัวข้อ (Section Header) **ไม่ใช่ชื่อร้านค้า!** ห้ามนำคำเหล่านี้มาใส่เป็น vendor_name เด็ดขาด ให้สกัดชื่อเฉพาะที่เป็นชื่อร้าน/แบรนด์/ธุรกิจ เช่น 'Pimploen\'s Shop'
-   - คำทั่วไป เช่น 'รายละเอียดลูกค้า', 'รายละเอียดลูกค้าคนสำคัญ', 'ข้อมูลผู้ซื้อ', 'ลูกค้า', 'ผู้ซื้อ' เป็นเพียงคำกำกับหัวข้อ (Section Header) **ไม่ใช่ชื่อลูกค้า!** ห้ามนำคำเหล่านี้มาใส่เป็น customer_name เด็ดขาด ให้สกัดชื่อบุคคลที่เป็นชื่อลูกค้าจริง เช่น 'น้องพาเพลิน'
-   - ในเอกสารที่มีการจัดรูปแบบ 2 คอลัมน์ (ซ้าย=ร้านค้า, ขวา=ลูกค้า):
-     หัวข้อ 'ร้านค้าผู้ให้บริการ' คู่กับชื่อร้าน 'Pimploen\'s Shop'
-     หัวข้อ 'รายละเอียดลูกค้าคนสำคัญ' คู่กับชื่อลูกค้า 'น้องพาเพลิน'
-     ให้จับคู่ชื่อจริงใต้หัวข้อให้ถูกต้อง ห้ามสลับกันและห้ามนำหัวข้อมาตอบ
-
-กฎเหล็กและแนวทางการสกัดข้อมูลทั่วไป (Strict Anti-Hallucination Rules):
-2. **ยึดข้อเท็จจริงตามเอกสาร 100% (Zero Hallucination)**:
-   - สกัดเฉพาะข้อมูลที่มีข้อความปรากฏชัดเจนในข้อความ OCR เท่านั้น
-   - ห้ามเดา ห้ามคิดไปเอง ห้ามสมมุติ หรือจินตนาการข้อมูลขึ้นมาเองโดยเด็ดขาด เน้นความถูกต้อง ไม่เน้นความคิดสร้างสรรค์
-3. **ข้อมูลที่ไม่มีระบุในเอกสาร**:
-   - หากฟิลด์ใดไม่มีข้อความปรากฏในเอกสาร ให้ใส่เป็น "ไม่มีระบุในเอกสาร" หรือ null
-   - โดยเฉพาะชื่อผู้ซื้อ (customer_name): ให้สกัดเฉพาะชื่อบุคคลหรือลูกค้าที่พิมพ์อยู่บนเอกสารเท่านั้น หากไม่มีระบุให้ใส่ "ไม่มีระบุในเอกสาร" ห้ามใส่ชื่อสถาบันหรือหน่วยงานใดๆ ที่ไม่มีพิมพ์ในเอกสารเด็ดขาด
-4. **เรื่องภาษีมูลค่าเพิ่ม (VAT) ห้ามคิดคำนวณเอง**:
-   - สกัดยอด VAT เฉพาะเมื่อในเอกสารมีการพิมพ์คำว่า "ภาษีมูลค่าเพิ่ม", "VAT", "ภาษี 7%" หรือมีตัวเลขภาษีระบุไว้ชัดเจนเท่านั้น
-   - หากในเอกสาร **ไม่มีการระบุเรื่องภาษีมูลค่าเพิ่มเลย ให้ใส่ vat เป็น null โดยเด็ดขาด ห้ามคำนวณ 7% เองเด็ดขาด!**
-5. **ยอดเงินรวมสุทธิ (total_amount)**:
-   - ต้องสกัดจากตัวเลขยอดเงินสุทธิที่พิมพ์ระบุอยู่บนเอกสารจริง (เช่น 'รวมราคาสุทธิ', 'ยอดสุทธิ', 'ยอดชำระ', 'รวมทั้งสิ้น', 'Grand Total')
-   - ห้ามนำราคาสินค้าไปบวกเลขภาษีเพิ่มเองจนตัวเลขไม่ตรงกับยอดสุทธิที่พิมพ์ในเอกสาร
-6. **การคิดวิเคราะห์**:
-   - หากโมเดลสามารถคิดได้ ให้เขียนขั้นตอนวิเคราะห์ในแท็ก <think>...</think> สั้นๆ ตรงไปตรงมา
-7. **รูปแบบผลลัพธ์**:
-   - ตอบผลลัพธ์เป็น JSON Object เท่านั้น โดยมีฟิลด์ตามโครงสร้างด้านล่างอย่างเคร่งครัด
-   - ตัวเลขยอดเงินให้เป็น Float (เช่น 570.0) ห้ามใส่เครื่องหมายจุลภาคคั่น
-
-โครงสร้าง JSON ที่ต้องการ:
+## PART 3: OUTPUT JSON SCHEMA
+Respond ONLY with a valid JSON object strictly matching this structure:
 {schema_example}
 """
 
@@ -313,11 +331,14 @@ class LLMExtractor:
         self,
         ollama_base_url: str = "http://127.0.0.1:11434",
         default_model: str = "qwen2.5:3b",
-        timeout_seconds: int = 120
+        timeout_seconds: int = 120,
+        num_gpu: Optional[int] = None
     ):
         self.base_url = ollama_base_url.rstrip("/")
         self.default_model = default_model
         self.timeout = timeout_seconds
+        # -1 instructs Ollama to offload 100% of layers to GPU if available (gracefully falls back to CPU)
+        self.num_gpu = int(os.getenv("OLLAMA_NUM_GPU", "-1")) if num_gpu is None else num_gpu
         self.validator = FinancialDocumentValidator()
 
     def is_ollama_running(self) -> bool:
@@ -347,6 +368,8 @@ class LLMExtractor:
             "ollama_online": online,
             "available_models": models,
             "default_model": self.default_model,
+            "gpu_acceleration": "auto_enabled (offload all layers if GPU present)" if self.num_gpu != 0 else "disabled",
+            "num_gpu": self.num_gpu,
             "has_real_fixture": REAL_RESPONSE_FIXTURE.exists(),
             "fixture_path": str(REAL_RESPONSE_FIXTURE),
             "supported_document_types": [
@@ -361,34 +384,31 @@ class LLMExtractor:
         document_type: str = DocumentType.GENERAL_RECEIPT.value,
         model_name: Optional[str] = None,
         temperature: float = 0.0,
-        use_mock_if_offline: bool = True,
-        force_mock: bool = False
+        **kwargs: Any,
     ) -> TypeDirectedExtractionResult:
         """
         Extract structured data according to the targeted document type.
+        Raises ConnectionError if Ollama is not running, or re-raises any LLM call failure.
         """
-        target_model = model_name or self.default_model
+        if not model_name or str(model_name).strip().lower() in ("string", "default", "none", ""):
+            target_model = self.default_model
+        else:
+            target_model = model_name
         start_time = time.time()
 
-        if not force_mock and self.is_ollama_running():
-            try:
-                result = self._call_ollama_api(
-                    ocr_markdown,
-                    document_type,
-                    target_model,
-                    temperature=temperature,
-                    start_time=start_time
-                )
-                return result
-            except Exception as e:
-                print(f"[LLMExtractor] Ollama call failed ({e}). Falling back to mock fixture.")
-                if not use_mock_if_offline:
-                    raise
+        if not self.is_ollama_running():
+            raise ConnectionError(
+                f"Ollama is not running at {self.base_url}. "
+                "Please start Ollama with 'ollama serve' before calling the extraction API."
+            )
 
-        if use_mock_if_offline or force_mock:
-            return self._generate_realistic_mock(ocr_markdown, document_type, target_model, start_time)
-
-        raise ConnectionError("Ollama is not running and use_mock_if_offline is disabled.")
+        return self._call_ollama_api(
+            ocr_markdown,
+            document_type,
+            target_model,
+            temperature=temperature,
+            start_time=start_time
+        )
 
     def _call_ollama_api(
         self,
@@ -413,10 +433,12 @@ class LLMExtractor:
                 {"role": "user", "content": user_prompt}
             ],
             "stream": False,
+            "format": "json",
             "options": {
                 "temperature": float(temperature),
                 "top_p": 0.1,
-                "num_gpu": 0
+                "num_ctx": 8192,
+                "num_gpu": self.num_gpu,  # -1 = auto-offload 100% of layers to GPU if available; fallback to CPU gracefully
             }
         }
 
@@ -427,8 +449,25 @@ class LLMExtractor:
             method="POST"
         )
 
-        with urllib.request.urlopen(req, timeout=self.timeout) as resp:
-            raw_body = json.loads(resp.read().decode("utf-8"))
+        raw_body = None
+        for attempt in range(2):
+            try:
+                with urllib.request.urlopen(req, timeout=self.timeout) as resp:
+                    raw_body = json.loads(resp.read().decode("utf-8"))
+                break
+            except urllib.error.HTTPError as e:
+                if attempt == 0 and e.code >= 500:
+                    time.sleep(1.0)
+                    if "format" in payload:
+                        del payload["format"]
+                        req = urllib.request.Request(
+                            f"{self.base_url}/api/chat",
+                            data=json.dumps(payload).encode("utf-8"),
+                            headers={"Content-Type": "application/json"},
+                            method="POST"
+                        )
+                    continue
+                raise
 
         elapsed_ms = round((time.time() - start_time) * 1000, 2)
         message_content = raw_body.get("message", {}).get("content", "")
@@ -489,6 +528,12 @@ class LLMExtractor:
         if total_amount is not None:
             try:
                 total_amount = float(total_amount)
+                if "total_amount" not in data or data["total_amount"] is None:
+                    data["total_amount"] = total_amount
+                if document_type == DocumentType.PROCUREMENT_APPROVAL_REQUEST.value and ("total_budget" not in data or data["total_budget"] is None):
+                    data["total_budget"] = total_amount
+                if document_type == DocumentType.PRINCIPLE_APPROVAL_GRANTED.value and ("total_approved_amount" not in data or data["total_approved_amount"] is None):
+                    data["total_approved_amount"] = total_amount
             except Exception:
                 pass
 
@@ -546,6 +591,8 @@ class LLMExtractor:
     @staticmethod
     def _parse_json_resilient(json_str: str) -> Dict[str, Any]:
         """Parse JSON with auto-repair for trailing commas or common LLM syntax slips."""
+        if not json_str or not json_str.strip():
+            return {}
         try:
             return json.loads(json_str)
         except Exception:
@@ -553,8 +600,14 @@ class LLMExtractor:
             repaired = re.sub(r",\s*([\]}])", r"\1", json_str)
             try:
                 return json.loads(repaired)
-            except Exception as e:
-                print(f"[LLMExtractor] Failed to parse JSON: {e}")
+            except Exception:
+                sub_match = re.search(r"(\{.*\})", json_str, flags=re.DOTALL)
+                if sub_match:
+                    try:
+                        return json.loads(sub_match.group(1))
+                    except Exception:
+                        pass
+                print(f"[LLMExtractor] Failed to parse JSON: {json_str[:120]}...")
                 return {}
 
     def _save_real_fixture(self, result: TypeDirectedExtractionResult, model_name: str):
@@ -598,111 +651,96 @@ class LLMExtractor:
             except Exception:
                 pass
 
-        # Domain mocks for each of the 9 university document types
-        mock_generators = {
-            DocumentType.PRINCIPLE_APPROVAL_REQUEST.value: {
-                "doc_no": "อว 78.03/ว.0425",
-                "doc_date": "15 สิงหาคม 2567",
-                "title": "ขออนุมัติหลักการจัดโครงการสัมมนาเชิงปฏิบัติการวิศวกรรมปัญญาประดิษฐ์",
-                "requester": "ภาควิชาวิศวกรรมคอมพิวเตอร์ คณะวิศวกรรมศาสตร์",
-                "expense_items": [
-                    {"item_no": 1, "description": "ค่าตอบแทนวิทยากรบรรยาย (6 ชั่วโมง)", "quantity": 6.0, "unit": "ชั่วโมง", "unit_price": 1000.0, "total_price": 6000.0},
-                    {"item_no": 2, "description": "ค่าอาหารว่างและเครื่องดื่มสำหรับผู้เข้าร่วม 50 คน", "quantity": 50.0, "unit": "ชุด", "unit_price": 50.0, "total_price": 2500.0},
-                    {"item_no": 3, "description": "ค่าวัสดุและเอกสารประกอบการสัมมนา", "quantity": 50.0, "unit": "ชุด", "unit_price": 70.0, "total_price": 3500.0}
-                ],
-                "total_amount": 12000.0
-            },
-            DocumentType.PRINCIPLE_APPROVAL_GRANTED.value: {
-                "ref_doc_no": "อว 78.03/ว.0425 ลงวันที่ 15 สิงหาคม 2567",
-                "approval_items": [
-                    {"item_no": 1, "description": "อนุมัติค่าตอบแทนวิทยากร", "quantity": 6.0, "unit": "ชั่วโมง", "unit_price": 1000.0, "total_price": 6000.0},
-                    {"item_no": 2, "description": "อนุมัติค่าอาหารว่างและเครื่องดื่ม", "quantity": 50.0, "unit": "ชุด", "unit_price": 50.0, "total_price": 2500.0},
-                    {"item_no": 3, "description": "อนุมัติค่าวัสดุและเอกสารสัมมนา", "quantity": 50.0, "unit": "ชุด", "unit_price": 70.0, "total_price": 3500.0}
-                ],
-                "total_approved_amount": 12000.0
-            },
-            DocumentType.DISBURSEMENT_APPROVAL_REQUEST.value: {
-                "doc_no": "อว 78.03/0892",
-                "doc_date": "25 สิงหาคม 2567",
-                "title": "ขออนุมัติเบิกจ่ายเงินงบประมาณค่าใช้จ่ายโครงการสัมมนาเชิงปฏิบัติการ",
-                "expense_items": [
-                    {"item_no": 1, "description": "เบิกจ่ายค่าตอบแทนวิทยากรและค่าอาหารว่าง", "quantity": 1.0, "unit": "งาน", "unit_price": 8500.0, "total_price": 8500.0}
-                ],
-                "total_amount": 8500.0,
-                "disbursement_type": "ทดรองจ่าย"
-            },
-            DocumentType.ADVANCE_PAYMENT_REQUEST_1.value: {
-                "doc_no": "ยง. 12/2567",
-                "requester": "ผศ.ดร.สมชาย ใจดี (ภาควิชาวิศวกรรมคอมพิวเตอร์)",
-                "total_amount": 12000.0,
-                "ref_doc_no": "อว 78.03/0892",
-                "expense_items": [
-                    {"item_no": 1, "description": "เงินทดรองจ่ายเพื่อเป็นค่าใช้จ่ายในการจัดสัมมนา", "quantity": 1.0, "unit": "โครงการ", "unit_price": 12000.0, "total_price": 12000.0}
-                ],
-                "transfer_destination": "ธนาคารไทยพาณิชย์ เลขที่บัญชี 333-2-12345-6 นายสมชาย ใจดี"
-            },
-            DocumentType.ADVANCE_PAYMENT_REQUEST_2.value: {
-                "doc_no": "ยง. 12/2567-ค",
-                "submission_date": "30 สิงหาคม 2567",
-                "claim_date": "31 สิงหาคม 2567",
-                "requester": "ผศ.ดร.สมชาย ใจดี",
-                "total_amount": 12000.0,
-                "ref_doc_no": "อว 78.03/ว.0425",
-                "expense_items": [
-                    {"item_no": 1, "description": "เคลียร์เงินยืมทดรองจ่ายโครงการสัมมนา AI (ตามหลักฐานใบเสร็จ)", "quantity": 1.0, "unit": "ชุด", "unit_price": 12000.0, "total_price": 12000.0}
-                ],
-                "transfer_destination": "พร้อมเพย์ 081-999-xxxx"
-            },
-            DocumentType.RECEIPT_SUBSTITUTE.value: {
-                "doc_date": "20 สิงหาคม 2567",
-                "expense_items": [
-                    {"item_no": 1, "description": "ค่าจ้างเหมาพาหนะรับส่งวิทยากร (รถแท็กซี่)", "quantity": 2.0, "unit": "เที่ยว", "unit_price": 350.0, "total_price": 700.0}
-                ],
-                "total_amount": 700.0,
-                "payer": "นายวิศวกร มุ่งมั่น (ผู้สำรองจ่าย)"
-            },
-            DocumentType.PARCEL_INSPECTION.value: {
-                "doc_no": "บพ. 88/2567",
-                "inspectors": "รศ.ดร.สมบัติ ประธานกรรมการ, ผศ.ดร.วิชัย กรรมการ, นางสาวมณีรัตน์ กรรมการและเลขานุการ",
-                "inspection_date": "18 กันยายน 2567",
-                "ref_doc_no": "ใบสั่งซื้อเลขที่ PO-EG-2567-089"
-            },
-            DocumentType.PROCUREMENT_APPROVAL_REQUEST.value: {
-                "doc_no": "อว 78.03/พสด.0112",
-                "doc_date": "5 กันยายน 2567",
-                "title": "ขออนุมัติจัดหาวัสดุและอุปกรณ์คอมพิวเตอร์สำหรับห้องปฏิบัติการ",
-                "procurement_reason": "เนื่องจากอุปกรณ์เดิมชำรุดเสียหาย และจำเป็นต้องใช้ในการเรียนการสอนภาคเรียนที่ 1/2567",
-                "item_details": [
-                    {"item_no": 1, "description": "จอภาพมอนิเตอร์ 27 นิ้ว 4K", "quantity": 5.0, "unit": "จอ", "unit_price": 9500.0, "total_price": 47500.0},
-                    {"item_no": 2, "description": "แป้นพิมพ์และเมาส์ไร้สาย", "quantity": 5.0, "unit": "ชุด", "unit_price": 1200.0, "total_price": 6000.0}
-                ],
-                "total_budget": 53500.0,
-                "required_date": "ภายในวันที่ 30 กันยายน 2567"
-            },
-            DocumentType.PROCUREMENT_ATTACHMENT.value: {
-                "ref_memo_no": "แนบท้ายบันทึกข้อความ ที่ อว 78.03/พสด.0112",
-                "expense_items": [
-                    {"item_no": 1, "description": "จอภาพมอนิเตอร์ 27 นิ้ว (ตามสเปก มหาวิทยาลัย)", "quantity": 5.0, "unit": "จอ", "unit_price": 9500.0, "total_price": 47500.0},
-                    {"item_no": 2, "description": "แป้นพิมพ์และเมาส์", "quantity": 5.0, "unit": "ชุด", "unit_price": 1200.0, "total_price": 6000.0}
-                ],
-                "total_amount": 53500.0
-            }
-        }
+        # Dynamic OCR extraction: Extract real fields from ocr_markdown directly
+        # Strictly enforces ZERO-HALLUCINATION: missing values are 'ไม่มีระบุในเอกสาร' or None
+        doc_no_match = re.search(r'(?:จปม\s*เลขที่|เลขที่|ที่\s*อว|ที่|บพ\.)[\s\.:]*([A-Za-z0-9\./\-]+)', ocr_markdown)
+        doc_no = doc_no_match.group(1).strip() if doc_no_match else "ไม่มีระบุในเอกสาร"
 
-        mock_data = mock_generators.get(document_type, mock_generators[DocumentType.PRINCIPLE_APPROVAL_REQUEST.value])
+        date_match = re.search(r'(?:วันที่|เมื่อวันที่|ลงวันที่)[\s\.:]*([0-9]{1,2}\s+[^\s0-9]+\s+[0-9]{4})', ocr_markdown)
+        doc_date = date_match.group(1).strip() if date_match else "ไม่มีระบุในเอกสาร"
+
+        title_match = re.search(r'(?:เรื่อง|หัวข้อ)[\s\.:]*([^\n\r]+)', ocr_markdown)
+        title = title_match.group(1).strip() if title_match else "ไม่มีระบุในเอกสาร"
+
+        req_match = re.search(r'(?:ข้าพเจ้า|ผู้ขอเบิก|ขอรับรอง|โดยมี)\s+((?:นาย|นาง|นางสาว|ผศ\.|ดร\.|รศ\.|ศ\.)[^\s,]+(?:\s+[^\s,]+)?)', ocr_markdown)
+        requester = req_match.group(1).strip() if req_match else "ไม่มีระบุในเอกสาร"
+
+        amt_match = re.search(r'(?:เป็นเงิน|จำนวนเงิน|รวมทั้งสิ้น|รวมเป็นเงิน|ยอดรวม|จำนวน)[\s\.:]*([0-9]{1,3}(?:,[0-9]{3})*(?:\.[0-9]{2})?|[0-9]+(?:\.[0-9]{2})?)', ocr_markdown)
+        total_amount = None
+        if amt_match:
+            try:
+                total_amount = float(amt_match.group(1).replace(",", ""))
+            except Exception:
+                total_amount = None
+
+        ref_match = re.search(r'(?:ตามหนังสืออนุมัติเบิกจ่าย|ตามหนังสืออนุมัติ|ตามหนังสือ|อ้างถึง|อ้างอิง|เลขที่)\s*([A-Za-z0-9\./\-]+)', ocr_markdown)
+        ref_doc_no = ref_match.group(1).strip() if ref_match else "ไม่มีระบุในเอกสาร"
+
+        trans_match = re.search(r'(?:โอนเข้าบัญชี|ธนาคาร|เลขที่บัญชี)[\s\.:]*([^\n\r]+)', ocr_markdown)
+        transfer_dest = trans_match.group(1).strip() if trans_match else "ไม่มีระบุในเอกสาร"
+
+        item_match = re.search(r'(?:โดยมีรายละเอียดค่าใช้จ่าย|รายละเอียดค่าใช้จ่าย ดังนี้)[\s\.:]*\n*([^\n\r]+)', ocr_markdown)
+        item_desc = item_match.group(1).strip() if item_match else (title if title != "ไม่มีระบุในเอกสาร" else "ค่าใช้จ่ายตามเอกสาร")
+
+        expense_items = []
+        if total_amount is not None:
+            expense_items = [
+                {
+                    "item_no": 1,
+                    "description": item_desc,
+                    "quantity": 1.0,
+                    "unit": "รายการ",
+                    "unit_price": total_amount,
+                    "total_price": total_amount
+                }
+            ]
+
+        config = PROMPT_CONFIGS.get(document_type, PROMPT_CONFIGS[DocumentType.GENERAL_RECEIPT.value])
+        schema_keys = set(config["json_schema"].keys())
+
+        mock_data: Dict[str, Any] = {}
+        for k in schema_keys:
+            if k == "doc_no":
+                mock_data[k] = doc_no
+            elif k in ("doc_date", "submission_date", "claim_date", "inspection_date", "required_date"):
+                mock_data[k] = doc_date
+            elif k == "title":
+                mock_data[k] = title
+            elif k == "requester":
+                mock_data[k] = requester
+            elif k in ("total_amount", "total_approved_amount", "total_budget", "subtotal"):
+                mock_data[k] = total_amount
+            elif k in ("ref_doc_no", "ref_memo_no"):
+                mock_data[k] = ref_doc_no
+            elif k == "transfer_destination":
+                mock_data[k] = transfer_dest
+            elif k in ("expense_items", "approval_items", "line_items", "item_details"):
+                mock_data[k] = expense_items
+            elif k == "payer":
+                mock_data[k] = requester
+            elif k == "inspectors":
+                mock_data[k] = requester
+            elif k == "disbursement_type":
+                mock_data[k] = "ทดรองจ่าย" if "ทดรองจ่าย" in ocr_markdown else ("เงินสดย่อย" if "เงินสดย่อย" in ocr_markdown else "ไม่มีระบุในเอกสาร")
+            elif k == "vendor_name":
+                mock_data[k] = title if title != "ไม่มีระบุในเอกสาร" else "ไม่มีระบุในเอกสาร"
+            elif k == "vat":
+                mock_data[k] = None
+            else:
+                mock_data[k] = "ไม่มีระบุในเอกสาร"
+
         type_name = DOCUMENT_TYPE_TITLES.get(document_type, document_type)
-
         mock_think = (
             f"1. สกัดข้อมูลตามประเภทเอกสารเป้าหมาย: {type_name}\n"
-            f"2. สกัดฟิลด์สำคัญ: {list(mock_data.keys())}\n"
-            f"3. ยอดรวมเงินที่คำนวณได้: {mock_data.get('total_amount') or mock_data.get('total_approved_amount') or mock_data.get('total_budget')} บาท"
+            f"2. สกัดฟิลด์สำคัญจากข้อความ OCR จริง: {list(mock_data.keys())}\n"
+            f"3. ยอดรวมเงินที่ตรวจพบในเอกสาร: {total_amount} บาท"
         )
 
         return self._build_result_object(
             document_type=document_type,
             data=mock_data,
             thinking_process=mock_think,
-            model_used=f"{model_name} (Targeted Mock Mode)",
+            model_used=f"{model_name} (Dynamic OCR Fallback Mode)",
             latency_ms=elapsed_ms,
             is_mock=True,
             raw_llm_response=json.dumps(mock_data, ensure_ascii=False, indent=2)

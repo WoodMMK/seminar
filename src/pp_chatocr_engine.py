@@ -367,7 +367,7 @@ class PPChatOCREngine:
             # Upgrade detector to PP-OCRv6_medium_det with optimal CPU resolution limit (1600px)
             ocr_modules = cfg['SubPipelines']['LayoutParser']['SubPipelines']['GeneralOCR']['SubModules']
             ocr_modules['TextDetection']['model_name'] = 'PP-OCRv6_medium_det'
-            ocr_modules['TextDetection']['limit_side_len'] = 1600
+            ocr_modules['TextDetection']['limit_side_len'] = 750
             if self.use_onnx:
                 ocr_modules['TextDetection']['engine'] = 'onnxruntime'
 
@@ -420,6 +420,21 @@ class PPChatOCREngine:
                     target_eval_path = str(temp_scaled_path)
         except Exception:
             target_eval_path = img_str
+
+        # Automatically clean Thai official document dotted lines (จุดไข่ปลา)
+        try:
+            import cv2
+            from src.ocr_engine import clean_dotted_lines_from_image
+            cv_img = cv2.imread(target_eval_path)
+            if cv_img is not None:
+                cleaned_cv = clean_dotted_lines_from_image(cv_img)
+                cache_dir = img_p.parent / ".scaled_cache"
+                cache_dir.mkdir(parents=True, exist_ok=True)
+                cleaned_path = cache_dir / f"clean_{img_p.name}"
+                cv2.imwrite(str(cleaned_path), cleaned_cv)
+                target_eval_path = str(cleaned_path)
+        except Exception:
+            pass
 
         pipeline = self.get_pipeline()
         raw_res_list = list(pipeline.visual_predict(target_eval_path))
@@ -486,12 +501,14 @@ class PPChatOCREngine:
                 if isinstance(block, list):
                     for item in block:
                         for line in str(item).split("\n"):
-                            l_strip = line.strip()
+                            from src.ocr_engine import clean_ocr_text_noise
+                            l_strip = clean_ocr_text_noise(line.strip())
                             if l_strip:
                                 ocr_text_lines.append(l_strip)
                 elif isinstance(block, str):
                     for line in block.split("\n"):
-                        l_strip = line.strip()
+                        from src.ocr_engine import clean_ocr_text_noise
+                        l_strip = clean_ocr_text_noise(line.strip())
                         if l_strip:
                             ocr_text_lines.append(l_strip)
 

@@ -91,7 +91,8 @@ ocr_engine = ThaiPerceptionEngine(
     use_doc_unwarping=False,
     use_doc_orientation_classify=False,
     use_textline_orientation=False,
-    limit_side_len=1600
+    return_word_box=False,
+    limit_side_len=750
 )
 llm_extractor = LLMExtractor(default_model="qwen2.5:3b")
 validator = FinancialDocumentValidator(petty_cash_threshold=10000.0)
@@ -283,12 +284,11 @@ class LLMExtractRequest(BaseModel):
     document_type: str = "general_receipt"
     model_name: Optional[str] = None
     temperature: float = 0.0
-    force_mock: bool = False
 
 
 @app.post("/api/llm/extract")
 async def extract_financial_data(req: LLMExtractRequest):
-    """Extract structured financial data with Local LLM (or mock fallback)."""
+    """Extract structured financial data with Local LLM."""
     try:
         result = await run_in_threadpool(
             llm_extractor.extract,
@@ -296,9 +296,10 @@ async def extract_financial_data(req: LLMExtractRequest):
             document_type=req.document_type,
             model_name=req.model_name,
             temperature=req.temperature,
-            force_mock=req.force_mock
         )
         return result.model_dump()
+    except ConnectionError as e:
+        return JSONResponse({"error": str(e), "error_type": "ollama_offline"}, status_code=503)
     except Exception as e:
         return JSONResponse({"error": str(e)}, status_code=500)
 
@@ -331,7 +332,6 @@ async def api_v1_extract(
     document_type: str = Form(DocumentType.GENERAL_RECEIPT.value, description="Target document type (1 of 10 types)"),
     model_name: Optional[str] = Form(None, description="Ollama model name (default: qwen2.5:3b)"),
     auto_deskew: bool = Form(False, description="Enable automatic image deskewing"),
-    force_mock: bool = Form(False, description="Force snapshot mock for offline evaluation"),
     temperature: float = Form(0.0, description="LLM temperature (0.0 for zero hallucination)")
 ):
     """Component 5: Complete End-to-End Extraction Pipeline."""
@@ -344,10 +344,11 @@ async def api_v1_extract(
             document_type=document_type,
             model_name=model_name,
             auto_deskew=auto_deskew,
-            force_mock=force_mock,
             temperature=temperature
         )
         return result
+    except ConnectionError as e:
+        return JSONResponse({"error": str(e), "error_type": "ollama_offline"}, status_code=503)
     except Exception as e:
         return JSONResponse({"error": str(e)}, status_code=500)
 
@@ -383,9 +384,10 @@ async def api_v1_benchmark(req: BenchmarkRequest):
             models=req.models,
             document_type=req.document_type,
             temperature=req.temperature,
-            include_mock_baseline=not req.force_mock
         )
         return report
+    except ConnectionError as e:
+        return JSONResponse({"error": str(e), "error_type": "ollama_offline"}, status_code=503)
     except Exception as e:
         return JSONResponse({"error": str(e)}, status_code=500)
 

@@ -6,9 +6,160 @@ configured with the th_PP-OCRv5_mobile_rec model (Zero-shot / No fine-tuning req
 
 from typing import List, Optional, Union
 from pathlib import Path
+import os
+import re
+import cv2
 import numpy as np
 from PIL import Image
 from pydantic import BaseModel, Field
+
+
+def clean_dotted_lines_from_image(img_input: np.ndarray, min_chain_len: int = 3) -> np.ndarray:
+    """
+    Intelligent Thai official form dotted fill-in line (จุดไข่ปลา) remover:
+    - Identifies small dot candidates (h <= 6, w <= 14, area <= 45).
+    - Identifies text characters (h >= 9).
+    - Protects genuine interior punctuation inside numbers and words
+      (e.g., ',' and '.' in '2,100.00' or '333.213582.0') by ensuring dots
+      sandwiched between adjacent text characters are never removed.
+    - Groups remaining dots into horizontal chains where dy <= 2 and dx between 3 and 16.
+    - Inpaints verified dotted lines (>= min_chain_len dots) with white.
+    """
+    if not isinstance(img_input, np.ndarray) or img_input.size == 0:
+        return img_input
+
+    is_gray = (len(img_input.shape) == 2)
+    gray = img_input if is_gray else cv2.cvtColor(img_input, cv2.COLOR_BGR2GRAY)
+
+    # Invert binary threshold to identify dark ink on light paper
+    _, binary = cv2.threshold(gray, 205, 255, cv2.THRESH_BINARY_INV)
+    num_labels, labels, stats, centroids = cv2.connectedComponentsWithStats(binary, connectivity=8)
+
+    if num_labels <= 1:
+        return img_input
+
+    # 1. Classify candidate dots vs text characters
+    dot_candidates = []
+    text_chars = []
+
+    for i in range(1, num_labels):
+        x, y, w, h, area = stats[i]
+        cx, cy = centroids[i]
+
+        # Dots of dotted leader lines have small height and area
+        if h <= 6 and w <= 14 and area <= 45:
+            dot_candidates.append({
+                "id": i, "x": x, "y": y, "w": w, "h": h, "area": area,
+                "cx": cx, "cy": cy, "xmin": x, "xmax": x + w, "ymin": y, "ymax": y + h
+            })
+        elif h >= 9:
+            text_chars.append({
+                "id": i, "x": x, "y": y, "w": w, "h": h, "area": area,
+                "xmin": x, "xmax": x + w, "ymin": y, "ymax": y + h
+            })
+
+    if len(dot_candidates) < min_chain_len:
+        return img_input
+
+    # 2. Protect punctuation marks that sit tightly inside a word/number (e.g. '.' or ',' in '2,100.00')
+    # A mark is inside a word if it is within 4px of a character to the left AND to the right
+    safe_dots = []
+    for d in dot_candidates:
+        has_left_char = False
+        has_right_char = False
+
+        for c in text_chars:
+            if not (c["ymax"] < d["ymin"] - 3 or c["ymin"] > d["ymax"] + 3):
+                if 0 <= (d["xmin"] - c["xmax"]) <= 4:
+                    has_left_char = True
+                if 0 <= (c["xmin"] - d["xmax"]) <= 4:
+                    has_right_char = True
+
+        if has_left_char and has_right_char:
+            # Protected interior punctuation
+            continue
+
+        safe_dots.append(d)
+
+    # 3. Form horizontal chains of dots
+    safe_dots.sort(key=lambda d: (round(d["cy"] / 3.0), d["cx"]))
+
+    chains = []
+    current_chain = []
+
+    for d in safe_dots:
+        if not current_chain:
+            current_chain.append(d)
+            continue
+
+        prev = current_chain[-1]
+        dy = abs(d["cy"] - prev["cy"])
+        dx = d["cx"] - prev["cx"]
+
+        if dy <= 2 and 3 <= dx <= 16:
+            current_chain.append(d)
+        else:
+            if len(current_chain) >= min_chain_len:
+                chains.append(current_chain)
+            current_chain = [d]
+
+    if len(current_chain) >= min_chain_len:
+        chains.append(current_chain)
+
+    if not chains:
+        return img_input
+
+    # 4. Inpaint chained dots
+    erase_mask = np.zeros(gray.shape, dtype=np.uint8)
+    for chain in chains:
+        for d in chain:
+            erase_mask[d["y"]:d["y"]+d["h"], d["x"]:d["x"]+d["w"]] = 255
+
+    kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (3, 3))
+    dilated_erase = cv2.dilate(erase_mask, kernel)
+
+    result = img_input.copy()
+    if is_gray:
+        result[dilated_erase == 255] = 255
+    else:
+        result[dilated_erase == 255] = [255, 255, 255]
+
+    return result
+
+
+def clean_ocr_text_noise(text: str) -> str:
+    """
+    Post-process OCR text to clean structural artifacts:
+    - Strip leading/trailing form border artifacts (dots, dashes, underscores).
+    - Collapse runs of dotted fill-in lines (จุดไข่ปลา) into single spaces.
+    - Collapse excessive spaces.
+    Does NOT do hardcoded word replacement; semantic interpretation and spelling
+    decisions are delegated to the LLM.
+    """
+    if not text:
+        return ""
+
+    lines = text.split("\n")
+    cleaned_lines = []
+
+    for line in lines:
+        line_clean = line.strip()
+        if not line_clean:
+            continue
+
+        # Strip leading/trailing dots, dashes, underscores (form lines / border artifacts)
+        line_clean = re.sub(r'^[.\-_—\s]+|[.\-_—\s]+$', '', line_clean)
+
+        # Collapse multiple internal dots (dotted fill-in lines) into space
+        line_clean = re.sub(r'\.{2,}', ' ', line_clean)
+
+        # Collapse multiple spaces
+        line_clean = re.sub(r'\s{2,}', '   ', line_clean)
+
+        if line_clean.strip():
+            cleaned_lines.append(line_clean)
+
+    return "\n".join(cleaned_lines)
 
 
 class BoundingBox(BaseModel):
@@ -84,8 +235,8 @@ class PagePerception(BaseModel):
 
 class ThaiPerceptionEngine:
     """
-    Perception Engine handling Thai OCR using PaddleOCR + th_PP-OCRv5_mobile_rec.
-    Optimized for Windows with automatic backend fallback.
+    Perception Engine handling Thai OCR using PaddleOCR / PaddleX + th_PP-OCRv5_mobile_rec.
+    Supports ONNX Runtime acceleration and automatic dotted line cleaning for Thai official forms.
     """
 
     def __init__(
@@ -95,8 +246,9 @@ class ThaiPerceptionEngine:
         use_doc_unwarping: bool = False,
         use_doc_orientation_classify: bool = False,
         use_textline_orientation: bool = False,
+        return_word_box: bool = False,
         unclip_ratio: float = 2.35,
-        limit_side_len: int = 1600,
+        limit_side_len: int = 960,
         box_thresh: float = 0.6,
         rec_batch_size: int = 1,
         expand_box_top_ratio: float = 0.0,
@@ -104,20 +256,20 @@ class ThaiPerceptionEngine:
         use_onnx: Optional[bool] = None,
         device: str = "cpu"
     ):
-        import os
         self.rec_model_name = rec_model_name
         self.enable_mkldnn = enable_mkldnn
         self.use_doc_unwarping = use_doc_unwarping
         self.use_doc_orientation_classify = use_doc_orientation_classify
         self.use_textline_orientation = use_textline_orientation
+        self.return_word_box = return_word_box
         self.unclip_ratio = unclip_ratio
         self.limit_side_len = limit_side_len
         self.box_thresh = box_thresh
         self.rec_batch_size = rec_batch_size
-        self.expand_box_top_ratio = expand_box_top_ratio
-        self.expand_box_bottom_ratio = expand_box_bottom_ratio
+        self.expand_box_top_ratio = float(os.getenv("OCR_EXPAND_TOP_RATIO", str(expand_box_top_ratio)))
+        self.expand_box_bottom_ratio = float(os.getenv("OCR_EXPAND_BOTTOM_RATIO", str(expand_box_bottom_ratio)))
         self.use_onnx = os.getenv("OCR_USE_ONNX", "true").lower() in ("1", "true", "yes") if use_onnx is None else use_onnx
-        self.device = device
+        self.device = os.getenv("OCR_DEVICE", device)
         self._ocr = None
 
         if self.expand_box_top_ratio > 0.0 or self.expand_box_bottom_ratio > 0.0:
@@ -128,8 +280,34 @@ class ThaiPerceptionEngine:
                 pass
 
     def _get_ocr_instance(self):
-        """Lazy load PaddleOCR instance to optimize startup time and memory."""
+        """Lazy load OCR instance (ONNX Runtime accelerated via PaddleX or PaddleOCR)."""
         if self._ocr is None:
+            if self.use_onnx:
+                try:
+                    from paddlex.inference.pipelines import load_pipeline_config
+                    from paddlex import create_pipeline
+                    from paddlex.inference.models.runners.paddle_static.config.pp_option import PaddlePredictorOption
+
+                    cfg = load_pipeline_config('OCR')
+                    cfg['use_doc_preprocessor'] = False
+                    cfg['use_textline_orientation'] = False
+                    cfg['SubModules']['TextDetection']['model_name'] = 'PP-OCRv6_medium_det'
+                    cfg['SubModules']['TextDetection']['limit_side_len'] = self.limit_side_len
+                    cfg['SubModules']['TextDetection']['limit_type'] = 'max'
+                    cfg['SubModules']['TextDetection']['unclip_ratio'] = self.unclip_ratio
+                    cfg['SubModules']['TextDetection']['engine'] = 'onnxruntime'
+                    cfg['SubModules']['TextRecognition']['model_name'] = self.rec_model_name
+                    cfg['SubModules']['TextRecognition']['batch_size'] = self.rec_batch_size
+                    cfg['SubModules']['TextRecognition']['engine'] = 'onnxruntime'
+
+                    pp_opt = PaddlePredictorOption()
+                    pp_opt.enable_new_ir = False
+
+                    self._ocr = create_pipeline(config=cfg, device=self.device, pp_option=pp_opt)
+                    return self._ocr
+                except Exception as e:
+                    print(f"[ThaiPerceptionEngine] Failed to initialize ONNX pipeline ({e}), falling back to PaddleOCR.")
+
             from paddleocr import PaddleOCR
             self._ocr = PaddleOCR(
                 text_recognition_model_name=self.rec_model_name,
@@ -326,9 +504,17 @@ class ThaiPerceptionEngine:
         if isinstance(image_input, Image.Image):
             input_data = np.array(image_input.convert("RGB"))
         elif isinstance(image_input, (str, Path)):
-            input_data = str(image_input)
+            input_data = cv2.imread(str(image_input))
+            if input_data is not None:
+                input_data = cv2.cvtColor(input_data, cv2.COLOR_BGR2RGB)
+            else:
+                input_data = str(image_input)
         else:
             input_data = image_input
+
+        # Automatically clean Thai official document dotted fill-in lines (จุดไข่ปลา)
+        if isinstance(input_data, np.ndarray):
+            input_data = clean_dotted_lines_from_image(input_data)
 
         ocr = self._get_ocr_instance()
         results = list(ocr.predict(
@@ -336,6 +522,7 @@ class ThaiPerceptionEngine:
             use_doc_unwarping=self.use_doc_unwarping,
             use_doc_orientation_classify=self.use_doc_orientation_classify,
             use_textline_orientation=self.use_textline_orientation,
+            return_word_box=self.return_word_box,
             text_det_unclip_ratio=self.unclip_ratio,
             text_det_limit_side_len=self.limit_side_len,
             text_det_box_thresh=self.box_thresh
@@ -350,10 +537,14 @@ class ThaiPerceptionEngine:
             rec_boxes = result_dict.get("rec_boxes", [])
 
             for text, score, box in zip(rec_texts, rec_scores, rec_boxes):
-                text_clean = str(text).strip()
+                text_clean = clean_ocr_text_noise(str(text).strip())
                 score_val = float(score)
 
                 if score_val < min_confidence or not text_clean:
+                    continue
+
+                # Filter out pure noise / dotted or line fragments that have no alphanumeric content
+                if re.fullmatch(r'^[.\-_—\s]+$', text_clean):
                     continue
 
                 bbox = BoundingBox.from_array(box)
@@ -367,6 +558,7 @@ class ThaiPerceptionEngine:
         cleaned_blocks = self.clean_and_merge_thai_fragments(text_blocks)
         ordered_blocks = self.sort_reading_order(cleaned_blocks)
         full_raw_text = self.build_row_formatted_text(cleaned_blocks)
+        full_raw_text = clean_ocr_text_noise(full_raw_text)
 
         return PagePerception(
             page_number=page_number,

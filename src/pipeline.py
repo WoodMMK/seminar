@@ -49,11 +49,13 @@ class DocumentProcessingPipeline:
     ):
         self.ingestor = ingestor or DocumentIngestion(target_dpi=150)
         self.ocr_engine = ocr_engine or ThaiPerceptionEngine(
+            use_onnx=True,
             device="cpu",
             use_doc_unwarping=False,
             use_doc_orientation_classify=False,
             use_textline_orientation=False,
-            limit_side_len=1600,
+            return_word_box=False,
+            limit_side_len=1200,
         )
         self.llm_extractor = llm_extractor or LLMExtractor(default_model="qwen2.5:3b")
         self.validator = validator or FinancialDocumentValidator(petty_cash_threshold=10000.0)
@@ -65,9 +67,10 @@ class DocumentProcessingPipeline:
         document_type: str = DocumentType.GENERAL_RECEIPT.value,
         model_name: Optional[str] = None,
         auto_deskew: bool = False,
-        force_mock: bool = False,
         temperature: float = 0.0,
         include_preview: bool = True,
+        max_pages: Optional[int] = None,
+        **kwargs: Any,
     ) -> FullPipelineResult:
         """
         Executes the full 4-stage extraction pipeline synchronously.
@@ -78,25 +81,29 @@ class DocumentProcessingPipeline:
         # Stage 1: Ingestion & Preprocessing (Component 1)
         # ---------------------------------------------------------------------
         t0 = time.perf_counter()
-        pages = self.ingestor.load_document(file_bytes)
-        if not pages:
+        all_pages = self.ingestor.load_document(file_bytes)
+        if not all_pages:
             raise ValueError(f"Could not load or parse document pages from '{filename}'")
 
+        pages = all_pages[:max_pages] if max_pages and max_pages > 0 else all_pages
         first_page = pages[0]
-        image_to_process = first_page.image
-
-        if auto_deskew:
-            image_to_process = self.ingestor.deskew_image(image_to_process)
-
         ingestion_ms = round((time.perf_counter() - t0) * 1000, 2)
 
         # ---------------------------------------------------------------------
-        # Stage 2: Perception Layer (Component 2: PaddleOCR & Row Formatting)
+        # Stage 2: Perception Layer (Component 2: Multi-Page OCR & Formatting)
         # ---------------------------------------------------------------------
         t1 = time.perf_counter()
-        perception = self.ocr_engine.process_image(image_to_process, page_number=1)
+        perceptions = []
+        for p in pages:
+            page_img = p.image
+            if auto_deskew:
+                page_img = self.ingestor.deskew_image(page_img)
+            perception = self.ocr_engine.process_image(page_img, page_number=p.page_number)
+            perceptions.append(perception)
+
         ocr_ms = round((time.perf_counter() - t1) * 1000, 2)
-        ocr_markdown = perception.to_llm_markdown()
+        ocr_markdown = "\n\n".join(p.to_llm_markdown() for p in perceptions)
+        total_text_blocks = sum(len(p.text_blocks) for p in perceptions)
 
         # ---------------------------------------------------------------------
         # Stage 3: LLM Reasoning & Extraction (Component 3)
@@ -107,7 +114,6 @@ class DocumentProcessingPipeline:
             document_type=document_type,
             model_name=model_name,
             temperature=temperature,
-            force_mock=force_mock,
         )
         llm_ms = round((time.perf_counter() - t2) * 1000, 2)
 
@@ -128,7 +134,7 @@ class DocumentProcessingPipeline:
             total_ms=total_ms,
         )
 
-        preview_base64 = _pil_to_base64(image_to_process) if include_preview else None
+        preview_base64 = _pil_to_base64(first_page.image) if include_preview else None
         type_title = DOCUMENT_TYPE_TITLES.get(document_type, document_type)
 
         return FullPipelineResult(
@@ -140,7 +146,7 @@ class DocumentProcessingPipeline:
             extraction=extraction_result,
             validation=validation_result,
             raw_ocr_markdown=ocr_markdown,
-            total_text_blocks=len(perception.text_blocks),
+            total_text_blocks=total_text_blocks,
             image_preview_base64=preview_base64,
         )
 
