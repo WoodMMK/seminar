@@ -102,7 +102,7 @@ PROMPT_CONFIGS: Dict[str, Dict[str, Any]] = {
             "3. total_amount: ยอดรวมเงินทดรองจ่ายที่ขอเบิก (ตัวเลข Float เช่น 2100.0 ห้ามตอบ null หากมีตัวเลขในเอกสาร)\n"
             "4. ref_doc_no: ตามหนังสืออนุมัติเบิกจ่าย เลขที่อะไร (เช่น อว 78.101/20290)\n"
             "5. expense_items: รายละเอียดตามประเภทค่าใช้จ่าย\n"
-            "6. transfer_destination: โอนเงินไปที่ใด (ชื่อธนาคาร, เลขที่บัญชี, ชื่อบัญชีผู้รับโอน)"
+            "6. transfer_destination: โอนเงินไปที่ใด (ระบุชื่อธนาคาร, เลขที่บัญชี 10 หลักเต็ม เช่น 333-213582-0 โดยรวมกลุ่มตัวเลขที่มีจุดคั่นเข้าด้วยกัน, ชื่อบัญชีผู้รับโอน)"
         ),
         "json_schema": {
             "doc_no": "<เลขที่เอกสารจริงจากข้อความ OCR เช่น B262/2568 หรือ ไม่มีระบุในเอกสาร>",
@@ -112,7 +112,7 @@ PROMPT_CONFIGS: Dict[str, Dict[str, Any]] = {
             "expense_items": [
                 {"item_no": 1, "description": "<รายละเอียดค่าใช้จ่าย>", "quantity": 1.0, "unit": "<หน่วยนับ>", "unit_price": 0.0, "total_price": 0.0}
             ],
-            "transfer_destination": "<ธนาคาร เลขที่บัญชี ชื่อบัญชี หรือ ไม่มีระบุในเอกสาร>"
+            "transfer_destination": "<ธนาคาร เลขที่บัญชี 10 หลักเต็ม ชื่อบัญชี หรือ ไม่มีระบุในเอกสาร>"
         }
     },
     DocumentType.ADVANCE_PAYMENT_REQUEST_2.value: {
@@ -127,7 +127,7 @@ PROMPT_CONFIGS: Dict[str, Dict[str, Any]] = {
             "5. total_amount: ยอดรวมเงิน (ตัวเลข Float)\n"
             "6. ref_doc_no: ตามหนังสืออนุมัติหลักการ เลขที่อะไร (หรือ ไม่มีระบุในเอกสาร)\n"
             "7. expense_items: รายละเอียดค่าใช้จ่าย\n"
-            "8. transfer_destination: โอนเงินไปที่ใด (หรือ ไม่มีระบุในเอกสาร)"
+            "8. transfer_destination: โอนเงินไปที่ใด (ระบุชื่อธนาคาร, เลขที่บัญชี 10 หลักเต็ม เช่น 333-213582-0, ชื่อบัญชีผู้รับโอน หรือ ไม่มีระบุในเอกสาร)"
         ),
         "json_schema": {
             "doc_no": "<เลขที่เอกสารจริงจากข้อความ OCR หรือ ไม่มีระบุในเอกสาร>",
@@ -139,7 +139,7 @@ PROMPT_CONFIGS: Dict[str, Dict[str, Any]] = {
             "expense_items": [
                 {"item_no": 1, "description": "<รายการค่าใช้จ่าย>", "quantity": 1.0, "unit": "<หน่วยนับ>", "unit_price": 0.0, "total_price": 0.0}
             ],
-            "transfer_destination": "<บัญชีธนาคาร หรือ ไม่มีระบุในเอกสาร>"
+            "transfer_destination": "<ธนาคาร เลขที่บัญชี 10 หลักเต็ม ชื่อบัญชี หรือ ไม่มีระบุในเอกสาร>"
         }
     },
     DocumentType.RECEIPT_SUBSTITUTE.value: {
@@ -289,9 +289,14 @@ Your objective is to extract structured JSON data from OCR-transcribed document 
   - Do NOT confuse the requester with department heads, deans, treasurers, committee members, or inspectors signing approval sections at the bottom (e.g. 'หัวหน้าภาควิชา', 'คณบดี', 'ประธานกรรมการ').
 - **Currency & Amount Cross-Verification**:
   - When the document provides both numerical figures and Thai textual currency in parentheses (e.g. '210000 บาท (สองพันหนึ่งร้อยบาทถ้วน)' or '2,100.00 บาท'), cross-verify with the spelled-out Thai words. 'สองพันหนึ่งร้อยบาท' verifies that the true amount is 2,100.00, not 210,000!
-  - Numeric fields must be extracted as clean numbers (Float, e.g. 2100.0), without commas or currency suffixes.
+  - Numeric fields must be extracted as clean numbers (Float, e.g. 2100.0), without commas or currency suffixes. Ignore dotted fill-in lines ('.....') that appear before or after the number.
 - **Tax & VAT Rule**:
   - Only record VAT when explicit words such as 'ภาษีมูลค่าเพิ่ม' or 'VAT' appear with an associated amount. Do NOT calculate 7% manually. If not stated, return `null`.
+- **Bank Account & Transfer Destination (`transfer_destination`)**:
+  - In Thai official documents, bank accounts are typically 10 digits (e.g., SCB branch code '333-XXXXXX-X' or 10-digit bank account numbers).
+  - OCR often reads hyphens '-' or spaces between digit blocks as periods '.' (e.g., '3.33.213582.0', '333.290068.1', '333.2405.47.9'). You MUST reassemble all digit chunks together into the complete 10-digit account number (e.g., '333-213582-0'). NEVER drop the 3-digit branch prefix (e.g., '333') or trailing check digits!
+  - OCR typos in account labels (e.g., 'เลยขที่บัญซี', 'เลที่บัญชี', 'เลยที่ัญชี') represent 'เลขที่บัญชี'.
+  - Extract the complete information: Bank Name + 10-digit Account Number + Recipient Account Name (e.g., 'ธนาคารไทยพาณิชย์ เลขที่บัญชี 333-213582-0 นางสาวอภิรมย์ ฉายเพิ่มศักดิ์').
 
 ### 4. DATE FORMATTING
 - Maintain Thai calendar years (BE, e.g. 2568, 2569) as printed on official documents. Remove accidental OCR punctuation inside dates (e.g. '14.สิงหาคม.2568' -> '14 สิงหาคม 2568').
@@ -676,8 +681,22 @@ class LLMExtractor:
         ref_match = re.search(r'(?:ตามหนังสืออนุมัติเบิกจ่าย|ตามหนังสืออนุมัติ|ตามหนังสือ|อ้างถึง|อ้างอิง|เลขที่)\s*([A-Za-z0-9\./\-]+)', ocr_markdown)
         ref_doc_no = ref_match.group(1).strip() if ref_match else "ไม่มีระบุในเอกสาร"
 
-        trans_match = re.search(r'(?:โอนเข้าบัญชี|ธนาคาร|เลขที่บัญชี)[\s\.:]*([^\n\r]+)', ocr_markdown)
-        transfer_dest = trans_match.group(1).strip() if trans_match else "ไม่มีระบุในเอกสาร"
+        # Smart bank account & transfer destination extraction
+        trans_match = re.search(r'(?:โอนเข้าบัญชี|ธนาคาร|[เลเ][ลขขย]+ที่?[บข]?[ัญบัญ]*[ชีซี]|เลขที่บัญชี)[\s\.:]*([^\n\r]+)', ocr_markdown)
+        if trans_match:
+            raw_dest = trans_match.group(1).strip()
+            acct_cand = re.search(r'([0-9][0-9\.\-\s]{7,20}[0-9])', raw_dest)
+            if acct_cand:
+                pure_digits = re.sub(r'[\.\-\s]', '', acct_cand.group(1))
+                if 8 <= len(pure_digits) <= 12:
+                    formatted_acct = f"{pure_digits[:3]}-{pure_digits[3:-1]}-{pure_digits[-1]}" if len(pure_digits) == 10 else pure_digits
+                    transfer_dest = raw_dest.replace(acct_cand.group(1), formatted_acct)
+                else:
+                    transfer_dest = raw_dest
+            else:
+                transfer_dest = raw_dest
+        else:
+            transfer_dest = "ไม่มีระบุในเอกสาร"
 
         item_match = re.search(r'(?:โดยมีรายละเอียดค่าใช้จ่าย|รายละเอียดค่าใช้จ่าย ดังนี้)[\s\.:]*\n*([^\n\r]+)', ocr_markdown)
         item_desc = item_match.group(1).strip() if item_match else (title if title != "ไม่มีระบุในเอกสาร" else "ค่าใช้จ่ายตามเอกสาร")

@@ -127,6 +127,69 @@ def clean_dotted_lines_from_image(img_input: np.ndarray, min_chain_len: int = 3)
     return result
 
 
+def enhance_document_for_ocr(
+    img_input: Union[np.ndarray, Image.Image],
+    auto_deskew: bool = True,
+    normalize_illumination: bool = True,
+    apply_clahe: bool = True
+) -> np.ndarray:
+    """
+    Standard production-grade document enhancement for Deep Learning OCR:
+    1. Auto-Deskew: Corrects subtle rotational skew (-15° to +15°) to align text lines horizontally.
+    2. Background Illumination Normalization: Removes scanner shadows & yellowish tint, leveling paper to clean white.
+    3. CLAHE Contrast Enhancement: Sharpens faint ink without eroding thin Thai vowel/tone marks.
+    """
+    if isinstance(img_input, Image.Image):
+        cv_img = cv2.cvtColor(np.array(img_input), cv2.COLOR_RGB2BGR)
+    elif isinstance(img_input, np.ndarray):
+        cv_img = img_input.copy()
+        if len(cv_img.shape) == 2:
+            cv_img = cv2.cvtColor(cv_img, cv2.COLOR_GRAY2BGR)
+    else:
+        return img_input
+
+    # 1. Auto-Deskew
+    if auto_deskew:
+        gray = cv2.cvtColor(cv_img, cv2.COLOR_BGR2GRAY)
+        thresh = cv2.threshold(gray, 0, 255, cv2.THRESH_BINARY_INV + cv2.THRESH_OTSU)[1]
+        coords = np.column_stack(np.where(thresh > 0))
+        if len(coords) >= 100:
+            rect = cv2.minAreaRect(coords)
+            angle = rect[-1]
+            if angle < -45:
+                angle = -(90 + angle)
+            elif angle > 45:
+                angle = 90 - angle
+            else:
+                angle = -angle
+
+            if 0.5 <= abs(angle) <= 15.0:
+                (h, w) = cv_img.shape[:2]
+                center = (w // 2, h // 2)
+                rot_mat = cv2.getRotationMatrix2D(center, angle, 1.0)
+                cv_img = cv2.warpAffine(
+                    cv_img, rot_mat, (w, h),
+                    flags=cv2.INTER_CUBIC,
+                    borderMode=cv2.BORDER_REPLICATE
+                )
+
+    # 2. Illumination Normalization
+    if normalize_illumination:
+        gray = cv2.cvtColor(cv_img, cv2.COLOR_BGR2GRAY)
+        dilated = cv2.dilate(gray, np.ones((25, 25), np.uint8))
+        bg = cv2.medianBlur(dilated, 25)
+        diff = cv2.absdiff(gray, bg)
+        norm_gray = 255 - diff
+
+        if apply_clahe:
+            clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8, 8))
+            norm_gray = clahe.apply(norm_gray)
+
+        cv_img = cv2.cvtColor(norm_gray, cv2.COLOR_GRAY2BGR)
+
+    return cv_img
+
+
 def remove_lines_text_and_binarize(
     image_path: Union[str, Path, np.ndarray, Image.Image],
     thresh_bin: int = 200,
@@ -255,14 +318,26 @@ def remove_lines_text_and_binarize(
 def clean_ocr_text_noise(text: str) -> str:
     """
     Post-process OCR text to clean structural artifacts:
-    - Strip leading/trailing form border artifacts (dots, dashes, underscores).
-    - Collapse runs of dotted fill-in lines (จุดไข่ปลา) into single spaces.
-    - Collapse excessive spaces.
-    Does NOT do hardcoded word replacement; semantic interpretation and spelling
-    decisions are delegated to the LLM.
+    - Smart Decimal Preservation: Preserves genuine decimal points in currency figures (e.g., 1,250.50).
+    - Double-Dot Collapsing: Fixes OCR overlap where dots collide with decimals (e.g., 1,250..50 -> 1,250.50).
+    - Spaced & Chained Dotted Line Erasure: Removes leader lines (. . . . . or ....... or _____).
+    - Preserves bank account digit sequences (e.g., 3.33.213582.0 or 333-213582-0).
+    - Strips leading/trailing form border artifacts while keeping true values intact.
     """
     if not text:
         return ""
+
+    # Rule 1: Collapse accidental double-dots between numbers (e.g., 1,250..50 -> 1,250.50)
+    text = re.sub(r'(\d+)\.{2,}(\d{1,4})\b', r'\1.\2', text)
+
+    # Rule 2: Clean dotted fill-in lines with spaces in between (. . . . .)
+    text = re.sub(r'(?:\.\s*){2,}\.?', ' ', text)
+
+    # Rule 3: Clean repeated dots (......)
+    text = re.sub(r'\.{2,}', ' ', text)
+
+    # Rule 4: Clean repeated underscores (______)
+    text = re.sub(r'_{2,}', ' ', text)
 
     lines = text.split("\n")
     cleaned_lines = []
@@ -272,14 +347,14 @@ def clean_ocr_text_noise(text: str) -> str:
         if not line_clean:
             continue
 
-        # Strip leading/trailing dots, dashes, underscores (form lines / border artifacts)
-        line_clean = re.sub(r'^[.\-_—\s]+|[.\-_—\s]+$', '', line_clean)
+        # Strip trailing dots, dashes, underscores
+        line_clean = re.sub(r'[.\-_—\s]+$', '', line_clean)
 
-        # Collapse multiple internal dots (dotted fill-in lines) into space
-        line_clean = re.sub(r'\.{2,}', ' ', line_clean)
+        # Strip leading dots/dashes, BUT preserve if it is a leading decimal before digits (e.g., .50)
+        line_clean = re.sub(r'^(?:(?!\.\d)[.\-_—\s])+', '', line_clean)
 
-        # Collapse multiple spaces
-        line_clean = re.sub(r'\s{2,}', '   ', line_clean)
+        # Collapse excessive internal spaces
+        line_clean = re.sub(r'\s{3,}', '   ', line_clean)
 
         if line_clean.strip():
             cleaned_lines.append(line_clean)
