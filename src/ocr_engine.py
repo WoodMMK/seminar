@@ -127,6 +127,195 @@ def clean_dotted_lines_from_image(img_input: np.ndarray, min_chain_len: int = 3)
     return result
 
 
+def remove_lines_text_and_binarize(
+    image_path: Union[str, Path, np.ndarray, Image.Image],
+    thresh_bin: int = 200,
+    min_sig_area: float = 600.0,
+    min_aspect_ratio: float = 0.3,
+    max_aspect_ratio: float = 7.0,
+    min_poly_vertices: int = 5,
+    canny_thresh1: int = 50,
+    canny_thresh2: int = 150,
+    hough_threshold: int = 150,
+    line_thickness: int = 7,
+    inpaint_radius: int = 3,
+    horizontal_only: bool = True,
+    return_intermediates: bool = False,
+    page_num: int = 1,
+) -> Union[np.ndarray, dict]:
+    """
+    Image preprocessing function to remove dotted fill-in lines while protecting signatures.
+
+    Steps:
+    1. Read image and convert to grayscale.
+    2. Create signature mask (กันไว้ไม่ให้โดนลบ):
+       - Adaptive Threshold (THRESH_BINARY_INV)
+       - Dilation with (3, 3) kernel
+       - Filter contours:
+         * area > 600 (min_sig_area)
+         * 0.3 < aspect_ratio < 7 (min_aspect_ratio < ar < max_aspect_ratio)
+         * len(approxPolyDP) > 5 (min_poly_vertices)
+       - Draw passing contours onto signature_mask (pixel 255 = white = signature).
+    3. Detect straight lines in the image:
+       - Canny edge detection (canny_thresh1, canny_thresh2).
+       - HoughLines detection.
+       - Draw detected lines onto line_mask with thickness 7.
+    4. Create safe_line_mask:
+       - safe_line_mask = line_mask without signature_mask (protects signatures from line erasure).
+    5. Erase lines with inpainting:
+       - Inpaint regions where safe_line_mask == 255 with background.
+       - Binarize inpainted image with threshold thresh_bin (default 200).
+    """
+    import time
+    t0 = time.time()
+
+    # 1. Read image and convert to grayscale
+    if isinstance(image_path, (str, Path)):
+        p = Path(image_path)
+        if p.suffix.lower() == ".pdf":
+            from src.ingestion import DocumentIngestion
+            ingestor = DocumentIngestion(target_dpi=150)
+            pages = ingestor.load_document(p)
+            idx = max(0, min(page_num - 1, len(pages) - 1))
+            img_bgr = pages[idx].to_cv2()
+        else:
+            img_bgr = cv2.imread(str(p))
+            if img_bgr is None:
+                raise ValueError(f"Could not read image from path: {image_path}")
+    elif isinstance(image_path, Image.Image):
+        rgb_arr = np.array(image_path.convert("RGB"))
+        img_bgr = cv2.cvtColor(rgb_arr, cv2.COLOR_RGB2BGR)
+    elif isinstance(image_path, np.ndarray):
+        if len(image_path.shape) == 2:
+            img_bgr = cv2.cvtColor(image_path, cv2.COLOR_GRAY2BGR)
+        elif image_path.shape[2] == 4:
+            img_bgr = cv2.cvtColor(image_path, cv2.COLOR_BGRA2BGR)
+        else:
+            img_bgr = image_path.copy()
+    else:
+        raise TypeError(f"Unsupported image type: {type(image_path)}")
+
+    gray = cv2.cvtColor(img_bgr, cv2.COLOR_BGR2GRAY)
+
+    # 2. Signature mask (กันไว้ไม่ให้โดนลบ)
+    adaptive_bin = cv2.adaptiveThreshold(
+        gray, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY_INV, 15, 8
+    )
+    kernel_dilate = cv2.getStructuringElement(cv2.MORPH_RECT, (3, 3))
+    dilated = cv2.dilate(adaptive_bin, kernel_dilate, iterations=2)
+    contours, _ = cv2.findContours(dilated, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+
+    signature_mask = np.zeros_like(gray, dtype=np.uint8)
+    sig_count = 0
+    contour_samples = []
+
+    for cnt in contours:
+        area = cv2.contourArea(cnt)
+        if area <= min_sig_area:
+            continue
+        x, y, w, h = cv2.boundingRect(cnt)
+        if h == 0:
+            continue
+        ar = float(w) / float(h)
+        if not (min_aspect_ratio < ar < max_aspect_ratio):
+            continue
+        epsilon = 0.02 * cv2.arcLength(cnt, True)
+        approx = cv2.approxPolyDP(cnt, epsilon, True)
+        if len(approx) <= min_poly_vertices:
+            continue
+
+        sig_count += 1
+        cv2.drawContours(signature_mask, [cnt], -1, 255, thickness=-1)
+        if len(contour_samples) < 30:
+            contour_samples.append({
+                "area": round(float(area), 1),
+                "aspect_ratio": round(ar, 2),
+                "poly_vertices": len(approx),
+                "bbox": [int(x), int(y), int(w), int(h)]
+            })
+
+    # 3. Detect straight lines using Canny and HoughLines
+    edges = cv2.Canny(gray, canny_thresh1, canny_thresh2, apertureSize=3)
+    lines = cv2.HoughLines(edges, 1, np.pi / 180, hough_threshold)
+
+    line_mask = np.zeros_like(gray, dtype=np.uint8)
+    line_count = 0
+    line_angles = []
+
+    if lines is not None:
+        H, W = gray.shape
+        diag = int(np.sqrt(H**2 + W**2)) + 500
+        for line in lines:
+            rho, theta = line[0]
+            deg = np.degrees(theta)
+            if horizontal_only and not (80.0 <= deg <= 100.0):
+                continue
+            line_count += 1
+            if len(line_angles) < 30:
+                line_angles.append(round(float(deg), 1))
+            a = np.cos(theta)
+            b = np.sin(theta)
+            x0 = a * rho
+            y0 = b * rho
+            x1 = int(x0 + diag * (-b))
+            y1 = int(y0 + diag * a)
+            x2 = int(x0 - diag * (-b))
+            y2 = int(y0 - diag * a)
+            cv2.line(line_mask, (x1, y1), (x2, y2), 255, thickness=line_thickness)
+
+    # 4. Safe line mask (ไม่ให้ลบเส้นส่วนที่ทับกับลายเซ็น)
+    safe_line_mask = cv2.bitwise_and(line_mask, cv2.bitwise_not(signature_mask))
+
+    # 5. Inpaint lines where safe_line_mask == 255, then binarize
+    has_lines = bool(np.any(safe_line_mask == 255))
+    if has_lines:
+        inpainted_bgr = cv2.inpaint(img_bgr, safe_line_mask, inpaintRadius=inpaint_radius, flags=cv2.INPAINT_TELEA)
+    else:
+        inpainted_bgr = img_bgr.copy()
+
+    inpainted_gray = cv2.cvtColor(inpainted_bgr, cv2.COLOR_BGR2GRAY)
+    _, final_binarized = cv2.threshold(inpainted_gray, thresh_bin, 255, cv2.THRESH_BINARY)
+
+    elapsed_ms = round((time.time() - t0) * 1000, 2)
+
+    if not return_intermediates:
+        return final_binarized
+
+    return {
+        "final_image": final_binarized,
+        "original_bgr": img_bgr,
+        "gray": gray,
+        "adaptive_bin": adaptive_bin,
+        "signature_mask": signature_mask,
+        "canny_edges": edges,
+        "line_mask": line_mask,
+        "safe_line_mask": safe_line_mask,
+        "inpainted_bgr": inpainted_bgr,
+        "inpainted_gray": inpainted_gray,
+        "final_binarized": final_binarized,
+        "stats": {
+            "elapsed_ms": elapsed_ms,
+            "width": int(gray.shape[1]),
+            "height": int(gray.shape[0]),
+            "total_contours": len(contours),
+            "signature_contours_kept": sig_count,
+            "signature_mask_pixels": int(np.sum(signature_mask == 255)),
+            "detected_lines_count": line_count,
+            "line_mask_pixels": int(np.sum(line_mask == 255)),
+            "safe_line_pixels": int(np.sum(safe_line_mask == 255)),
+            "protected_line_pixels": int(np.sum(line_mask == 255) - np.sum(safe_line_mask == 255)),
+            "thresh_bin": thresh_bin,
+            "min_sig_area": min_sig_area,
+            "aspect_ratio_range": [min_aspect_ratio, max_aspect_ratio],
+            "hough_threshold": hough_threshold,
+            "line_thickness": line_thickness,
+            "horizontal_only": horizontal_only,
+            "contour_samples": contour_samples,
+            "line_angles_sample": line_angles,
+        }
+    }
+
+
 def clean_ocr_text_noise(text: str) -> str:
     """
     Post-process OCR text to clean structural artifacts:

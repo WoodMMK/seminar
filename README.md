@@ -23,7 +23,42 @@
 > 2. ตรวจสอบและสั่งเปิด **PostgreSQL Docker Container** (`expense-reimbursement-postgres`)
 > 3. ตรวจสอบและสั่งเปิด **Ollama Local LLM** (Port 11434 พร้อมตั้งค่าโหลดขึ้น VRAM ของ GPU เต็มประสิทธิภาพ)
 > 4. เปิด **FastAPI Headless Backend Server** ด้วย Python Environment ใน `.venv`
-> 5. เด้งเปิดหน้าเว็บเบราว์เซอร์ไปที่ **Swagger UI (`http://localhost:8000/docs`)** ให้อัตโนมัติ เพื่อทดสอบเรียก API ได้ทันที
+> 5. เด้งเปิดหน้าเว็บเบราว์เซอร์ไปที่ **Interactive Preprocessing Studio (`http://localhost:8000/`)** ให้อัตโนมัติ เพื่อตรวจสอบภาพขั้นตอนการตัดจุดไข่ปลาและปกป้องลายเซ็นแบบ Real-time พร้อมลิงก์ไปยัง **Swagger API (`http://localhost:8000/docs`)**
+
+---
+
+## 🎨 สตูดิโอแสดงผลการตัดจุดไข่ปลาและปกป้องลายเซ็น (Interactive Preprocessing Studio)
+
+เข้าใช้งานผ่านเว็บเบราว์เซอร์ได้ทันทีที่: **`http://localhost:8000/`** หรือ **`http://localhost:8000/ui`**
+
+### ฟังก์ชัน `remove_lines_text_and_binarize(image_path, thresh_bin=200)`
+ฟังก์ชันประมวลผลภาพเพื่อลบเส้นบรรทัดจุดไข่ปลา (`.....`) และเส้นกรอกข้อความออกจากเอกสารราชการ โดยไม่ลบลายเซ็น มี 5 ขั้นตอนหลัก:
+1. **Grayscale Conversion:** อ่านภาพและแปลงเป็นภาพขาวดำ 8-bit
+2. **Signature Mask (กันไว้ไม่ให้โดนลบ):**
+   - ใช้ Adaptive Thresholding (`THRESH_BINARY_INV`) แปลงเป็นไบนารี
+   - ขยายสโตรกเส้นด้วย Dilation (เคอร์เนล 3x3)
+   - ค้นหา Contours และกรองด้วยเกณฑ์ลายเซ็น:
+     * พื้นที่ `area > 600` พิกเซล
+     * อัตราส่วนกว้าง/สูง `0.3 < aspect_ratio < 7.0`
+     * รูปทรงซับซ้อน `len(approxPolyDP) > 5` จุดเหลี่ยม
+   - วาดคอนทัวร์ที่ผ่านเกณฑ์ลง `signature_mask` (พิกเซลสีขาว 255)
+3. **Straight Line Detection (HoughLines):**
+   - ตรวจจับเส้นขอบด้วย Canny Edge Detection (50, 150)
+   - ค้นหาเส้นตรงด้วย HoughLines ในมุมแนวราบ (80° - 100°)
+   - วาดเส้นตรงลง `line_mask` ด้วยความหนา 7 พิกเซล
+4. **Safe Line Mask:**
+   - สร้าง `safe_line_mask = line_mask & ~signature_mask` เพื่อป้องกันไม่ให้ลบเส้นส่วนที่ทับกับลายเซ็น
+5. **Inpainting & Binarization:**
+   - ลบเส้นในตำแหน่งที่เป็น 255 บน `safe_line_mask` ด้วย Inpainting (Telea) ซ่อมพื้นหลังให้กลืนเนียน
+   - Binarize ภาพด้วยค่า `thresh_bin=200` เพื่อให้ได้ภาพสุดท้ายที่คมชัดพร้อมส่งเข้า PaddleOCR
+
+#### ฟีเจอร์บนหน้าเว็บ Studio:
+- 🎚️ **Before / After Split Slider:** ลากสไลเดอร์เปรียบเทียบภาพต้นฉบับ vs ภาพสุดท้ายที่ผ่านการตัดเส้นแบบเรียลไทม์
+- 📋 **9-Step Pipeline Stepper:** คลิกดูภาพและคำอธิบายในแต่ละขั้นตอนทั้ง 9 สเต็ปอย่างละเอียด
+- 🔲 **9-Grid All Steps View:** แสดงภาพผลลัพธ์ของทั้ง 9 สเต็ปพร้อมกันในตาราง Grid พร้อมปุ่มคลิกดูขนาดเต็ม
+- ⚙️ **Interactive Sliders:** ปรับแต่งค่า `thresh_bin`, `min_sig_area`, `hough_threshold`, `line_thickness`, `min_poly_vertices` ได้สดๆ จากหน้าเว็บ
+- 🔍 **Live OCR Comparison:** ปุ่มกดรันโมเดล Thai OCR เปรียบเทียบข้อความที่อ่านได้จากภาพต้นฉบับ vs ภาพหลังตัดเส้น แสดงจำนวนบรรทัดที่ตรวจจับได้เพิ่มขึ้น
+
 
 ---
 

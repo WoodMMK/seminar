@@ -1,0 +1,1536 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Thai OCR Image Preprocessing & Signature Protection Studio</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&family=Outfit:wght@400;500;600;700&family=Prompt:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-base: #070a12;
+      --bg-card: rgba(15, 23, 42, 0.75);
+      --bg-card-hover: rgba(30, 41, 59, 0.85);
+      --border-subtle: rgba(255, 255, 255, 0.08);
+      --border-highlight: rgba(99, 102, 241, 0.4);
+      --primary: #6366f1;
+      --primary-hover: #4f46e5;
+      --primary-glow: rgba(99, 102, 241, 0.25);
+      --cyan: #06b6d4;
+      --cyan-glow: rgba(6, 182, 212, 0.25);
+      --emerald: #10b981;
+      --amber: #f59e0b;
+      --rose: #f43f5e;
+      --text-main: #f8fafc;
+      --text-muted: #94a3b8;
+      --text-dim: #64748b;
+      --font-thai: 'Prompt', -apple-system, BlinkMacSystemFont, sans-serif;
+      --font-eng: 'Outfit', sans-serif;
+      --font-mono: 'JetBrains Mono', monospace;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      background-color: var(--bg-base);
+      background-image:
+        radial-gradient(circle at 15% 15%, rgba(99, 102, 241, 0.12) 0%, transparent 45%),
+        radial-gradient(circle at 85% 85%, rgba(6, 182, 212, 0.08) 0%, transparent 45%);
+      color: var(--text-main);
+      font-family: var(--font-thai);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      overflow-x: hidden;
+    }
+
+    /* Header */
+    header {
+      background: rgba(10, 15, 29, 0.85);
+      backdrop-filter: blur(16px);
+      border-bottom: 1px solid var(--border-subtle);
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      padding: 14px 28px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+
+    .brand-logo {
+      width: 40px;
+      height: 40px;
+      background: linear-gradient(135deg, #6366f1, #06b6d4);
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 4px 14px var(--primary-glow);
+    }
+
+    .brand-logo svg {
+      width: 22px;
+      height: 22px;
+      fill: #fff;
+    }
+
+    .brand-text h1 {
+      font-family: var(--font-eng);
+      font-size: 1.15rem;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      background: linear-gradient(90deg, #ffffff, #cbd5e1);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .brand-text p {
+      font-size: 0.78rem;
+      color: var(--text-muted);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .tag-badge {
+      display: inline-flex;
+      align-items: center;
+      padding: 2px 8px;
+      border-radius: 999px;
+      font-size: 0.7rem;
+      font-family: var(--font-mono);
+      background: rgba(99, 102, 241, 0.15);
+      color: #a5b4fc;
+      border: 1px solid rgba(99, 102, 241, 0.3);
+    }
+
+    .header-actions {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .btn-nav {
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid var(--border-subtle);
+      color: var(--text-muted);
+      padding: 6px 14px;
+      border-radius: 8px;
+      font-size: 0.8rem;
+      text-decoration: none;
+      transition: all 0.2s ease;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .btn-nav:hover {
+      background: rgba(255, 255, 255, 0.1);
+      color: var(--text-main);
+      border-color: rgba(255, 255, 255, 0.2);
+    }
+
+    /* Main Container */
+    main {
+      flex: 1;
+      padding: 24px 28px;
+      max-width: 1720px;
+      margin: 0 auto;
+      width: 100%;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+
+    /* Top Control Bar */
+    .control-panel {
+      background: var(--bg-card);
+      backdrop-filter: blur(14px);
+      border: 1px solid var(--border-subtle);
+      border-radius: 14px;
+      padding: 18px 22px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+    }
+
+    .panel-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1px solid var(--border-subtle);
+      padding-bottom: 12px;
+    }
+
+    .panel-title {
+      font-size: 0.95rem;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .panel-title span {
+      color: var(--cyan);
+    }
+
+    .source-selection-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+    }
+
+    @media (max-width: 900px) {
+      .source-selection-row {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .source-block {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .source-label {
+      font-size: 0.8rem;
+      font-weight: 500;
+      color: var(--text-muted);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .sample-select {
+      background: #0b1120;
+      color: var(--text-main);
+      border: 1px solid var(--border-subtle);
+      border-radius: 8px;
+      padding: 10px 14px;
+      font-family: var(--font-thai);
+      font-size: 0.86rem;
+      outline: none;
+      cursor: pointer;
+      width: 100%;
+      transition: border-color 0.2s;
+    }
+
+    .sample-select:focus {
+      border-color: var(--primary);
+    }
+
+    .dropzone {
+      border: 2px dashed rgba(255, 255, 255, 0.15);
+      border-radius: 10px;
+      padding: 10px 16px;
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.2s;
+      background: rgba(0, 0, 0, 0.2);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      font-size: 0.82rem;
+      color: var(--text-muted);
+    }
+
+    .dropzone:hover, .dropzone.dragover {
+      border-color: var(--primary);
+      background: rgba(99, 102, 241, 0.08);
+      color: #fff;
+    }
+
+    /* Parameters Grid */
+    .params-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+      gap: 14px;
+      padding-top: 4px;
+    }
+
+    .param-item {
+      background: rgba(11, 17, 32, 0.6);
+      border: 1px solid var(--border-subtle);
+      border-radius: 10px;
+      padding: 10px 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .param-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 0.78rem;
+    }
+
+    .param-title {
+      color: var(--text-muted);
+    }
+
+    .param-val {
+      font-family: var(--font-mono);
+      font-size: 0.82rem;
+      font-weight: 600;
+      color: var(--cyan);
+    }
+
+    .range-input {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 100%;
+      height: 5px;
+      background: rgba(255, 255, 255, 0.1);
+      border-radius: 5px;
+      outline: none;
+      cursor: pointer;
+    }
+
+    .range-input::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 14px;
+      height: 14px;
+      border-radius: 50%;
+      background: var(--primary);
+      cursor: pointer;
+      box-shadow: 0 0 8px var(--primary-glow);
+      transition: transform 0.1s;
+    }
+
+    .range-input::-webkit-slider-thumb:hover {
+      transform: scale(1.2);
+    }
+
+    .toggle-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      cursor: pointer;
+    }
+
+    .switch {
+      position: relative;
+      display: inline-block;
+      width: 36px;
+      height: 20px;
+    }
+
+    .switch input {
+      opacity: 0;
+      width: 0;
+      height: 0;
+    }
+
+    .slider {
+      position: absolute;
+      cursor: pointer;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background-color: rgba(255, 255, 255, 0.2);
+      transition: .3s;
+      border-radius: 20px;
+    }
+
+    .slider:before {
+      position: absolute;
+      content: "";
+      height: 14px;
+      width: 14px;
+      left: 3px;
+      bottom: 3px;
+      background-color: white;
+      transition: .3s;
+      border-radius: 50%;
+    }
+
+    input:checked + .slider {
+      background-color: var(--primary);
+    }
+
+    input:checked + .slider:before {
+      transform: translateX(16px);
+    }
+
+    .action-row {
+      display: flex;
+      justify-content: flex-end;
+      gap: 12px;
+      align-items: center;
+      padding-top: 6px;
+    }
+
+    .btn {
+      padding: 10px 22px;
+      border-radius: 8px;
+      font-size: 0.88rem;
+      font-weight: 500;
+      font-family: var(--font-thai);
+      cursor: pointer;
+      transition: all 0.2s ease;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      border: none;
+    }
+
+    .btn-primary {
+      background: linear-gradient(135deg, #6366f1, #4f46e5);
+      color: #fff;
+      box-shadow: 0 4px 16px var(--primary-glow);
+    }
+
+    .btn-primary:hover {
+      box-shadow: 0 6px 22px rgba(99, 102, 241, 0.45);
+      transform: translateY(-1px);
+    }
+
+    .btn-secondary {
+      background: rgba(255, 255, 255, 0.06);
+      color: var(--text-muted);
+      border: 1px solid var(--border-subtle);
+    }
+
+    .btn-secondary:hover {
+      background: rgba(255, 255, 255, 0.12);
+      color: var(--text-main);
+    }
+
+    .btn-ocr {
+      background: linear-gradient(135deg, #059669, #10b981);
+      color: #fff;
+      box-shadow: 0 4px 14px rgba(16, 185, 129, 0.25);
+    }
+
+    .btn-ocr:hover {
+      box-shadow: 0 6px 20px rgba(16, 185, 129, 0.4);
+      transform: translateY(-1px);
+    }
+
+    /* View Mode Tabs */
+    .view-mode-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+
+    .tab-group {
+      display: inline-flex;
+      background: rgba(15, 23, 42, 0.8);
+      padding: 4px;
+      border-radius: 10px;
+      border: 1px solid var(--border-subtle);
+      gap: 4px;
+    }
+
+    .tab-btn {
+      background: transparent;
+      border: none;
+      color: var(--text-muted);
+      padding: 8px 16px;
+      border-radius: 6px;
+      font-size: 0.82rem;
+      font-weight: 500;
+      font-family: var(--font-thai);
+      cursor: pointer;
+      transition: all 0.2s;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .tab-btn.active {
+      background: var(--primary);
+      color: #fff;
+      box-shadow: 0 2px 10px var(--primary-glow);
+    }
+
+    .tab-btn:hover:not(.active) {
+      color: var(--text-main);
+      background: rgba(255, 255, 255, 0.05);
+    }
+
+    /* Stats Ribbon */
+    .stats-ribbon {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 12px;
+    }
+
+    .stat-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-subtle);
+      border-radius: 10px;
+      padding: 12px 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .stat-title {
+      font-size: 0.72rem;
+      color: var(--text-dim);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .stat-val {
+      font-family: var(--font-mono);
+      font-size: 1.25rem;
+      font-weight: 700;
+      color: var(--text-main);
+      display: flex;
+      align-items: baseline;
+      gap: 6px;
+    }
+
+    .stat-val small {
+      font-size: 0.72rem;
+      font-weight: 400;
+      color: var(--text-muted);
+    }
+
+    /* Canvas / Viewport Area */
+    .viewport-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-subtle);
+      border-radius: 14px;
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      min-height: 520px;
+      position: relative;
+    }
+
+    /* Step Selector Pills */
+    .step-stepper {
+      display: flex;
+      gap: 8px;
+      overflow-x: auto;
+      padding-bottom: 6px;
+      border-bottom: 1px solid var(--border-subtle);
+    }
+
+    .step-pill {
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid var(--border-subtle);
+      padding: 6px 14px;
+      border-radius: 20px;
+      font-size: 0.78rem;
+      color: var(--text-muted);
+      cursor: pointer;
+      white-space: nowrap;
+      transition: all 0.2s;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .step-pill.active {
+      background: rgba(6, 182, 212, 0.18);
+      border-color: var(--cyan);
+      color: #67e8f9;
+      font-weight: 600;
+    }
+
+    .step-pill:hover:not(.active) {
+      background: rgba(255, 255, 255, 0.08);
+      color: var(--text-main);
+    }
+
+    .step-pill .step-idx {
+      width: 18px;
+      height: 18px;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, 0.1);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.68rem;
+      font-family: var(--font-mono);
+    }
+
+    .step-pill.active .step-idx {
+      background: var(--cyan);
+      color: #000;
+      font-weight: 700;
+    }
+
+    /* Single Step Viewer */
+    .single-view-container {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 12px;
+      width: 100%;
+    }
+
+    .image-stage-frame {
+      max-width: 100%;
+      max-height: 720px;
+      overflow: auto;
+      background: #000;
+      border-radius: 10px;
+      border: 1px solid var(--border-subtle);
+      box-shadow: inset 0 0 20px rgba(0, 0, 0, 0.8);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      position: relative;
+    }
+
+    .image-stage-frame img {
+      max-width: 100%;
+      height: auto;
+      display: block;
+      transition: transform 0.2s;
+    }
+
+    .image-caption {
+      font-size: 0.84rem;
+      color: var(--text-muted);
+      text-align: center;
+      max-width: 800px;
+      line-height: 1.5;
+    }
+
+    /* Split Comparison Slider */
+    .split-slider-container {
+      position: relative;
+      width: 100%;
+      max-width: 900px;
+      margin: 0 auto;
+      border-radius: 10px;
+      overflow: hidden;
+      border: 1px solid var(--border-subtle);
+      background: #000;
+      user-select: none;
+    }
+
+    .split-img {
+      display: block;
+      width: 100%;
+      height: auto;
+    }
+
+    .split-overlay {
+      position: absolute;
+      top: 0;
+      left: 0;
+      height: 100%;
+      width: 50%;
+      overflow: hidden;
+      border-right: 2px solid var(--cyan);
+      box-shadow: 2px 0 12px var(--cyan-glow);
+    }
+
+    .split-overlay img {
+      position: absolute;
+      top: 0;
+      left: 0;
+      height: 100%;
+      width: auto;
+      max-width: none;
+    }
+
+    .split-handle {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: 38px;
+      height: 38px;
+      border-radius: 50%;
+      background: var(--cyan);
+      box-shadow: 0 0 16px var(--cyan-glow);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: ew-resize;
+      z-index: 10;
+    }
+
+    .split-handle svg {
+      width: 18px;
+      height: 18px;
+      fill: #000;
+    }
+
+    .split-badge {
+      position: absolute;
+      top: 14px;
+      padding: 4px 10px;
+      border-radius: 6px;
+      font-size: 0.72rem;
+      font-family: var(--font-mono);
+      font-weight: 600;
+      z-index: 5;
+      backdrop-filter: blur(8px);
+    }
+
+    .split-badge.left {
+      left: 14px;
+      background: rgba(0, 0, 0, 0.7);
+      color: #fff;
+      border: 1px solid rgba(255, 255, 255, 0.2);
+    }
+
+    .split-badge.right {
+      right: 14px;
+      background: rgba(6, 182, 212, 0.2);
+      color: #67e8f9;
+      border: 1px solid var(--cyan);
+    }
+
+    /* 9-Grid View */
+    .grid-view-container {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 16px;
+      width: 100%;
+    }
+
+    .grid-card {
+      background: rgba(11, 17, 32, 0.6);
+      border: 1px solid var(--border-subtle);
+      border-radius: 10px;
+      padding: 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      transition: all 0.2s;
+    }
+
+    .grid-card:hover {
+      border-color: var(--border-highlight);
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4);
+    }
+
+    .grid-card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .grid-card-title {
+      font-size: 0.82rem;
+      font-weight: 600;
+      color: #e2e8f0;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .grid-card-img {
+      width: 100%;
+      height: 240px;
+      object-fit: contain;
+      background: #000;
+      border-radius: 6px;
+      border: 1px solid var(--border-subtle);
+      cursor: pointer;
+    }
+
+    .grid-card-desc {
+      font-size: 0.72rem;
+      color: var(--text-dim);
+      line-height: 1.4;
+    }
+
+    /* OCR Comparison Modal / Section */
+    .ocr-compare-section {
+      background: var(--bg-card);
+      border: 1px solid var(--border-subtle);
+      border-radius: 14px;
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .ocr-columns {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+    }
+
+    @media (max-width: 800px) {
+      .ocr-columns {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .ocr-box {
+      background: #0b1120;
+      border: 1px solid var(--border-subtle);
+      border-radius: 10px;
+      padding: 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .ocr-box-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1px solid var(--border-subtle);
+      padding-bottom: 8px;
+      font-size: 0.85rem;
+      font-weight: 600;
+    }
+
+    .ocr-text-scroll {
+      max-height: 320px;
+      overflow-y: auto;
+      font-family: var(--font-mono);
+      font-size: 0.8rem;
+      line-height: 1.6;
+      color: #cbd5e1;
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+
+    /* Loading Overlay */
+    .loading-overlay {
+      position: absolute;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(7, 10, 18, 0.78);
+      backdrop-filter: blur(8px);
+      border-radius: 14px;
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 14px;
+      z-index: 50;
+    }
+
+    .loading-spinner {
+      width: 44px;
+      height: 44px;
+      border: 3px solid rgba(99, 102, 241, 0.2);
+      border-top-color: var(--primary);
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    /* Modal for Full Image Zoom */
+    .modal {
+      display: none;
+      position: fixed;
+      top: 0; left: 0; width: 100%; height: 100%;
+      background: rgba(0, 0, 0, 0.85);
+      backdrop-filter: blur(10px);
+      z-index: 1000;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+
+    .modal-content {
+      max-width: 90vw;
+      max-height: 90vh;
+      object-fit: contain;
+      border-radius: 10px;
+      box-shadow: 0 10px 40px rgba(0, 0, 0, 0.8);
+    }
+
+    .modal-close {
+      position: absolute;
+      top: 20px; right: 28px;
+      font-size: 2rem;
+      color: #fff;
+      cursor: pointer;
+    }
+
+    footer {
+      border-top: 1px solid var(--border-subtle);
+      padding: 16px 28px;
+      text-align: center;
+      font-size: 0.76rem;
+      color: var(--text-dim);
+      background: #05070e;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Header -->
+  <header>
+    <div class="brand">
+      <div class="brand-logo">
+        <svg viewBox="0 0 24 24"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-5 14H7v-2h7v2zm3-4H7v-2h10v2zm0-4H7V7h10v2z"/></svg>
+      </div>
+      <div class="brand-text">
+        <h1>Thai OCR Preprocessing & Inpainting Studio</h1>
+        <p>
+          <span>ฟังก์ชัน <code>remove_lines_text_and_binarize</code></span>
+          <span class="tag-badge">Adaptive Threshold + Dilation + HoughLines + Inpaint</span>
+        </p>
+      </div>
+    </div>
+    <div class="header-actions">
+      <a href="/docs" target="_blank" class="btn-nav">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M14 2H6c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.89 2 1.99 2H18c1.1 0 2-.9 2-2V8l-6-6zm2 16H8v-2h8v2zm0-4H8v-2h8v2zm-3-5V3.5L18.5 9H13z"/></svg>
+        Swagger API
+      </a>
+      <a href="/api/v1/health" target="_blank" class="btn-nav">
+        <span style="width: 7px; height: 7px; border-radius: 50%; background: #10b981; display: inline-block;"></span>
+        Health
+      </a>
+    </div>
+  </header>
+
+  <!-- Main Content -->
+  <main>
+
+    <!-- Source Selection & Controls -->
+    <section class="control-panel">
+      <div class="panel-header">
+        <div class="panel-title">
+          <span>⚙️</span> พารามิเตอร์การประมวลผล (Image Processing Pipeline Config)
+        </div>
+        <div style="font-size: 0.78rem; color: var(--text-dim);">
+          รองรับ PDF (แปลงที่ 150 DPI) และไฟล์รูปภาพทุกฟอร์แมต
+        </div>
+      </div>
+
+      <div class="source-selection-row">
+        <!-- Sample Selector -->
+        <div class="source-block">
+          <label class="source-label" for="sample-select">
+            📁 เลือกเอกสารตัวอย่างจาก Datasets
+          </label>
+          <select id="sample-select" class="sample-select">
+            <option value="">กำลังโหลดรายการเอกสาร...</option>
+          </select>
+        </div>
+
+        <!-- File Upload Dropzone -->
+        <div class="source-block">
+          <label class="source-label">
+            📤 หรืออัปโหลดไฟล์ของตนเอง (PDF / PNG / JPG)
+          </label>
+          <div id="dropzone" class="dropzone">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M19.35 10.04C18.67 6.59 15.64 4 12 4 9.11 4 6.6 5.64 5.35 8.04 2.34 8.36 0 10.91 0 14c0 3.31 2.69 6 6 6h13c2.76 0 5-2.24 5-5 0-2.64-2.05-4.78-4.65-4.96zM14 13v4h-4v-4H7l5-5 5 5h-3z"/></svg>
+            <span id="upload-label">ลากไฟล์มาวางที่นี่ หรือคลิกเพื่อเลือกไฟล์</span>
+            <input type="file" id="file-input" style="display: none;" accept=".pdf,.png,.jpg,.jpeg">
+          </div>
+        </div>
+      </div>
+
+      <!-- Parameter Sliders -->
+      <div class="params-grid">
+        <!-- thresh_bin -->
+        <div class="param-item">
+          <div class="param-header">
+            <span class="param-title">1. Threshold Binary (thresh_bin)</span>
+            <span id="val-thresh-bin" class="param-val">200</span>
+          </div>
+          <input type="range" id="input-thresh-bin" class="range-input" min="100" max="250" value="200" step="1">
+          <small style="font-size: 0.7rem; color: var(--text-dim);">จุดตัดแปลงภาพขาวดำ (Thresholding)</small>
+        </div>
+
+        <!-- min_sig_area -->
+        <div class="param-item">
+          <div class="param-header">
+            <span class="param-title">2. Min Signature Area (area >)</span>
+            <span id="val-sig-area" class="param-val">600</span>
+          </div>
+          <input type="range" id="input-sig-area" class="range-input" min="200" max="2000" value="600" step="50">
+          <small style="font-size: 0.7rem; color: var(--text-dim);">พื้นที่ขั้นต่ำของคอนทัวร์ลายเซ็น (พิกเซล)</small>
+        </div>
+
+        <!-- hough_threshold -->
+        <div class="param-item">
+          <div class="param-header">
+            <span class="param-title">3. HoughLines Threshold</span>
+            <span id="val-hough-thresh" class="param-val">150</span>
+          </div>
+          <input type="range" id="input-hough-thresh" class="range-input" min="50" max="250" value="150" step="10">
+          <small style="font-size: 0.7rem; color: var(--text-dim);">ความไวในการตรวจจับเส้นตรง / จุดไข่ปลา</small>
+        </div>
+
+        <!-- line_thickness -->
+        <div class="param-item">
+          <div class="param-header">
+            <span class="param-title">4. Line Thickness (หนา)</span>
+            <span id="val-thickness" class="param-val">7</span>
+          </div>
+          <input type="range" id="input-thickness" class="range-input" min="1" max="15" value="7" step="1">
+          <small style="font-size: 0.7rem; color: var(--text-dim);">ความหนาของเส้นที่วาดลง line_mask</small>
+        </div>
+
+        <!-- min_poly_vertices -->
+        <div class="param-item">
+          <div class="param-header">
+            <span class="param-title">5. Poly Complexity (len >)</span>
+            <span id="val-poly" class="param-val">5</span>
+          </div>
+          <input type="range" id="input-poly" class="range-input" min="3" max="12" value="5" step="1">
+          <small style="font-size: 0.7rem; color: var(--text-dim);">ความซับซ้อนของรูปทรงลายเซ็น (เหลี่ยม)</small>
+        </div>
+
+        <!-- Horizontal Only Toggle -->
+        <div class="param-item">
+          <div class="toggle-row">
+            <div>
+              <div style="font-size: 0.8rem; font-weight: 500;">ตรวจเฉพาะเส้นแนวนอน</div>
+              <small style="font-size: 0.7rem; color: var(--text-dim);">กรองมุม 80° - 100° (ไม่ลบเส้นกรอบตาราง)</small>
+            </div>
+            <label class="switch">
+              <input type="checkbox" id="input-horizontal" checked>
+              <span class="slider"></span>
+            </label>
+          </div>
+        </div>
+      </div>
+
+      <!-- Action Buttons -->
+      <div class="action-row">
+        <button id="btn-reset" class="btn btn-secondary">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M17.65 6.35C16.2 4.9 14.21 4 12 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08c-.82 2.33-3.04 4-5.65 4-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/></svg>
+          คืนค่าเริ่มต้น
+        </button>
+        <button id="btn-process" class="btn btn-primary">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M7.5 5.6L10 7 8.6 4.5 10 2 7.5 3.4 5 2l1.4 2.5L5 7zm12 9.8L17 14l1.4 2.5L17 19l2.5-1.4L22 19l-1.4-2.5L22 14zM22 2l-2.5 1.4L17 2l1.4 2.5L17 7l2.5-1.4L22 7l-1.4-2.5zm-7.63 5.29c-.39-.39-1.02-.39-1.41 0L1.29 18.96c-.39.39-.39 1.02 0 1.41l2.34 2.34c.39.39 1.02.39 1.41 0L16.7 11.05c.39-.39.39-1.02 0-1.41l-2.33-2.35zm-1.03 5.49l-2.12-2.12 2.44-2.44 2.12 2.12-2.44 2.44z"/></svg>
+          ประมวลผลภาพ (Process Pipeline)
+        </button>
+      </div>
+    </section>
+
+    <!-- Diagnostics Ribbon -->
+    <section class="stats-ribbon" id="stats-ribbon">
+      <div class="stat-card">
+        <span class="stat-title">⏱️ Latency</span>
+        <span class="stat-val" id="stat-latency">- <small>ms</small></span>
+      </div>
+      <div class="stat-card">
+        <span class="stat-title">📐 Resolution</span>
+        <span class="stat-val" id="stat-dim">- <small>px</small></span>
+      </div>
+      <div class="stat-card">
+        <span class="stat-title">🛡️ ลายเซ็นที่ตรวจพบ</span>
+        <span class="stat-val" id="stat-sig-count" style="color: var(--emerald);">- <small>contours</small></span>
+      </div>
+      <div class="stat-card">
+        <span class="stat-title">🔒 พิกเซลลายเซ็นที่คุ้มกัน</span>
+        <span class="stat-val" id="stat-sig-px">- <small>px</small></span>
+      </div>
+      <div class="stat-card">
+        <span class="stat-title">📏 เส้นตรง/จุดไข่ปลา</span>
+        <span class="stat-val" id="stat-lines">- <small>lines</small></span>
+      </div>
+      <div class="stat-card">
+        <span class="stat-title">🎨 พิกเซลที่ซ่อม Inpaint</span>
+        <span class="stat-val" id="stat-safe-px" style="color: var(--cyan);">- <small>px</small></span>
+      </div>
+    </section>
+
+    <!-- View Mode Selector -->
+    <div class="view-mode-bar">
+      <div class="tab-group" id="view-mode-tabs">
+        <button class="tab-btn active" data-mode="slider">
+          <span>🎚️</span> Before / After Slider
+        </button>
+        <button class="tab-btn" data-mode="stepper">
+          <span>📋</span> 9-Step Pipeline Stepper
+        </button>
+        <button class="tab-btn" data-mode="grid">
+          <span>🔲</span> 9-Grid All Steps
+        </button>
+      </div>
+
+      <button id="btn-compare-ocr" class="btn btn-ocr">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor"><path d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z"/></svg>
+        เปรียบเทียบผลลัพธ์ OCR (ต้นฉบับ vs หลังตัดเส้น)
+      </button>
+    </div>
+
+    <!-- Main Viewport Card -->
+    <section class="viewport-card" id="viewport-card">
+      <div class="loading-overlay" id="loading-overlay">
+        <div class="loading-spinner"></div>
+        <p style="font-size: 0.9rem; color: #cbd5e1;">กำลังรัน <code>remove_lines_text_and_binarize</code>...</p>
+      </div>
+
+      <!-- Mode 1: Split Slider View -->
+      <div id="view-slider" class="split-slider-container">
+        <div class="split-badge left">ต้นฉบับ (Original)</div>
+        <div class="split-badge right">ภาพสุดท้ายเข้า OCR (Binarized)</div>
+        <img id="slider-img-orig" class="split-img" src="" alt="Original">
+        <div class="split-overlay" id="split-overlay">
+          <img id="slider-img-final" src="" alt="Preprocessed Final">
+        </div>
+        <div class="split-handle" id="split-handle">
+          <svg viewBox="0 0 24 24"><path d="M8.59 16.59L13.17 12 8.59 7.41 10 6l6 6-6 6-1.41-1.41z"/></svg>
+        </div>
+      </div>
+
+      <!-- Mode 2: 9-Step Stepper View -->
+      <div id="view-stepper" style="display: none; width: 100%; flex-direction: column; gap: 16px;">
+        <div class="step-stepper" id="step-stepper">
+          <!-- Dynamically populated 9 pills -->
+        </div>
+
+        <div class="single-view-container">
+          <div class="image-stage-frame">
+            <img id="stepper-active-img" src="" alt="Step image" onclick="openModal(this.src)">
+          </div>
+          <div class="image-caption" id="stepper-active-desc">
+            คำอธิบายแต่ละขั้นตอน
+          </div>
+        </div>
+      </div>
+
+      <!-- Mode 3: 9-Grid View -->
+      <div id="view-grid" class="grid-view-container" style="display: none;">
+        <!-- Dynamically populated 9 cards -->
+      </div>
+    </section>
+
+    <!-- OCR Comparison Section -->
+    <section class="ocr-compare-section" id="ocr-section" style="display: none;">
+      <div class="panel-header">
+        <div class="panel-title">
+          <span>🔍</span> ผลการทดสอบเปรียบเทียบโมเดล Thai OCR (ThaiPerceptionEngine)
+        </div>
+        <div id="ocr-summary-tag" class="tag-badge">
+          พร้อมเปรียบเทียบ
+        </div>
+      </div>
+
+      <div class="ocr-columns">
+        <div class="ocr-box">
+          <div class="ocr-box-header">
+            <span style="color: #f87171;">❌ ภาพต้นฉบับ (ก่อนตัดจุดไข่ปลา)</span>
+            <span id="ocr-orig-count" style="font-family: var(--font-mono); color: var(--text-dim);">- lines</span>
+          </div>
+          <div class="ocr-text-scroll" id="ocr-orig-text">
+            (กดปุ่มเปรียบเทียบผลลัพธ์ OCR ด้านบนเพื่อดูผลลัพธ์)
+          </div>
+        </div>
+
+        <div class="ocr-box">
+          <div class="ocr-box-header">
+            <span style="color: #34d399;">✅ ภาพหลังตัดเส้นและ Inpaint (สะอาด)</span>
+            <span id="ocr-clean-count" style="font-family: var(--font-mono); color: var(--emerald);">- lines</span>
+          </div>
+          <div class="ocr-text-scroll" id="ocr-clean-text">
+            (กดปุ่มเปรียบเทียบผลลัพธ์ OCR ด้านบนเพื่อดูผลลัพธ์)
+          </div>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- Modal for full screen zoom -->
+  <div class="modal" id="image-modal" onclick="closeModal()">
+    <span class="modal-close">&times;</span>
+    <img class="modal-content" id="modal-img" src="" alt="Enlarged preview">
+  </div>
+
+  <footer>
+    Automated Financial Document Extraction System • Department of Computer Engineering, Mahidol University
+  </footer>
+
+  <script>
+    // State management
+    let state = {
+      images: {},
+      stats: {},
+      selectedSample: null,
+      customFile: null,
+      currentViewMode: 'slider',
+      currentStepIdx: 8, // Default to final step (index 8 = Step 9)
+      ocrResults: null,
+    };
+
+    const STEP_CONFIG = [
+      { id: 'original', name: '1. ต้นฉบับ', title: 'ภาพต้นฉบับ (Original Image)', desc: 'เอกสารดิบก่อนการประมวลผล มีเส้นบรรทัดจุดไข่ปลา (.....) และลายเซ็นของผู้ทำเอกสาร' },
+      { id: 'gray', name: '2. Grayscale', title: 'แปลงเป็นขาวดำ 8-bit (Grayscale)', desc: 'ลดมิติสีเหลือ 1 Channel (0-255) เตรียมความพร้อมสำหรับการตรวจจับเส้นขอบและ Adaptive Thresholding' },
+      { id: 'adaptive_bin', name: '3. Adaptive Binary', title: 'Adaptive Thresholding & Dilation', desc: 'แปลงภาพเป็นไบนารีด้วย Gaussian Adaptive Threshold แบบ Invert (หมึกดำเป็นสีขาว 255) และขยายเส้นสโตรกด้วย Dilation 3x3' },
+      { id: 'signature_mask', name: '4. Signature Mask', title: 'หน้ากากคุ้มกันลายเซ็น (Signature Mask)', desc: 'กรองคอนทัวร์ที่เป็นลายเซ็นด้วยเกณฑ์: พื้นที่ > 600, อัตราส่วนกว้าง/สูง 0.3-7.0, และความซับซ้อน Poly > 5 เพื่อกันไม่ให้ถูกลบ' },
+      { id: 'canny_edges', name: '5. Canny Edges', title: 'ตรวจจับขอบภาพ (Canny Edge Detection)', desc: 'สกัดเส้นขอบคมชัดด้วย Canny Threshold 50/150 เพื่อส่งต่อให้ Hough Transform ค้นหาเส้นตรง' },
+      { id: 'line_mask', name: '6. HoughLines Mask', title: 'หน้ากากเส้นตรง (HoughLines Mask - หนา 7)', desc: 'ตรวจจับเส้นตรงในแนวราบ (80°-100°) ด้วย HoughLines และวาดลงบน Mask ด้วยความหนา 7 พิกเซลเพื่อครอบคลุมจุดไข่ปลา' },
+      { id: 'safe_line_mask', name: '7. Safe Line Mask', title: 'Safe Line Mask (ตัดเส้นโดยไม่ลบลายเซ็น)', desc: 'นำ line_mask มาตัดส่วนที่ทับซ้อนกับ signature_mask ออก รับประกันว่าลายเซ็นและข้อความสำคัญจะไม่โดนลบ' },
+      { id: 'inpainted', name: '8. Inpainted Image', title: 'ภาพหลังลบเส้นด้วย Inpainting', desc: 'ลบเส้นตรงและจุดไข่ปลาใน safe_line_mask แล้วซ่อมพื้นหลังด้วยเทคนิค Telea Inpainting ให้เนียนเรียบ' },
+      { id: 'final_binarized', name: '9. Final OCR Image', title: 'ภาพสุดท้ายส่งเข้าโมเดล OCR (Binarized)', desc: 'ภาพที่ผ่านการ Inpaint แล้วแปลงเป็นไบนารีคมชัดด้วย threshold = thresh_bin พร้อมส่งเข้า PaddleOCR' },
+    ];
+
+    // DOM Elements
+    const sampleSelect = document.getElementById('sample-select');
+    const dropzone = document.getElementById('dropzone');
+    const fileInput = document.getElementById('file-input');
+    const uploadLabel = document.getElementById('upload-label');
+    const btnProcess = document.getElementById('btn-process');
+    const btnReset = document.getElementById('btn-reset');
+    const btnCompareOcr = document.getElementById('btn-compare-ocr');
+    const loadingOverlay = document.getElementById('loading-overlay');
+
+    // Range Inputs
+    const inputThreshBin = document.getElementById('input-thresh-bin');
+    const valThreshBin = document.getElementById('val-thresh-bin');
+    const inputSigArea = document.getElementById('input-sig-area');
+    const valSigArea = document.getElementById('val-sig-area');
+    const inputHoughThresh = document.getElementById('input-hough-thresh');
+    const valHoughThresh = document.getElementById('val-hough-thresh');
+    const inputThickness = document.getElementById('input-thickness');
+    const valThickness = document.getElementById('val-thickness');
+    const inputPoly = document.getElementById('input-poly');
+    const valPoly = document.getElementById('val-poly');
+    const inputHorizontal = document.getElementById('input-horizontal');
+
+    // Sliders Bindings
+    function bindSlider(input, label) {
+      input.addEventListener('input', () => { label.innerText = input.value; });
+    }
+    bindSlider(inputThreshBin, valThreshBin);
+    bindSlider(inputSigArea, valSigArea);
+    bindSlider(inputHoughThresh, valHoughThresh);
+    bindSlider(inputThickness, valThickness);
+    bindSlider(inputPoly, valPoly);
+
+    // Load available sample documents from server
+    async function loadSamples() {
+      try {
+        const res = await fetch('/api/preprocess/samples');
+        const data = await res.json();
+        sampleSelect.innerHTML = '<option value="">-- เลือกเอกสารตัวอย่างเพื่อทดสอบ --</option>';
+        data.forEach((s) => {
+          const opt = document.createElement('option');
+          opt.value = s.path;
+          opt.innerText = `[${s.folder}] ${s.name}`;
+          sampleSelect.appendChild(opt);
+        });
+
+        // Auto-select first sample and trigger initial process
+        if (data.length > 0) {
+          sampleSelect.value = data[0].path;
+          state.selectedSample = data[0].path;
+          runPipeline();
+        }
+      } catch (err) {
+        console.error('Failed to load samples:', err);
+        sampleSelect.innerHTML = '<option value="">ไม่สามารถโหลดตัวอย่างได้</option>';
+      }
+    }
+
+    // Dropzone & File Input Handlers
+    dropzone.addEventListener('click', () => fileInput.click());
+    fileInput.addEventListener('change', (e) => {
+      if (e.target.files.length > 0) {
+        handleFileSelect(e.target.files[0]);
+      }
+    });
+
+    dropzone.addEventListener('dragover', (e) => {
+      e.preventDefault();
+      dropzone.classList.add('dragover');
+    });
+
+    dropzone.addEventListener('dragleave', () => dropzone.classList.remove('dragover'));
+    dropzone.addEventListener('drop', (e) => {
+      e.preventDefault();
+      dropzone.classList.remove('dragover');
+      if (e.dataTransfer.files.length > 0) {
+        handleFileSelect(e.dataTransfer.files[0]);
+      }
+    });
+
+    function handleFileSelect(file) {
+      state.customFile = file;
+      state.selectedSample = null;
+      sampleSelect.value = '';
+      uploadLabel.innerText = `ไฟล์ที่เลือก: ${file.name} (${(file.size / 1024).toFixed(1)} KB)`;
+      runPipeline();
+    }
+
+    sampleSelect.addEventListener('change', () => {
+      if (sampleSelect.value) {
+        state.selectedSample = sampleSelect.value;
+        state.customFile = null;
+        uploadLabel.innerText = 'ลากไฟล์มาวางที่นี่ หรือคลิกเพื่อเลือกไฟล์';
+        runPipeline();
+      }
+    });
+
+    // Reset Defaults
+    btnReset.addEventListener('click', () => {
+      inputThreshBin.value = 200; valThreshBin.innerText = 200;
+      inputSigArea.value = 600; valSigArea.innerText = 600;
+      inputHoughThresh.value = 150; valHoughThresh.innerText = 150;
+      inputThickness.value = 7; valThickness.innerText = 7;
+      inputPoly.value = 5; valPoly.innerText = 5;
+      inputHorizontal.checked = true;
+      runPipeline();
+    });
+
+    btnProcess.addEventListener('click', () => runPipeline());
+
+    // Execute Main Preprocessing Pipeline via API
+    async function runPipeline() {
+      if (!state.selectedSample && !state.customFile) return;
+
+      loadingOverlay.style.display = 'flex';
+      const formData = new FormData();
+
+      if (state.customFile) {
+        formData.append('file', state.customFile);
+      } else if (state.selectedSample) {
+        formData.append('sample_path', state.selectedSample);
+      }
+
+      formData.append('thresh_bin', inputThreshBin.value);
+      formData.append('min_sig_area', inputSigArea.value);
+      formData.append('hough_threshold', inputHoughThresh.value);
+      formData.append('line_thickness', inputThickness.value);
+      formData.append('min_poly_vertices', inputPoly.value);
+      formData.append('horizontal_only', inputHorizontal.checked ? 'true' : 'false');
+
+      try {
+        const res = await fetch('/api/preprocess/process', {
+          method: 'POST',
+          body: formData
+        });
+        const data = await res.json();
+        if (data.error) {
+          alert('Error: ' + data.error);
+          return;
+        }
+
+        state.images = data.images;
+        state.stats = data.stats;
+
+        updateDiagnostics(data.stats);
+        updateViews();
+      } catch (err) {
+        console.error('Pipeline error:', err);
+        alert('เกิดข้อผิดพลาดในการประมวลผลภาพ');
+      } finally {
+        loadingOverlay.style.display = 'none';
+      }
+    }
+
+    // Diagnostics Update
+    function updateDiagnostics(stats) {
+      if (!stats) return;
+      document.getElementById('stat-latency').innerHTML = `${stats.elapsed_ms || '-'} <small>ms</small>`;
+      document.getElementById('stat-dim').innerHTML = `${stats.width || '-'} × ${stats.height || '-'} <small>px</small>`;
+      document.getElementById('stat-sig-count').innerHTML = `${stats.signature_contours_kept || 0} <small>kept / ${stats.total_contours || 0}</small>`;
+      document.getElementById('stat-sig-px').innerHTML = `${(stats.signature_mask_pixels || 0).toLocaleString()} <small>px</small>`;
+      document.getElementById('stat-lines').innerHTML = `${stats.detected_lines_count || 0} <small>lines</small>`;
+      document.getElementById('stat-safe-px').innerHTML = `${(stats.safe_line_pixels || 0).toLocaleString()} <small>px</small>`;
+    }
+
+    // Update Views based on state
+    function updateViews() {
+      if (!state.images.original) return;
+
+      // 1. Update Slider View
+      document.getElementById('slider-img-orig').src = state.images.original;
+      document.getElementById('slider-img-final').src = state.images.final_binarized;
+
+      // Adjust split overlay width to match aspect
+      const origImg = document.getElementById('slider-img-orig');
+      const finalImg = document.getElementById('slider-img-final');
+      origImg.onload = () => {
+        finalImg.style.width = origImg.clientWidth + 'px';
+        finalImg.style.height = origImg.clientHeight + 'px';
+      };
+
+      // 2. Build Stepper Pills & Stage Frame
+      const stepper = document.getElementById('step-stepper');
+      stepper.innerHTML = '';
+      STEP_CONFIG.forEach((step, idx) => {
+        const pill = document.createElement('div');
+        pill.className = `step-pill ${idx === state.currentStepIdx ? 'active' : ''}`;
+        pill.innerHTML = `<span class="step-idx">${idx + 1}</span> <span>${step.name}</span>`;
+        pill.onclick = () => selectStep(idx);
+        stepper.appendChild(pill);
+      });
+      renderActiveStep();
+
+      // 3. Build 9-Grid Cards
+      const grid = document.getElementById('view-grid');
+      grid.innerHTML = '';
+      STEP_CONFIG.forEach((step, idx) => {
+        const imgSrc = state.images[step.id] || '';
+        const card = document.createElement('div');
+        card.className = 'grid-card';
+        card.innerHTML = `
+          <div class="grid-card-header">
+            <span class="grid-card-title">${step.name}</span>
+            <span class="tag-badge">Step ${idx + 1}</span>
+          </div>
+          <img class="grid-card-img" src="${imgSrc}" alt="${step.name}" onclick="openModal('${imgSrc}')">
+          <p class="grid-card-desc">${step.desc}</p>
+        `;
+        grid.appendChild(card);
+      });
+    }
+
+    // Stepper Selection
+    function selectStep(idx) {
+      state.currentStepIdx = idx;
+      document.querySelectorAll('.step-pill').forEach((p, i) => {
+        p.classList.toggle('active', i === idx);
+      });
+      renderActiveStep();
+    }
+
+    function renderActiveStep() {
+      const step = STEP_CONFIG[state.currentStepIdx];
+      const activeImg = document.getElementById('stepper-active-img');
+      const activeDesc = document.getElementById('stepper-active-desc');
+      activeImg.src = state.images[step.id] || '';
+      activeDesc.innerHTML = `<strong>${step.title}</strong> — ${step.desc}`;
+    }
+
+    // View Mode Tab Switching
+    document.querySelectorAll('#view-mode-tabs .tab-btn').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('#view-mode-tabs .tab-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        const mode = btn.dataset.mode;
+        state.currentViewMode = mode;
+
+        document.getElementById('view-slider').style.display = (mode === 'slider') ? 'block' : 'none';
+        document.getElementById('view-stepper').style.display = (mode === 'stepper') ? 'flex' : 'none';
+        document.getElementById('view-grid').style.display = (mode === 'grid') ? 'grid' : 'none';
+
+        if (mode === 'slider') {
+          // Re-sync image dimensions
+          const origImg = document.getElementById('slider-img-orig');
+          const finalImg = document.getElementById('slider-img-final');
+          if (origImg.clientWidth > 0) {
+            finalImg.style.width = origImg.clientWidth + 'px';
+            finalImg.style.height = origImg.clientHeight + 'px';
+          }
+        }
+      });
+    });
+
+    // Split Slider Interactive Dragging
+    const splitContainer = document.getElementById('view-slider');
+    const splitOverlay = document.getElementById('split-overlay');
+    const splitHandle = document.getElementById('split-handle');
+    let isDragging = false;
+
+    function setSliderPosition(x) {
+      const rect = splitContainer.getBoundingClientRect();
+      let pos = (x - rect.left) / rect.width;
+      pos = Math.max(0.02, Math.min(0.98, pos));
+      const pct = (pos * 100).toFixed(1) + '%';
+      splitOverlay.style.width = pct;
+      splitHandle.style.left = pct;
+    }
+
+    splitContainer.addEventListener('mousedown', (e) => {
+      isDragging = true;
+      setSliderPosition(e.clientX);
+    });
+
+    window.addEventListener('mousemove', (e) => {
+      if (!isDragging) return;
+      setSliderPosition(e.clientX);
+    });
+
+    window.addEventListener('mouseup', () => { isDragging = false; });
+
+    // Touch Support for Mobile / Tablets
+    splitContainer.addEventListener('touchstart', (e) => {
+      isDragging = true;
+      setSliderPosition(e.touches[0].clientX);
+    });
+
+    window.addEventListener('touchmove', (e) => {
+      if (!isDragging) return;
+      setSliderPosition(e.touches[0].clientX);
+    });
+
+    window.addEventListener('touchend', () => { isDragging = false; });
+
+    // Live OCR Comparison
+    btnCompareOcr.addEventListener('click', async () => {
+      if (!state.selectedSample && !state.customFile) return;
+
+      const ocrSection = document.getElementById('ocr-section');
+      ocrSection.style.display = 'flex';
+      ocrSection.scrollIntoView({ behavior: 'smooth' });
+
+      document.getElementById('ocr-orig-text').innerText = 'กำลังรัน OCR บนภาพต้นฉบับ...';
+      document.getElementById('ocr-clean-text').innerText = 'กำลังรัน OCR บนภาพที่ผ่านการตัดเส้น...';
+
+      const formData = new FormData();
+      if (state.customFile) {
+        formData.append('file', state.customFile);
+      } else if (state.selectedSample) {
+        formData.append('sample_path', state.selectedSample);
+      }
+      formData.append('thresh_bin', inputThreshBin.value);
+
+      try {
+        const res = await fetch('/api/preprocess/compare_ocr', {
+          method: 'POST',
+          body: formData
+        });
+        const data = await res.json();
+        if (data.error) {
+          alert('OCR Comparison Error: ' + data.error);
+          return;
+        }
+
+        document.getElementById('ocr-orig-count').innerText = `${data.original_line_count} บรรทัด`;
+        document.getElementById('ocr-clean-count').innerText = `${data.clean_line_count} บรรทัด (+${data.clean_line_count - data.original_line_count})`;
+        document.getElementById('ocr-orig-text').innerText = data.original_text || '(ไม่พบข้อความ)';
+        document.getElementById('ocr-clean-text').innerText = data.clean_text || '(ไม่พบข้อความ)';
+        document.getElementById('ocr-summary-tag').innerText = `ตรวจจับเพิ่มขึ้น ${data.clean_line_count - data.original_line_count} บรรทัด (${data.elapsed_ms} ms)`;
+      } catch (err) {
+        console.error('OCR Compare error:', err);
+        document.getElementById('ocr-orig-text').innerText = 'เกิดข้อผิดพลาดในการรัน OCR';
+      }
+    });
+
+    // Image Zoom Modal
+    function openModal(src) {
+      if (!src) return;
+      const modal = document.getElementById('image-modal');
+      const modalImg = document.getElementById('modal-img');
+      modalImg.src = src;
+      modal.style.display = 'flex';
+    }
+
+    function closeModal() {
+      document.getElementById('image-modal').style.display = 'none';
+    }
+
+    // Initialize on page load
+    window.addEventListener('DOMContentLoaded', loadSamples);
+  </script>
+</body>
+</html>

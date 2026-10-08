@@ -78,15 +78,16 @@ if not exist ".venv\Scripts\python.exe" (
 
 echo.
 echo ============================================================
-echo   Server is running at: http://localhost:8000
-echo   Swagger API Docs at:  http://localhost:8000/docs
-echo   Ollama LLM Host at:   http://localhost:11434 (GPU: %OLLAMA_NUM_GPU%)
+echo   Interactive UI Studio: http://localhost:8000/
+echo   Swagger API Docs:      http://localhost:8000/docs
+echo   ReDoc Documentation:   http://localhost:8000/redoc
+echo   Ollama LLM Host at:    http://localhost:11434 (GPU: %OLLAMA_NUM_GPU%)
 echo   Press Ctrl + C in this window to stop the server.
 echo ============================================================
 echo.
 
-:: Automatically open browser to Swagger API Docs
-start "" cmd /c "timeout /t 2 /nobreak > nul && start http://localhost:8000/docs"
+:: Automatically open browser to Interactive UI Studio
+start "" cmd /c "timeout /t 2 /nobreak > nul && start http://localhost:8000/"
 
 :: Launch FastAPI Web Server
 .\.venv\Scripts\python.exe -m src.app
