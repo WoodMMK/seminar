@@ -130,10 +130,6 @@ def clean_dotted_lines_from_image(img_input: np.ndarray, min_chain_len: int = 3)
 def remove_lines_text_and_binarize(
     image_path: Union[str, Path, np.ndarray, Image.Image],
     thresh_bin: int = 200,
-    min_sig_area: float = 600.0,
-    min_aspect_ratio: float = 0.3,
-    max_aspect_ratio: float = 7.0,
-    min_poly_vertices: int = 5,
     canny_thresh1: int = 50,
     canny_thresh2: int = 150,
     hough_threshold: int = 150,
@@ -144,26 +140,16 @@ def remove_lines_text_and_binarize(
     page_num: int = 1,
 ) -> Union[np.ndarray, dict]:
     """
-    Image preprocessing function to remove dotted fill-in lines while protecting signatures.
+    Image preprocessing function to remove dotted fill-in lines and form baselines.
 
     Steps:
     1. Read image and convert to grayscale.
-    2. Create signature mask (กันไว้ไม่ให้โดนลบ):
-       - Adaptive Threshold (THRESH_BINARY_INV)
-       - Dilation with (3, 3) kernel
-       - Filter contours:
-         * area > 600 (min_sig_area)
-         * 0.3 < aspect_ratio < 7 (min_aspect_ratio < ar < max_aspect_ratio)
-         * len(approxPolyDP) > 5 (min_poly_vertices)
-       - Draw passing contours onto signature_mask (pixel 255 = white = signature).
-    3. Detect straight lines in the image:
+    2. Detect straight lines using Canny edge detection and HoughLines:
        - Canny edge detection (canny_thresh1, canny_thresh2).
-       - HoughLines detection.
+       - HoughLines detection (horizontal_only: 80°-100°).
        - Draw detected lines onto line_mask with thickness 7.
-    4. Create safe_line_mask:
-       - safe_line_mask = line_mask without signature_mask (protects signatures from line erasure).
-    5. Erase lines with inpainting:
-       - Inpaint regions where safe_line_mask == 255 with background.
+    3. Inpaint lines directly:
+       - Inpaint regions where line_mask == 255 with background color.
        - Binarize inpainted image with threshold thresh_bin (default 200).
     """
     import time
@@ -197,44 +183,7 @@ def remove_lines_text_and_binarize(
 
     gray = cv2.cvtColor(img_bgr, cv2.COLOR_BGR2GRAY)
 
-    # 2. Signature mask (กันไว้ไม่ให้โดนลบ)
-    adaptive_bin = cv2.adaptiveThreshold(
-        gray, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY_INV, 15, 8
-    )
-    kernel_dilate = cv2.getStructuringElement(cv2.MORPH_RECT, (3, 3))
-    dilated = cv2.dilate(adaptive_bin, kernel_dilate, iterations=2)
-    contours, _ = cv2.findContours(dilated, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-
-    signature_mask = np.zeros_like(gray, dtype=np.uint8)
-    sig_count = 0
-    contour_samples = []
-
-    for cnt in contours:
-        area = cv2.contourArea(cnt)
-        if area <= min_sig_area:
-            continue
-        x, y, w, h = cv2.boundingRect(cnt)
-        if h == 0:
-            continue
-        ar = float(w) / float(h)
-        if not (min_aspect_ratio < ar < max_aspect_ratio):
-            continue
-        epsilon = 0.02 * cv2.arcLength(cnt, True)
-        approx = cv2.approxPolyDP(cnt, epsilon, True)
-        if len(approx) <= min_poly_vertices:
-            continue
-
-        sig_count += 1
-        cv2.drawContours(signature_mask, [cnt], -1, 255, thickness=-1)
-        if len(contour_samples) < 30:
-            contour_samples.append({
-                "area": round(float(area), 1),
-                "aspect_ratio": round(ar, 2),
-                "poly_vertices": len(approx),
-                "bbox": [int(x), int(y), int(w), int(h)]
-            })
-
-    # 3. Detect straight lines using Canny and HoughLines
+    # 2. Detect straight lines using Canny and HoughLines
     edges = cv2.Canny(gray, canny_thresh1, canny_thresh2, apertureSize=3)
     lines = cv2.HoughLines(edges, 1, np.pi / 180, hough_threshold)
 
@@ -263,13 +212,10 @@ def remove_lines_text_and_binarize(
             y2 = int(y0 - diag * a)
             cv2.line(line_mask, (x1, y1), (x2, y2), 255, thickness=line_thickness)
 
-    # 4. Safe line mask (ไม่ให้ลบเส้นส่วนที่ทับกับลายเซ็น)
-    safe_line_mask = cv2.bitwise_and(line_mask, cv2.bitwise_not(signature_mask))
-
-    # 5. Inpaint lines where safe_line_mask == 255, then binarize
-    has_lines = bool(np.any(safe_line_mask == 255))
+    # 3. Inpaint lines where line_mask == 255, then binarize
+    has_lines = bool(np.any(line_mask == 255))
     if has_lines:
-        inpainted_bgr = cv2.inpaint(img_bgr, safe_line_mask, inpaintRadius=inpaint_radius, flags=cv2.INPAINT_TELEA)
+        inpainted_bgr = cv2.inpaint(img_bgr, line_mask, inpaintRadius=inpaint_radius, flags=cv2.INPAINT_TELEA)
     else:
         inpainted_bgr = img_bgr.copy()
 
@@ -285,11 +231,8 @@ def remove_lines_text_and_binarize(
         "final_image": final_binarized,
         "original_bgr": img_bgr,
         "gray": gray,
-        "adaptive_bin": adaptive_bin,
-        "signature_mask": signature_mask,
         "canny_edges": edges,
         "line_mask": line_mask,
-        "safe_line_mask": safe_line_mask,
         "inpainted_bgr": inpainted_bgr,
         "inpainted_gray": inpainted_gray,
         "final_binarized": final_binarized,
@@ -297,20 +240,13 @@ def remove_lines_text_and_binarize(
             "elapsed_ms": elapsed_ms,
             "width": int(gray.shape[1]),
             "height": int(gray.shape[0]),
-            "total_contours": len(contours),
-            "signature_contours_kept": sig_count,
-            "signature_mask_pixels": int(np.sum(signature_mask == 255)),
             "detected_lines_count": line_count,
             "line_mask_pixels": int(np.sum(line_mask == 255)),
-            "safe_line_pixels": int(np.sum(safe_line_mask == 255)),
-            "protected_line_pixels": int(np.sum(line_mask == 255) - np.sum(safe_line_mask == 255)),
+            "inpainted_pixels": int(np.sum(line_mask == 255)),
             "thresh_bin": thresh_bin,
-            "min_sig_area": min_sig_area,
-            "aspect_ratio_range": [min_aspect_ratio, max_aspect_ratio],
             "hough_threshold": hough_threshold,
             "line_thickness": line_thickness,
             "horizontal_only": horizontal_only,
-            "contour_samples": contour_samples,
             "line_angles_sample": line_angles,
         }
     }

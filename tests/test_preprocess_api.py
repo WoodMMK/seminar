@@ -14,7 +14,7 @@ def test_ui_routes():
     res_ui = client.get("/ui")
     assert res_ui.status_code == 200
     assert "text/html" in res_ui.headers.get("content-type", "")
-    assert "Thai OCR Preprocessing" in res_ui.text
+    assert "Thai OCR Dotted Line Inpainting Studio" in res_ui.text
 
     res_pre = client.get("/preprocess")
     assert res_pre.status_code == 200
@@ -22,7 +22,7 @@ def test_ui_routes():
     # Browser request to /
     res_root = client.get("/", headers={"Accept": "text/html,application/xhtml+xml"})
     assert res_root.status_code == 200
-    assert "Thai OCR Preprocessing" in res_root.text
+    assert "Thai OCR Dotted Line Inpainting Studio" in res_root.text
 
 
 def test_samples_endpoint():
@@ -39,7 +39,7 @@ def test_samples_endpoint():
 
 
 def test_process_endpoint_with_sample():
-    """Verify that /api/preprocess/process returns all 9 image dataurls and stats."""
+    """Verify that /api/preprocess/process returns all 6 image dataurls and stats."""
     res_samples = client.get("/api/preprocess/samples")
     samples = res_samples.json()
     sample_path = samples[0]["path"]
@@ -49,7 +49,6 @@ def test_process_endpoint_with_sample():
         data={
             "sample_path": sample_path,
             "thresh_bin": 200,
-            "min_sig_area": 600,
             "hough_threshold": 150,
             "line_thickness": 7,
             "horizontal_only": "true"
@@ -60,8 +59,7 @@ def test_process_endpoint_with_sample():
     assert data.get("success") is True
     images = data.get("images", {})
     for expected_key in [
-        "original", "gray", "adaptive_bin", "signature_mask",
-        "canny_edges", "line_mask", "safe_line_mask", "inpainted", "final_binarized"
+        "original", "gray", "canny_edges", "line_mask", "inpainted", "final_binarized"
     ]:
         assert expected_key in images
         assert images[expected_key].startswith("data:image/png;base64,")

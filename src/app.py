@@ -238,29 +238,23 @@ async def api_preprocess_samples():
 @app.post(
     "/api/preprocess/process",
     tags=["Image Preprocessing & Inpainting"],
-    summary="Execute remove_lines_text_and_binarize Pipeline and Return 9 Stage Images"
+    summary="Execute remove_lines_text_and_binarize Pipeline and Return Stage Images"
 )
 async def api_preprocess_process(
     file: Optional[UploadFile] = File(None),
     sample_path: Optional[str] = Form(None),
     page_num: int = Form(1),
     thresh_bin: int = Form(200),
-    min_sig_area: float = Form(600.0),
-    min_aspect_ratio: float = Form(0.3),
-    max_aspect_ratio: float = Form(7.0),
-    min_poly_vertices: int = Form(5),
     hough_threshold: int = Form(150),
     line_thickness: int = Form(7),
     horizontal_only: bool = Form(True),
 ):
     """
-    Executes the 5-step image processing pipeline:
+    Executes the image processing pipeline:
     1. Grayscale conversion
-    2. Adaptive thresholding + Dilation -> Contour filtering for signature mask
-    3. Canny edge detection + HoughLines -> Line mask (thickness 7)
-    4. Safe line mask (line_mask without signature_mask)
-    5. Inpainting on safe_line_mask + Binarization with thresh_bin
-    Returns base64 data URLs for all 9 stages + detailed contour & line metrics.
+    2. Canny edge detection + HoughLines -> Line mask (thickness 7)
+    3. Inpainting on line_mask + Binarization with thresh_bin
+    Returns base64 data URLs for all stages + detailed line metrics.
     """
     try:
         import cv2
@@ -293,10 +287,6 @@ async def api_preprocess_process(
             remove_lines_text_and_binarize,
             image_path=target_input,
             thresh_bin=thresh_bin,
-            min_sig_area=min_sig_area,
-            min_aspect_ratio=min_aspect_ratio,
-            max_aspect_ratio=max_aspect_ratio,
-            min_poly_vertices=min_poly_vertices,
             hough_threshold=hough_threshold,
             line_thickness=line_thickness,
             horizontal_only=horizontal_only,
@@ -311,11 +301,8 @@ async def api_preprocess_process(
         images = {
             "original": encode_dataurl(res["original_bgr"]),
             "gray": encode_dataurl(res["gray"]),
-            "adaptive_bin": encode_dataurl(res["adaptive_bin"]),
-            "signature_mask": encode_dataurl(res["signature_mask"]),
             "canny_edges": encode_dataurl(res["canny_edges"]),
             "line_mask": encode_dataurl(res["line_mask"]),
-            "safe_line_mask": encode_dataurl(res["safe_line_mask"]),
             "inpainted": encode_dataurl(res["inpainted_bgr"]),
             "final_binarized": encode_dataurl(res["final_binarized"]),
         }

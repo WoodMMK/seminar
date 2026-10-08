@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Thai OCR Image Preprocessing & Signature Protection Studio</title>
+  <title>Thai OCR Dotted Line Inpainting Studio</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&family=Outfit:wght@400;500;600;700&family=Prompt:wght@300;400;500;600;700&display=swap" rel="stylesheet">
@@ -49,7 +49,6 @@
       overflow-x: hidden;
     }
 
-    /* Header */
     header {
       background: rgba(10, 15, 29, 0.85);
       backdrop-filter: blur(16px);
@@ -142,7 +141,6 @@
       border-color: rgba(255, 255, 255, 0.2);
     }
 
-    /* Main Container */
     main {
       flex: 1;
       padding: 24px 28px;
@@ -154,7 +152,6 @@
       gap: 20px;
     }
 
-    /* Top Control Bar */
     .control-panel {
       background: var(--bg-card);
       backdrop-filter: blur(14px);
@@ -254,10 +251,9 @@
       color: #fff;
     }
 
-    /* Parameters Grid */
     .params-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
       gap: 14px;
       padding-top: 4px;
     }
@@ -421,7 +417,6 @@
       transform: translateY(-1px);
     }
 
-    /* View Mode Tabs */
     .view-mode-bar {
       display: flex;
       justify-content: space-between;
@@ -466,10 +461,9 @@
       background: rgba(255, 255, 255, 0.05);
     }
 
-    /* Stats Ribbon */
     .stats-ribbon {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
       gap: 12px;
     }
 
@@ -506,7 +500,6 @@
       color: var(--text-muted);
     }
 
-    /* Canvas / Viewport Area */
     .viewport-card {
       background: var(--bg-card);
       border: 1px solid var(--border-subtle);
@@ -519,7 +512,6 @@
       position: relative;
     }
 
-    /* Step Selector Pills */
     .step-stepper {
       display: flex;
       gap: 8px;
@@ -573,7 +565,6 @@
       font-weight: 700;
     }
 
-    /* Single Step Viewer */
     .single-view-container {
       display: flex;
       flex-direction: column;
@@ -611,7 +602,6 @@
       line-height: 1.5;
     }
 
-    /* Split Comparison Slider */
     .split-slider-container {
       position: relative;
       width: 100%;
@@ -699,10 +689,9 @@
       border: 1px solid var(--cyan);
     }
 
-    /* 9-Grid View */
     .grid-view-container {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
       gap: 16px;
       width: 100%;
     }
@@ -741,7 +730,7 @@
 
     .grid-card-img {
       width: 100%;
-      height: 240px;
+      height: 260px;
       object-fit: contain;
       background: #000;
       border-radius: 6px;
@@ -755,7 +744,6 @@
       line-height: 1.4;
     }
 
-    /* OCR Comparison Modal / Section */
     .ocr-compare-section {
       background: var(--bg-card);
       border: 1px solid var(--border-subtle);
@@ -809,7 +797,6 @@
       word-break: break-word;
     }
 
-    /* Loading Overlay */
     .loading-overlay {
       position: absolute;
       top: 0; left: 0; right: 0; bottom: 0;
@@ -837,7 +824,6 @@
       to { transform: rotate(360deg); }
     }
 
-    /* Modal for Full Image Zoom */
     .modal {
       display: none;
       position: fixed;
@@ -885,10 +871,10 @@
         <svg viewBox="0 0 24 24"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-5 14H7v-2h7v2zm3-4H7v-2h10v2zm0-4H7V7h10v2z"/></svg>
       </div>
       <div class="brand-text">
-        <h1>Thai OCR Preprocessing & Inpainting Studio</h1>
+        <h1>Thai OCR Dotted Line Inpainting Studio</h1>
         <p>
           <span>ฟังก์ชัน <code>remove_lines_text_and_binarize</code></span>
-          <span class="tag-badge">Adaptive Threshold + Dilation + HoughLines + Inpaint</span>
+          <span class="tag-badge">Canny + HoughLines (thickness=7) + Telea Inpaint + Binarize</span>
         </p>
       </div>
     </div>
@@ -911,7 +897,7 @@
     <section class="control-panel">
       <div class="panel-header">
         <div class="panel-title">
-          <span>⚙️</span> พารามิเตอร์การประมวลผล (Image Processing Pipeline Config)
+          <span>⚙️</span> พารามิเตอร์การตัดเส้นบรรทัดจุดไข่ปลา (Dotted Line Inpaint Config)
         </div>
         <div style="font-size: 0.78rem; color: var(--text-dim);">
           รองรับ PDF (แปลงที่ 150 DPI) และไฟล์รูปภาพทุกฟอร์แมต
@@ -954,20 +940,10 @@
           <small style="font-size: 0.7rem; color: var(--text-dim);">จุดตัดแปลงภาพขาวดำ (Thresholding)</small>
         </div>
 
-        <!-- min_sig_area -->
-        <div class="param-item">
-          <div class="param-header">
-            <span class="param-title">2. Min Signature Area (area >)</span>
-            <span id="val-sig-area" class="param-val">600</span>
-          </div>
-          <input type="range" id="input-sig-area" class="range-input" min="200" max="2000" value="600" step="50">
-          <small style="font-size: 0.7rem; color: var(--text-dim);">พื้นที่ขั้นต่ำของคอนทัวร์ลายเซ็น (พิกเซล)</small>
-        </div>
-
         <!-- hough_threshold -->
         <div class="param-item">
           <div class="param-header">
-            <span class="param-title">3. HoughLines Threshold</span>
+            <span class="param-title">2. HoughLines Threshold</span>
             <span id="val-hough-thresh" class="param-val">150</span>
           </div>
           <input type="range" id="input-hough-thresh" class="range-input" min="50" max="250" value="150" step="10">
@@ -977,21 +953,11 @@
         <!-- line_thickness -->
         <div class="param-item">
           <div class="param-header">
-            <span class="param-title">4. Line Thickness (หนา)</span>
+            <span class="param-title">3. Line Thickness (หนา)</span>
             <span id="val-thickness" class="param-val">7</span>
           </div>
           <input type="range" id="input-thickness" class="range-input" min="1" max="15" value="7" step="1">
-          <small style="font-size: 0.7rem; color: var(--text-dim);">ความหนาของเส้นที่วาดลง line_mask</small>
-        </div>
-
-        <!-- min_poly_vertices -->
-        <div class="param-item">
-          <div class="param-header">
-            <span class="param-title">5. Poly Complexity (len >)</span>
-            <span id="val-poly" class="param-val">5</span>
-          </div>
-          <input type="range" id="input-poly" class="range-input" min="3" max="12" value="5" step="1">
-          <small style="font-size: 0.7rem; color: var(--text-dim);">ความซับซ้อนของรูปทรงลายเซ็น (เหลี่ยม)</small>
+          <small style="font-size: 0.7rem; color: var(--text-dim);">ความหนาของเส้นที่วาดลง line_mask เพื่อ Inpaint</small>
         </div>
 
         <!-- Horizontal Only Toggle -->
@@ -999,7 +965,7 @@
           <div class="toggle-row">
             <div>
               <div style="font-size: 0.8rem; font-weight: 500;">ตรวจเฉพาะเส้นแนวนอน</div>
-              <small style="font-size: 0.7rem; color: var(--text-dim);">กรองมุม 80° - 100° (ไม่ลบเส้นกรอบตาราง)</small>
+              <small style="font-size: 0.7rem; color: var(--text-dim);">กรองมุม 80° - 100° (ไม่ลบเส้นกรอบแนวตั้ง)</small>
             </div>
             <label class="switch">
               <input type="checkbox" id="input-horizontal" checked>
@@ -1017,7 +983,7 @@
         </button>
         <button id="btn-process" class="btn btn-primary">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M7.5 5.6L10 7 8.6 4.5 10 2 7.5 3.4 5 2l1.4 2.5L5 7zm12 9.8L17 14l1.4 2.5L17 19l2.5-1.4L22 19l-1.4-2.5L22 14zM22 2l-2.5 1.4L17 2l1.4 2.5L17 7l2.5-1.4L22 7l-1.4-2.5zm-7.63 5.29c-.39-.39-1.02-.39-1.41 0L1.29 18.96c-.39.39-.39 1.02 0 1.41l2.34 2.34c.39.39 1.02.39 1.41 0L16.7 11.05c.39-.39.39-1.02 0-1.41l-2.33-2.35zm-1.03 5.49l-2.12-2.12 2.44-2.44 2.12 2.12-2.44 2.44z"/></svg>
-          ประมวลผลภาพ (Process Pipeline)
+          ประมวลผลตัดเส้น (Process Pipeline)
         </button>
       </div>
     </section>
@@ -1033,20 +999,12 @@
         <span class="stat-val" id="stat-dim">- <small>px</small></span>
       </div>
       <div class="stat-card">
-        <span class="stat-title">🛡️ ลายเซ็นที่ตรวจพบ</span>
-        <span class="stat-val" id="stat-sig-count" style="color: var(--emerald);">- <small>contours</small></span>
-      </div>
-      <div class="stat-card">
-        <span class="stat-title">🔒 พิกเซลลายเซ็นที่คุ้มกัน</span>
-        <span class="stat-val" id="stat-sig-px">- <small>px</small></span>
-      </div>
-      <div class="stat-card">
-        <span class="stat-title">📏 เส้นตรง/จุดไข่ปลา</span>
-        <span class="stat-val" id="stat-lines">- <small>lines</small></span>
+        <span class="stat-title">📏 เส้นตรง/จุดไข่ปลาที่พบ</span>
+        <span class="stat-val" id="stat-lines" style="color: var(--cyan);">- <small>lines</small></span>
       </div>
       <div class="stat-card">
         <span class="stat-title">🎨 พิกเซลที่ซ่อม Inpaint</span>
-        <span class="stat-val" id="stat-safe-px" style="color: var(--cyan);">- <small>px</small></span>
+        <span class="stat-val" id="stat-inpaint-px" style="color: var(--emerald);">- <small>px</small></span>
       </div>
     </section>
 
@@ -1057,10 +1015,10 @@
           <span>🎚️</span> Before / After Slider
         </button>
         <button class="tab-btn" data-mode="stepper">
-          <span>📋</span> 9-Step Pipeline Stepper
+          <span>📋</span> Pipeline Stepper (6 Steps)
         </button>
         <button class="tab-btn" data-mode="grid">
-          <span>🔲</span> 9-Grid All Steps
+          <span>🔲</span> Grid All Steps
         </button>
       </div>
 
@@ -1090,10 +1048,10 @@
         </div>
       </div>
 
-      <!-- Mode 2: 9-Step Stepper View -->
+      <!-- Mode 2: Stepper View -->
       <div id="view-stepper" style="display: none; width: 100%; flex-direction: column; gap: 16px;">
         <div class="step-stepper" id="step-stepper">
-          <!-- Dynamically populated 9 pills -->
+          <!-- Dynamically populated pills -->
         </div>
 
         <div class="single-view-container">
@@ -1106,9 +1064,9 @@
         </div>
       </div>
 
-      <!-- Mode 3: 9-Grid View -->
+      <!-- Mode 3: Grid View -->
       <div id="view-grid" class="grid-view-container" style="display: none;">
-        <!-- Dynamically populated 9 cards -->
+        <!-- Dynamically populated cards -->
       </div>
     </section>
 
@@ -1159,30 +1117,25 @@
   </footer>
 
   <script>
-    // State management
     let state = {
       images: {},
       stats: {},
       selectedSample: null,
       customFile: null,
       currentViewMode: 'slider',
-      currentStepIdx: 8, // Default to final step (index 8 = Step 9)
+      currentStepIdx: 5, // Default to final step (index 5 = Step 6)
       ocrResults: null,
     };
 
     const STEP_CONFIG = [
-      { id: 'original', name: '1. ต้นฉบับ', title: 'ภาพต้นฉบับ (Original Image)', desc: 'เอกสารดิบก่อนการประมวลผล มีเส้นบรรทัดจุดไข่ปลา (.....) และลายเซ็นของผู้ทำเอกสาร' },
-      { id: 'gray', name: '2. Grayscale', title: 'แปลงเป็นขาวดำ 8-bit (Grayscale)', desc: 'ลดมิติสีเหลือ 1 Channel (0-255) เตรียมความพร้อมสำหรับการตรวจจับเส้นขอบและ Adaptive Thresholding' },
-      { id: 'adaptive_bin', name: '3. Adaptive Binary', title: 'Adaptive Thresholding & Dilation', desc: 'แปลงภาพเป็นไบนารีด้วย Gaussian Adaptive Threshold แบบ Invert (หมึกดำเป็นสีขาว 255) และขยายเส้นสโตรกด้วย Dilation 3x3' },
-      { id: 'signature_mask', name: '4. Signature Mask', title: 'หน้ากากคุ้มกันลายเซ็น (Signature Mask)', desc: 'กรองคอนทัวร์ที่เป็นลายเซ็นด้วยเกณฑ์: พื้นที่ > 600, อัตราส่วนกว้าง/สูง 0.3-7.0, และความซับซ้อน Poly > 5 เพื่อกันไม่ให้ถูกลบ' },
-      { id: 'canny_edges', name: '5. Canny Edges', title: 'ตรวจจับขอบภาพ (Canny Edge Detection)', desc: 'สกัดเส้นขอบคมชัดด้วย Canny Threshold 50/150 เพื่อส่งต่อให้ Hough Transform ค้นหาเส้นตรง' },
-      { id: 'line_mask', name: '6. HoughLines Mask', title: 'หน้ากากเส้นตรง (HoughLines Mask - หนา 7)', desc: 'ตรวจจับเส้นตรงในแนวราบ (80°-100°) ด้วย HoughLines และวาดลงบน Mask ด้วยความหนา 7 พิกเซลเพื่อครอบคลุมจุดไข่ปลา' },
-      { id: 'safe_line_mask', name: '7. Safe Line Mask', title: 'Safe Line Mask (ตัดเส้นโดยไม่ลบลายเซ็น)', desc: 'นำ line_mask มาตัดส่วนที่ทับซ้อนกับ signature_mask ออก รับประกันว่าลายเซ็นและข้อความสำคัญจะไม่โดนลบ' },
-      { id: 'inpainted', name: '8. Inpainted Image', title: 'ภาพหลังลบเส้นด้วย Inpainting', desc: 'ลบเส้นตรงและจุดไข่ปลาใน safe_line_mask แล้วซ่อมพื้นหลังด้วยเทคนิค Telea Inpainting ให้เนียนเรียบ' },
-      { id: 'final_binarized', name: '9. Final OCR Image', title: 'ภาพสุดท้ายส่งเข้าโมเดล OCR (Binarized)', desc: 'ภาพที่ผ่านการ Inpaint แล้วแปลงเป็นไบนารีคมชัดด้วย threshold = thresh_bin พร้อมส่งเข้า PaddleOCR' },
+      { id: 'original', name: '1. ต้นฉบับ', title: 'ภาพต้นฉบับ (Original Image)', desc: 'เอกสารดิบก่อนการประมวลผล มีเส้นบรรทัดจุดไข่ปลา (.....) และเส้นกรอกข้อความ' },
+      { id: 'gray', name: '2. Grayscale', title: 'แปลงเป็นขาวดำ 8-bit (Grayscale)', desc: 'ลดมิติสีเหลือ 1 Channel (0-255) เตรียมความพร้อมสำหรับการตรวจจับเส้นขอบ Canny Edge Detection' },
+      { id: 'canny_edges', name: '3. Canny Edges', title: 'ตรวจจับขอบภาพ (Canny Edge Detection)', desc: 'สกัดเส้นขอบคมชัดด้วย Canny Threshold 50/150 เพื่อส่งต่อให้ HoughLines ค้นหาเส้นตรง' },
+      { id: 'line_mask', name: '4. HoughLines Mask', title: 'หน้ากากเส้นตรง (HoughLines Mask - หนา 7)', desc: 'ตรวจจับเส้นตรงในแนวราบ (80°-100°) ด้วย HoughLines และวาดลงบน Mask ด้วยความหนา 7 พิกเซลเพื่อครอบคลุมจุดไข่ปลา' },
+      { id: 'inpainted', name: '5. Inpainted Image', title: 'ภาพหลังลบเส้นด้วย Inpainting', desc: 'ลบเส้นตรงและจุดไข่ปลาใน line_mask แล้วซ่อมแซมพื้นหลังด้วยเทคนิค Telea Inpainting ให้เนียนเรียบเป็นเนื้อเดียวกัน' },
+      { id: 'final_binarized', name: '6. Final OCR Image', title: 'ภาพสุดท้ายส่งเข้าโมเดล OCR (Binarized)', desc: 'ภาพที่ผ่านการ Inpaint แล้วแปลงเป็นไบนารีคมชัดด้วย threshold = thresh_bin พร้อมส่งเข้า PaddleOCR' },
     ];
 
-    // DOM Elements
     const sampleSelect = document.getElementById('sample-select');
     const dropzone = document.getElementById('dropzone');
     const fileInput = document.getElementById('file-input');
@@ -1192,30 +1145,21 @@
     const btnCompareOcr = document.getElementById('btn-compare-ocr');
     const loadingOverlay = document.getElementById('loading-overlay');
 
-    // Range Inputs
     const inputThreshBin = document.getElementById('input-thresh-bin');
     const valThreshBin = document.getElementById('val-thresh-bin');
-    const inputSigArea = document.getElementById('input-sig-area');
-    const valSigArea = document.getElementById('val-sig-area');
     const inputHoughThresh = document.getElementById('input-hough-thresh');
     const valHoughThresh = document.getElementById('val-hough-thresh');
     const inputThickness = document.getElementById('input-thickness');
     const valThickness = document.getElementById('val-thickness');
-    const inputPoly = document.getElementById('input-poly');
-    const valPoly = document.getElementById('val-poly');
     const inputHorizontal = document.getElementById('input-horizontal');
 
-    // Sliders Bindings
     function bindSlider(input, label) {
       input.addEventListener('input', () => { label.innerText = input.value; });
     }
     bindSlider(inputThreshBin, valThreshBin);
-    bindSlider(inputSigArea, valSigArea);
     bindSlider(inputHoughThresh, valHoughThresh);
     bindSlider(inputThickness, valThickness);
-    bindSlider(inputPoly, valPoly);
 
-    // Load available sample documents from server
     async function loadSamples() {
       try {
         const res = await fetch('/api/preprocess/samples');
@@ -1228,7 +1172,6 @@
           sampleSelect.appendChild(opt);
         });
 
-        // Auto-select first sample and trigger initial process
         if (data.length > 0) {
           sampleSelect.value = data[0].path;
           state.selectedSample = data[0].path;
@@ -1240,7 +1183,6 @@
       }
     }
 
-    // Dropzone & File Input Handlers
     dropzone.addEventListener('click', () => fileInput.click());
     fileInput.addEventListener('change', (e) => {
       if (e.target.files.length > 0) {
@@ -1279,20 +1221,16 @@
       }
     });
 
-    // Reset Defaults
     btnReset.addEventListener('click', () => {
       inputThreshBin.value = 200; valThreshBin.innerText = 200;
-      inputSigArea.value = 600; valSigArea.innerText = 600;
       inputHoughThresh.value = 150; valHoughThresh.innerText = 150;
       inputThickness.value = 7; valThickness.innerText = 7;
-      inputPoly.value = 5; valPoly.innerText = 5;
       inputHorizontal.checked = true;
       runPipeline();
     });
 
     btnProcess.addEventListener('click', () => runPipeline());
 
-    // Execute Main Preprocessing Pipeline via API
     async function runPipeline() {
       if (!state.selectedSample && !state.customFile) return;
 
@@ -1306,10 +1244,8 @@
       }
 
       formData.append('thresh_bin', inputThreshBin.value);
-      formData.append('min_sig_area', inputSigArea.value);
       formData.append('hough_threshold', inputHoughThresh.value);
       formData.append('line_thickness', inputThickness.value);
-      formData.append('min_poly_vertices', inputPoly.value);
       formData.append('horizontal_only', inputHorizontal.checked ? 'true' : 'false');
 
       try {
@@ -1336,18 +1272,14 @@
       }
     }
 
-    // Diagnostics Update
     function updateDiagnostics(stats) {
       if (!stats) return;
       document.getElementById('stat-latency').innerHTML = `${stats.elapsed_ms || '-'} <small>ms</small>`;
       document.getElementById('stat-dim').innerHTML = `${stats.width || '-'} × ${stats.height || '-'} <small>px</small>`;
-      document.getElementById('stat-sig-count').innerHTML = `${stats.signature_contours_kept || 0} <small>kept / ${stats.total_contours || 0}</small>`;
-      document.getElementById('stat-sig-px').innerHTML = `${(stats.signature_mask_pixels || 0).toLocaleString()} <small>px</small>`;
       document.getElementById('stat-lines').innerHTML = `${stats.detected_lines_count || 0} <small>lines</small>`;
-      document.getElementById('stat-safe-px').innerHTML = `${(stats.safe_line_pixels || 0).toLocaleString()} <small>px</small>`;
+      document.getElementById('stat-inpaint-px').innerHTML = `${(stats.inpainted_pixels || 0).toLocaleString()} <small>px</small>`;
     }
 
-    // Update Views based on state
     function updateViews() {
       if (!state.images.original) return;
 
@@ -1355,7 +1287,6 @@
       document.getElementById('slider-img-orig').src = state.images.original;
       document.getElementById('slider-img-final').src = state.images.final_binarized;
 
-      // Adjust split overlay width to match aspect
       const origImg = document.getElementById('slider-img-orig');
       const finalImg = document.getElementById('slider-img-final');
       origImg.onload = () => {
@@ -1375,7 +1306,7 @@
       });
       renderActiveStep();
 
-      // 3. Build 9-Grid Cards
+      // 3. Build Grid Cards
       const grid = document.getElementById('view-grid');
       grid.innerHTML = '';
       STEP_CONFIG.forEach((step, idx) => {
@@ -1394,7 +1325,6 @@
       });
     }
 
-    // Stepper Selection
     function selectStep(idx) {
       state.currentStepIdx = idx;
       document.querySelectorAll('.step-pill').forEach((p, i) => {
@@ -1411,7 +1341,6 @@
       activeDesc.innerHTML = `<strong>${step.title}</strong> — ${step.desc}`;
     }
 
-    // View Mode Tab Switching
     document.querySelectorAll('#view-mode-tabs .tab-btn').forEach((btn) => {
       btn.addEventListener('click', () => {
         document.querySelectorAll('#view-mode-tabs .tab-btn').forEach(b => b.classList.remove('active'));
@@ -1424,7 +1353,6 @@
         document.getElementById('view-grid').style.display = (mode === 'grid') ? 'grid' : 'none';
 
         if (mode === 'slider') {
-          // Re-sync image dimensions
           const origImg = document.getElementById('slider-img-orig');
           const finalImg = document.getElementById('slider-img-final');
           if (origImg.clientWidth > 0) {
@@ -1435,7 +1363,6 @@
       });
     });
 
-    // Split Slider Interactive Dragging
     const splitContainer = document.getElementById('view-slider');
     const splitOverlay = document.getElementById('split-overlay');
     const splitHandle = document.getElementById('split-handle');
@@ -1462,7 +1389,6 @@
 
     window.addEventListener('mouseup', () => { isDragging = false; });
 
-    // Touch Support for Mobile / Tablets
     splitContainer.addEventListener('touchstart', (e) => {
       isDragging = true;
       setSliderPosition(e.touches[0].clientX);
@@ -1475,7 +1401,6 @@
 
     window.addEventListener('touchend', () => { isDragging = false; });
 
-    // Live OCR Comparison
     btnCompareOcr.addEventListener('click', async () => {
       if (!state.selectedSample && !state.customFile) return;
 
@@ -1516,7 +1441,6 @@
       }
     });
 
-    // Image Zoom Modal
     function openModal(src) {
       if (!src) return;
       const modal = document.getElementById('image-modal');
@@ -1529,7 +1453,6 @@
       document.getElementById('image-modal').style.display = 'none';
     }
 
-    // Initialize on page load
     window.addEventListener('DOMContentLoaded', loadSamples);
   </script>
 </body>
