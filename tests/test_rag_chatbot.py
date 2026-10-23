@@ -169,6 +169,28 @@ class TestRAGChatbot(unittest.TestCase):
         self.assertIn("route_taken", data)
         self.assertIn("documents", data)
 
+    def test_07_binary_decision_mode_all_vs_top_k(self):
+        """Verify Binary Decision Intention Agent assigns 'ALL' vs 'TOP_K' correctly."""
+        # 1. Total/Sum/Count Query -> Mode: ALL
+        q_all = "เบิกจ่ายทั้งหมดของ นายสมชาย มั่นคง รวมเป็นเงินกี่บาท"
+        intent_all, meta_all = self.chatbot.classify_query_intent(q_all)
+        self.assertEqual(meta_all.get("mode"), "ALL")
+        self.assertEqual(meta_all.get("scope"), "ALL")
+
+        res_all = self.chatbot.execute_rag(q_all, top_k=5)
+        self.assertEqual(res_all.get("mode"), "ALL")
+        self.assertTrue(res_all.get("bypass_top_k_truncation"))
+
+        # 2. Conceptual / Policy / Semantic Query -> Mode: TOP_K
+        q_topk = "โครงการสัมมนาจัดขึ้นเพื่อวัตถุประสงค์อะไร"
+        intent_topk, meta_topk = self.chatbot.classify_query_intent(q_topk)
+        self.assertEqual(meta_topk.get("mode"), "TOP_K")
+        self.assertEqual(meta_topk.get("scope"), "TOP_K")
+
+        res_topk = self.chatbot.execute_rag(q_topk, top_k=5)
+        self.assertEqual(res_topk.get("mode"), "TOP_K")
+
 
 if __name__ == "__main__":
     unittest.main()
+

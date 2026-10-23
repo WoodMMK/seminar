@@ -149,11 +149,106 @@ class FinancialRAGChatbot:
     def __init__(
         self,
         ollama_url: str = "http://127.0.0.1:11434",
-        embedding_service: Optional[EmbeddingService] = None
+        embedding_service: Optional[EmbeddingService] = None,
+        llm_model: str = "qwen2.5:3b"
     ):
         self.ollama_url = ollama_url.rstrip("/")
         self.embedding_service = embedding_service or EmbeddingService(ollama_url=self.ollama_url)
+        self.llm_model = llm_model
         self.mock_corpus: Optional[List[Dict[str, Any]]] = None
+
+    def evaluate_intention_with_llm(self, query: str) -> Dict[str, Any]:
+        """
+        Lightweight LLM Intention Agent:
+        Evaluates user natural language query and makes a Binary Decision:
+        - mode: 'ALL' (Exhaustive SQL aggregation: totals, counts, full history - BYPASSES Top-K)
+        - mode: 'TOP_K' (Semantic pgvector cosine search: conceptual, policy, specific detail)
+        
+        Falls back seamlessly to deterministic rule evaluator if Ollama is offline or on error.
+        """
+        q = (query or "").strip()
+        if not q:
+            return self.classify_intent(q)
+
+        prompt = (
+            "You are a financial query intention classifier for a university expense reimbursement system.\n"
+            "Analyze the user query and output strictly a JSON object with this schema:\n"
+            "{\n"
+            '  "mode": "ALL" | "TOP_K",\n'
+            '  "is_dossier": true | false,\n'
+            '  "person_name": string or null,\n'
+            '  "case_number": string or null,\n'
+            '  "is_audit": true | false\n'
+            "}\n"
+            "Decision Rules:\n"
+            '- mode "ALL": if user asks for total money/sum, counts of documents, lists of all expenses/receipts of someone, or all items. Must retrieve all without top-k truncation.\n'
+            '- mode "TOP_K": if user asks conceptual questions, rules, rationale, or semantic lookup where top-k items are enough.\n'
+            '- is_dossier: true if query explicitly mentions an approval memo number or tracking code (e.g. อว..., B262/..., A060/...).\n'
+            '- is_audit: true if user asks about discrepancies, errors, or unbalanced math.\n\n'
+            f'User Query: "{q}"\n'
+        )
+
+        try:
+            req_data = json.dumps({
+                "model": self.llm_model,
+                "prompt": prompt,
+                "format": "json",
+                "stream": False,
+                "options": {"temperature": 0.0, "num_predict": 120}
+            }).encode("utf-8")
+            req = urllib.request.Request(
+                f"{self.ollama_url}/api/generate",
+                data=req_data,
+                headers={"Content-Type": "application/json"},
+                method="POST"
+            )
+            with urllib.request.urlopen(req, timeout=2.0) as resp:
+                if resp.status == 200:
+                    resp_json = json.loads(resp.read().decode("utf-8"))
+                    text = resp_json.get("response", "")
+                    parsed = json.loads(text)
+                    
+                    mode = str(parsed.get("mode", "")).upper()
+                    if mode not in ("ALL", "TOP_K"):
+                        mode = "ALL" if parsed.get("is_aggregation") else "TOP_K"
+
+                    is_dossier = bool(parsed.get("is_dossier") or parsed.get("case_number"))
+                    is_audit = bool(parsed.get("is_audit"))
+
+                    if is_dossier:
+                        intent = QueryIntent.CASE_DOSSIER_LOOKUP
+                    elif is_audit:
+                        intent = QueryIntent.RECONCILIATION_AUDIT
+                    elif mode == "ALL":
+                        intent = QueryIntent.EXHAUSTIVE_AGGREGATION
+                    else:
+                        intent = QueryIntent.SEMANTIC_QA
+
+                    person = parsed.get("person_name")
+                    case_num = parsed.get("case_number")
+                    fallback = self.classify_intent(q)
+                    if not person:
+                        person = fallback.get("entity")
+                    if not case_num:
+                        case_num = fallback.get("identifier")
+
+                    return {
+                        "mode": mode,
+                        "scope": mode,
+                        "intent": intent,
+                        "entity": person,
+                        "identifier": case_num,
+                        "is_audit": is_audit,
+                        "is_aggregation": mode == "ALL",
+                        "evaluator": "llm_agent"
+                    }
+        except Exception:
+            pass
+
+        # Fast deterministic fallback
+        info = self.classify_intent(q)
+        info["evaluator"] = "deterministic_fallback"
+        return info
 
     def classify_query_intent(self, query: str) -> Tuple[str, Dict[str, Any]]:
         """Convenience method returning (intent_str, meta_dict)."""
@@ -162,8 +257,11 @@ class FinancialRAGChatbot:
         meta = {
             "person_name": info.get("entity"),
             "case_identifier": info.get("identifier"),
+            "mode": info.get("mode", "TOP_K"),
+            "scope": info.get("scope", "TOP_K"),
             "is_aggregation": info.get("is_aggregation", False),
-            "is_audit": info.get("is_audit", False)
+            "is_audit": info.get("is_audit", False),
+            "evaluator": info.get("evaluator", "rule_based")
         }
         return intent, meta
 
@@ -173,6 +271,7 @@ class FinancialRAGChatbot:
     def classify_intent(self, query: str) -> Dict[str, Any]:
         """
         Analyzes user query to detect:
+        - Binary Retrieval Mode: 'ALL' (Exhaustive/Aggregation) vs 'TOP_K' (Semantic)
         - EXHAUSTIVE_AGGREGATION (e.g. กี่ฉบับ, รวมเป็นเงินเท่าไหร่, ทั้งหมด, มีใครบ้าง) -> Avoids Top-K truncation!
         - CASE_DOSSIER_LOOKUP (e.g. อว 78.101/..., B262/2568, A060/2569)
         - RECONCILIATION_AUDIT (e.g. ตรวจสอบยอด, ไม่ตรง, discrepancy)
@@ -210,30 +309,46 @@ class FinancialRAGChatbot:
                     entity_name = known
                     break
 
+        mode = "ALL" if is_aggregation else "TOP_K"
+
         if form_no_match or principle_match:
             return {
+                "mode": mode,
+                "scope": mode,
                 "intent": "CASE_DOSSIER_LOOKUP",
                 "identifier": (form_no_match.group(1) if form_no_match else principle_match.group(0)),
                 "entity": entity_name,
-                "is_aggregation": is_aggregation
+                "is_aggregation": is_aggregation,
+                "evaluator": "deterministic_rule"
             }
 
         if is_aggregation:
             return {
+                "mode": "ALL",
+                "scope": "ALL",
                 "intent": "EXHAUSTIVE_AGGREGATION",
                 "entity": entity_name,
-                "is_audit": is_audit
+                "is_audit": is_audit,
+                "is_aggregation": True,
+                "evaluator": "deterministic_rule"
             }
 
         if is_audit:
             return {
+                "mode": mode,
+                "scope": mode,
                 "intent": "RECONCILIATION_AUDIT",
-                "entity": entity_name
+                "entity": entity_name,
+                "is_audit": True,
+                "evaluator": "deterministic_rule"
             }
 
         return {
+            "mode": "TOP_K",
+            "scope": "TOP_K",
             "intent": "SEMANTIC_QA",
-            "entity": entity_name
+            "entity": entity_name,
+            "evaluator": "deterministic_rule"
         }
 
     # =========================================================================
@@ -242,14 +357,15 @@ class FinancialRAGChatbot:
     def execute_rag(self, query: str = "", top_k: int = 5, user_query: Optional[str] = None, **kwargs) -> Dict[str, Any]:
         """
         Main RAG Execution:
-        1. Classifies query intent.
+        1. Classifies query intent via LLM Intention Agent (Binary Decision: ALL vs TOP_K).
         2. Routes to either Exhaustive SQL Aggregation, Case Dossier Lookup, or Hybrid Vector Search.
         3. Formulates structured answer and cites exact document references.
         """
         query = query or user_query or kwargs.get("user_query") or ""
         start_time = datetime.now(timezone.utc)
-        intent_info = self.classify_intent(query)
+        intent_info = self.evaluate_intention_with_llm(query)
         intent = intent_info["intent"]
+        mode = intent_info.get("mode", "ALL" if intent == "EXHAUSTIVE_AGGREGATION" else "TOP_K")
 
         docs_found = []
         summary_stats = {}
@@ -264,7 +380,7 @@ class FinancialRAGChatbot:
 
         if conn is not None:
             try:
-                if intent == "EXHAUSTIVE_AGGREGATION":
+                if intent == "EXHAUSTIVE_AGGREGATION" or mode == "ALL":
                     route_taken = "exhaustive_sql_aggregation"
                     docs_found, summary_stats = self._query_exhaustive_sql(conn, intent_info)
                 elif intent == "CASE_DOSSIER_LOOKUP":
@@ -294,9 +410,12 @@ class FinancialRAGChatbot:
         return {
             "success": True,
             "query": query,
+            "mode": mode,
+            "scope": mode,
             "intent": intent,
             "route_taken": route_taken,
-            "bypass_top_k_truncation": route_taken == "exhaustive_sql_aggregation",
+            "bypass_top_k_truncation": route_taken == "exhaustive_sql_aggregation" or mode == "ALL",
+            "evaluator": intent_info.get("evaluator", "rule_based"),
             "total_matches_count": len(docs_found),
             "documents": docs_found,
             "summary_stats": summary_stats,
@@ -315,6 +434,7 @@ class FinancialRAGChatbot:
             ],
             "elapsed_ms": elapsed_ms
         }
+
 
     # -------------------------------------------------------------------------
     # Route A: Exhaustive SQL Aggregation (Solves Top-K Truncation)
