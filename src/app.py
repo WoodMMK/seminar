@@ -60,6 +60,10 @@ tags_metadata = [
     {
         "name": "Model Benchmarking",
         "description": "Comparative evaluation of LLM models for academic thesis and seminar presentations."
+    },
+    {
+        "name": "RAG Chatbot",
+        "description": "Hybrid Vector & Exhaustive Metadata Chatbot with Top-K truncation bypass."
     }
 ]
 
@@ -784,6 +788,36 @@ async def api_chatocr_save_to_db(payload: ChatOcrSaveDbPayload):
 async def api_db_recent(limit: int = 10):
     """Fetch recent saved reimbursement documents from PostgreSQL."""
     return await run_in_threadpool(get_recent_saved_documents, limit=limit)
+
+
+from src.rag_engine import FinancialRAGChatbot, EmbeddingService
+
+rag_chatbot = FinancialRAGChatbot()
+
+
+class ChatQueryPayload(BaseModel):
+    query: str
+    top_k: Optional[int] = 5
+
+
+@app.post("/api/chat/query", tags=["RAG Chatbot"])
+async def api_chat_query(payload: ChatQueryPayload):
+    """Query the hybrid RAG Chatbot over reimbursement documents.
+    Handles semantic QA, exhaustive aggregations (bypassing top-k truncation),
+    case dossier roll-ups, and reconciliation audits.
+    """
+    try:
+        res = await run_in_threadpool(
+            rag_chatbot.execute_rag,
+            user_query=payload.query,
+            top_k=payload.top_k or 5
+        )
+        return res
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        return JSONResponse({"error": str(e), "success": False}, status_code=500)
+
 
 
 

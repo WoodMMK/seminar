@@ -1,0 +1,24 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: pgvector/pgvector:pg16
+    container_name: expense-reimbursement-postgres
+    restart: always
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-112233}
+      POSTGRES_DB: expense_reimbursement_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - reimbursement_pgdata:/var/lib/postgresql/data
+      - ./docs/database_schema.sql:/docker-entrypoint-initdb.d/01_schema.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d expense_reimbursement_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  reimbursement_pgdata:

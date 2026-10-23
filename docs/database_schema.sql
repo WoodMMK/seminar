@@ -6,9 +6,12 @@
 -- Paired with: docs/database_erd.mmd
 -- =====================================================================
 
--- 1. Enable Cryptographic Functions Extension for UUID generation
+-- 1. Enable Cryptographic Functions and pgvector Vector Extensions
 CREATE EXTENSION IF NOT EXISTS pgcrypto WITH SCHEMA public;
 COMMENT ON EXTENSION pgcrypto IS 'cryptographic functions for gen_random_uuid()';
+
+CREATE EXTENSION IF NOT EXISTS vector WITH SCHEMA public;
+COMMENT ON EXTENSION vector IS 'vector data type and ivfflat/hnsw indexes for pgvector RAG semantic search';
 
 SET statement_timeout = 0;
 SET lock_timeout = 0;
@@ -73,16 +76,20 @@ CREATE TABLE public.documents (
     document_type character varying(50) NOT NULL,
     classified_step character varying(50),
     extracted_data jsonb,
+    embedding vector(1024),
     uploaded_at timestamp with time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
     CONSTRAINT documents_pkey PRIMARY KEY (id),
     CONSTRAINT uq_documents_s3_path UNIQUE (s3_path),
     CONSTRAINT fk_documents_record FOREIGN KEY (record_id) REFERENCES public.disbursement_records(id) ON DELETE CASCADE
 );
 
-COMMENT ON TABLE public.documents IS 'เอกสารต้นฉบับ ไฟล์แนบ และข้อมูลทางการเงินที่สกัดได้จาก PP-ChatOCRv4 ในรูป JSONB';
+CREATE INDEX IF NOT EXISTS idx_documents_embedding ON public.documents USING hnsw (embedding vector_cosine_ops);
+
+COMMENT ON TABLE public.documents IS 'เอกสารต้นฉบับ ไฟล์แนบ และข้อมูลทางการเงินที่สกัดได้จาก PP-ChatOCRv4 ในรูป JSONB พร้อม Vector Embedding';
 COMMENT ON COLUMN public.documents.id IS 'Primary Key (Document ID)';
 COMMENT ON COLUMN public.documents.record_id IS 'Foreign Key อ้างอิง Case Dossier (disbursement_records.id)';
 COMMENT ON COLUMN public.documents.extracted_data IS 'ผลลัพธ์ที่สกัดได้แบบสมบูรณ์: chat_answers, embed_text, filter_metadata, math_reconciliation';
+COMMENT ON COLUMN public.documents.embedding IS 'Dense Vector Embedding (1024-dim, bge-m3) สำหรับการทำ RAG Semantic Retrieval';
 
 -- =====================================================================
 -- Table 4: expense_items (รายการค่าใช้จ่ายย่อยในแต่ละเอกสาร)

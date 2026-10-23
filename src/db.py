@@ -37,7 +37,7 @@ def get_db_connection():
 
 
 def ensure_schema_columns(conn):
-    """Ensure principle_doc_no and title columns exist on disbursement_records."""
+    """Ensure principle_doc_no, title, and pgvector embedding columns exist."""
     try:
         cur = conn.cursor()
         cur.execute(
@@ -52,6 +52,18 @@ def ensure_schema_columns(conn):
     except Exception as e:
         conn.rollback()
         logger.warning(f"Could not ensure schema columns: {e}")
+
+    # Check and enable pgvector extension if available in the PostgreSQL container
+    try:
+        cur = conn.cursor()
+        cur.execute("CREATE EXTENSION IF NOT EXISTS vector;")
+        cur.execute("ALTER TABLE documents ADD COLUMN IF NOT EXISTS embedding vector(1024);")
+        cur.execute("CREATE INDEX IF NOT EXISTS idx_documents_embedding ON documents USING hnsw (embedding vector_cosine_ops);")
+        conn.commit()
+        cur.close()
+    except Exception as e:
+        conn.rollback()
+        logger.debug(f"pgvector extension not installed or already configured: {e}")
 
 
 def check_db_status() -> Dict[str, Any]:
