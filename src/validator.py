@@ -380,6 +380,19 @@ class FinancialDocumentValidator:
         fields = result.fields or {}
         items = result.expense_items or result.line_items or []
 
+        if doc_type == DocumentType.ADDITIONAL_DOCUMENTS.value or not result.should_extract:
+            validation_result = DocumentValidationResult(
+                is_valid=True,
+                status="SKIPPED",
+                issues=[],
+                math_report=None,
+                tax_id_report=None,
+                date_report=None,
+                normalized_data={},
+            )
+            result.validation = validation_result
+            return validation_result
+
         # ---------------------------------------------------------------------
         # A. Date Normalization & Verification
         # ---------------------------------------------------------------------
@@ -437,12 +450,18 @@ class FinancialDocumentValidator:
             tot = fields.get("total_budget")
         if tot is None and "total_approved_amount" in fields:
             tot = fields.get("total_approved_amount")
+        if tot is None and "approved_total_amount" in fields:
+            tot = fields.get("approved_total_amount")
 
         subtot = result.subtotal or fields.get("subtotal")
         vat_val = result.vat or fields.get("vat")
 
+        math_not_applicable = doc_type in {
+            DocumentType.PARCEL_INSPECTION.value,
+            DocumentType.PARCEL_INSPECTION_PAGE_2.value,
+        }
         math_report = self.reconcile_financial_math(tot, subtot, vat_val, items)
-        if not math_report.is_balanced:
+        if not math_not_applicable and not math_report.is_balanced:
             issues.append(
                 ValidationIssue(
                     field="total_amount",
@@ -600,29 +619,29 @@ class FinancialDocumentValidator:
                         )
                     )
 
-        # Rule 4: advance_payment_request_1 (แบบเบิกเงินทดรองจ่าย แบบที่ 1)
+        # ResNet 05AdvancePayment -> แบบที่ 1 (เงินทดรองจ่าย)
         elif doc_type == DocumentType.ADVANCE_PAYMENT_REQUEST_1.value:
-            check_required("doc_no", "4.1 เลขที่เอกสาร")
-            check_required("requester", "4.2 ใครเป็นคนเบิก")
-            check_required("ref_doc_no", "4.4 ตามหนังสืออนุมัติเบิกจ่าย เลขที่อะไร")
-            check_required("transfer_destination", "4.6 ข้อมูลการโอนเงิน (ธนาคาร/เลขที่บัญชี)")
+            check_required("doc_no", "05.1 เลขที่เอกสาร")
+            check_required("requester", "05.2 ใครเป็นคนเบิก")
+            check_required("ref_doc_no", "05.4 ตามหนังสืออนุมัติเบิกจ่าย เลขที่อะไร")
+            check_required("transfer_destination", "05.6 ข้อมูลการโอนเงิน (ธนาคาร/เลขที่บัญชี)")
             if total is None:
                 issues.append(
                     ValidationIssue(
                         field="total_amount",
-                        message="ไม่พบยอดรวมเงินทดรองจ่าย (4.3 ยอดรวม)",
+                        message="ไม่พบยอดรวมเงินทดรองจ่าย (05.3 ยอดรวม)",
                         severity=ValidationSeverity.ERROR,
                         code="MISSING_REQUIRED_FIELD",
                     )
                 )
 
-        # Rule 5: advance_payment_request_2 (แบบเบิกเงินทดรองจ่าย แบบที่ 2 - เคลียร์เงิน)
+        # ResNet 04PettyCash -> แบบที่ 2 (เงินสดย่อย)
         elif doc_type == DocumentType.ADVANCE_PAYMENT_REQUEST_2.value:
-            check_required("doc_no", "5.1 เลขที่เอกสาร")
-            check_required("requester", "5.4 ใครเป็นคนเบิก")
-            check_required("ref_doc_no", "5.6 ตามหนังสืออนุมัติหลักการ เลขที่อะไร")
-            has_submission = check_required("submission_date", "5.2 วันที่ส่งเอกสาร", severity=ValidationSeverity.WARNING)
-            has_claim = check_required("claim_date", "5.3 วันที่ขอรับเงิน", severity=ValidationSeverity.WARNING)
+            check_required("doc_no", "04.1 เลขที่เอกสาร")
+            check_required("requester", "04.4 ใครเป็นคนเบิก")
+            check_required("ref_doc_no", "04.6 ตามหนังสืออนุมัติหลักการ เลขที่อะไร")
+            has_submission = check_required("submission_date", "04.2 วันที่ส่งเอกสาร", severity=ValidationSeverity.WARNING)
+            has_claim = check_required("claim_date", "04.3 วันที่ขอรับเงิน", severity=ValidationSeverity.WARNING)
             if not has_submission and not has_claim:
                 issues.append(
                     ValidationIssue(
@@ -636,7 +655,7 @@ class FinancialDocumentValidator:
                 issues.append(
                     ValidationIssue(
                         field="total_amount",
-                        message="ไม่พบยอดรวมการขอรับเงิน/เคลียร์เงิน (5.5 ยอดรวม)",
+                        message="ไม่พบยอดรวมเงินสดย่อย (04.5 ยอดรวม)",
                         severity=ValidationSeverity.ERROR,
                         code="MISSING_REQUIRED_FIELD",
                     )
@@ -671,6 +690,20 @@ class FinancialDocumentValidator:
             check_required("inspectors", "7.2 ผู้ตรวจรับพัสดุ / คณะกรรมการตรวจรับ")
             check_required("inspection_date", "วันที่ตรวจรับพัสดุ", severity=ValidationSeverity.WARNING)
 
+        # Rule 07_02: parcel inspection page 2 / signature page
+        elif doc_type == DocumentType.PARCEL_INSPECTION_PAGE_2.value:
+            check_required("doc_no", "เลขที่เอกสาร")
+            signer_names = fields.get("signer_names") or []
+            if not isinstance(signer_names, list) or not any(str(name).strip() for name in signer_names):
+                issues.append(
+                    ValidationIssue(
+                        field="signer_names",
+                        message="ไม่พบชื่อผู้ลงนามที่อ่านได้ชัดเจน",
+                        severity=ValidationSeverity.ERROR,
+                        code="MISSING_REQUIRED_FIELD",
+                    )
+                )
+
         # Rule 8: procurement_approval_request (ขออนุมัติจัดหาพัสดุ)
         elif doc_type == DocumentType.PROCUREMENT_APPROVAL_REQUEST.value:
             check_required("doc_no", "8.1 เลขที่เอกสาร")
@@ -696,6 +729,41 @@ class FinancialDocumentValidator:
                     ValidationIssue(
                         field="total_amount",
                         message="ไม่พบยอดรวมพัสดุ (9.2 ยอดรวม)",
+                        severity=ValidationSeverity.ERROR,
+                        code="MISSING_REQUIRED_FIELD",
+                    )
+                )
+
+        # Rule 10: approved materials request
+        elif doc_type == DocumentType.APPROVED_MATERIALS.value:
+            check_required("procurement_request_code", "รหัสใบขอจัดหา")
+            check_required("document_date", "วันที่จัดทำเอกสาร")
+            check_required("title", "เรื่อง")
+            approved_total = fields.get("approved_total_amount") or total
+            if approved_total is None:
+                issues.append(
+                    ValidationIssue(
+                        field="approved_total_amount",
+                        message="ไม่พบยอดรวมที่อนุมัติ",
+                        severity=ValidationSeverity.ERROR,
+                        code="MISSING_REQUIRED_FIELD",
+                    )
+                )
+            if not items:
+                issues.append(
+                    ValidationIssue(
+                        field="approved_items",
+                        message="ไม่พบรายละเอียดรายการที่อนุมัติ",
+                        severity=ValidationSeverity.ERROR,
+                        code="EMPTY_EXPENSE_ITEMS",
+                    )
+                )
+            parcel_inspectors = fields.get("parcel_inspectors") or []
+            if not isinstance(parcel_inspectors, list) or not any(str(name).strip() for name in parcel_inspectors):
+                issues.append(
+                    ValidationIssue(
+                        field="parcel_inspectors",
+                        message="ไม่พบรายชื่อผู้ตรวจรับพัสดุ",
                         severity=ValidationSeverity.ERROR,
                         code="MISSING_REQUIRED_FIELD",
                     )

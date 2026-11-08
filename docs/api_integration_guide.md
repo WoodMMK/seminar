@@ -1,6 +1,36 @@
 # คู่มือการเชื่อมต่อระบบ (API Integration Guide)
 ## Thai Financial Document Extraction API — PP-ChatOCRv4 Headless Service
 
+### Full automatic classification, validation and extraction
+
+`POST /api/v1/classify-validate-extract` is the recommended endpoint for the
+latest model. Upload only the PDF or image in multipart field `file`; the
+client does not provide a document type.
+
+The backend runs the latest 11-class ResNet, OCRs every page independently,
+loads the predicted class's positive `01.json` OCR reference, and sends one
+class-specific request to Qwen. The same LLM response contains both the
+validation decision and, only for `MATCH`, the extracted fields. Only that
+class's reference and extraction schema are sent; the reference is guidance
+and is not treated as an exact wording template.
+
+- `MATCH`: the ResNet class becomes `final_document_type` and extraction runs.
+- `ADDITIONAL`: the final type is `10Additional_documents`; extraction is `null`.
+- There is no `UNCERTAIN` state; users can correct the result in the UI.
+- Incomplete or low-quality OCR is not automatically classified as Additional.
+  Qwen still chooses the better-supported binary result and exposes OCR uncertainty
+  through `llm.ocr_quality` so the UI can flag it for optional user correction.
+
+The response includes ResNet confidence and top-three probabilities, OCR
+quality, LLM evidence, extracted fields, validation results, timings, and
+`timings.llm_request_count`. `llm.reference_ocr_source` records the reference
+file used for traceability. Set `REFERENCE_OCR_DIR` to override the packaged
+`assets/reference_ocr` directory.
+
+Deployment must set `RESNET_CHECKPOINT` to the latest checkpoint file. Model
+binaries are intentionally kept outside Git; `assets/reference_ocr` contains
+the small positive OCR references required by the combined prompt.
+
 > 🚀 **สถาปัตยกรรมระบบ (System Architecture):**  
 > บริการนี้เป็น **Pure FastAPI Backend (Headless REST API)** โดยไม่มีหน้า UI ฝังในตัว  
 > สำหรับให้ทีม Frontend (React, Vue, Next.js, Angular หรือ Mobile App) เชื่อมต่อผ่าน HTTP REST API ได้โดยตรง  

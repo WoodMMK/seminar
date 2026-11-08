@@ -2,6 +2,70 @@
 
 ระบบสกัดข้อมูลและตรวจสอบความถูกต้องของเอกสารเบิกจ่ายราชการและเอกสารการเงินภาษาไทยอัตโนมัติ (**Headless FastAPI Backend Service** ขับเคลื่อนด้วย PP-ChatOCRv4, Thai PP-OCRv5 และ Local LLM)
 
+## Latest ResNet taxonomy and extraction routing
+
+The extraction API accepts either the canonical extraction type or the exact
+class label produced by the latest ResNet model. The authoritative mapping is
+available from `GET /api/v1/document-types`.
+
+Important mappings:
+
+- `04PettyCash` -> `advance_payment_request_2` (แบบที่ 2 - เงินสดย่อย)
+- `05AdvancePayment` -> `advance_payment_request_1` (แบบที่ 1 - เงินทดรองจ่าย)
+- `07_02Inspectionform` -> `parcel_inspection_page_2`
+- `10Approved_materials` -> `approved_materials`
+- `10Additional_documents` -> `additional_documents` (extraction is skipped)
+
+New extraction fields:
+
+- `07_02Inspectionform`: เลขที่เอกสาร, ชื่อผู้ลงนาม
+- `10Approved_materials`: รหัสใบขอจัดหา, ยอดรวมที่อนุมัติ,
+  รายละเอียดรายการที่อนุมัติ, วันที่จัดทำเอกสาร, เรื่อง, ผู้ตรวจรับพัสดุ
+
+Additional documents return `should_extract: false`, an empty `fields` object,
+and a `skip_reason`; they are never sent to the extraction LLM.
+
+## Full automatic pipeline
+
+Use `POST /api/v1/classify-validate-extract` with only a PDF or image upload.
+The endpoint performs:
+
+```text
+input
+  -> latest 11-class ResNet (prediction, confidence, top-3)
+  -> Thai OCR, processed page by page
+  -> load the predicted class's positive reference OCR (`01.json`)
+  -> one Qwen request for both validation and conditional extraction
+```
+
+The combined LLM result is handled as follows:
+
+- `MATCH`: extract with only the schema belonging to the ResNet-predicted class.
+- `ADDITIONAL`: return `10Additional_documents`; do not extract.
+- There is no `UNCERTAIN` state; users can correct the final class or fields in the UI.
+- Poor or incomplete OCR does not automatically mean `ADDITIONAL`. Qwen must make
+  its best-supported binary decision and report the uncertainty through
+  `ocr_quality` for display in the UI.
+
+Only one LLM request is made for each document. The prompt includes one positive
+OCR reference and the extraction schema for the ResNet-predicted class only;
+references and schemas for unrelated classes are not included. The reference is
+guidance, not an exact wording template.
+
+Configuration environment variables:
+
+- `RESNET_CHECKPOINT`: checkpoint path. Defaults to the latest local 11-class model.
+- `RESNET_DEVICE`: `auto`, `cpu`, or `cuda`.
+- `OLLAMA_BASE_URL`: defaults to `http://127.0.0.1:11434`.
+- `COMBINED_LLM_MODEL`: defaults to `qwen3:4b-instruct-2507-q4_K_M`.
+- `COMBINED_LLM_TIMEOUT`: defaults to 300 seconds.
+- `REFERENCE_OCR_DIR`: directory containing `<ResNet class>/01.json` reference
+  OCR files. Defaults to the packaged `assets/reference_ocr` directory.
+
+The ResNet checkpoint is intentionally not stored in Git. Before starting the
+website backend, set `RESNET_CHECKPOINT` to the deployed copy of
+`resnet18_data2_11class_10Approved_materials_plus_real_02_05.pt`.
+
 ---
 
 ## 📖 เอกสารและคู่มือการเชื่อมต่อระบบ (Documentation)

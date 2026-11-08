@@ -20,6 +20,7 @@ from src.schemas import (
     FullPipelineResult,
     HealthCheckResponse,
     PipelineTiming,
+    resolve_document_type,
 )
 
 
@@ -72,6 +73,7 @@ class DocumentProcessingPipeline:
         """
         Executes the full 4-stage extraction pipeline synchronously.
         """
+        document_type = resolve_document_type(document_type)
         total_start = time.perf_counter()
 
         # ---------------------------------------------------------------------

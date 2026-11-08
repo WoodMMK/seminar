@@ -13,12 +13,15 @@ class DocumentType(str, Enum):
     PRINCIPLE_APPROVAL_REQUEST = "principle_approval_request"      # 1. เอกสารขออนุมัติหลักการ
     PRINCIPLE_APPROVAL_GRANTED = "principle_approval_granted"      # 2. เอกสารอนุมัติหลักการ
     DISBURSEMENT_APPROVAL_REQUEST = "disbursement_approval_request" # 3. ขออนุมัติเบิกจ่าย
-    ADVANCE_PAYMENT_REQUEST_1 = "advance_payment_request_1"        # 4. แบบเบิกเงินทดรองจ่าย (แบบที่ 1)
-    ADVANCE_PAYMENT_REQUEST_2 = "advance_payment_request_2"        # 5. แบบเบิกเงินทดรองจ่าย (แบบที่ 2 - รับเงิน/เคลียร์)
+    ADVANCE_PAYMENT_REQUEST_1 = "advance_payment_request_1"        # 05AdvancePayment: แบบที่ 1
+    ADVANCE_PAYMENT_REQUEST_2 = "advance_payment_request_2"        # 04PettyCash: แบบที่ 2
     RECEIPT_SUBSTITUTE = "receipt_substitute"                      # 6. ใบแทนใบเสร็จ / ใบสำคัญรับเงิน
     PARCEL_INSPECTION = "parcel_inspection"                        # 7. ใบตรวจรับพัสดุ
+    PARCEL_INSPECTION_PAGE_2 = "parcel_inspection_page_2"          # 07_02. ใบตรวจรับพัสดุหน้าที่ 2
     PROCUREMENT_APPROVAL_REQUEST = "procurement_approval_request"  # 8. ขออนุมัติจัดหาพัสดุ
     PROCUREMENT_ATTACHMENT = "procurement_attachment"              # 9. เอกสารประกอบการขออนุมัติจัดหา
+    APPROVED_MATERIALS = "approved_materials"                      # 10. เอกสารอนุมัติจัดหาวัสดุ
+    ADDITIONAL_DOCUMENTS = "additional_documents"                  # เอกสารแนบอื่น: ไม่สกัดข้อมูล
     GENERAL_RECEIPT = "general_receipt"                            # 10. ใบเสร็จรับเงิน/ใบกำกับภาษีทั่วไป
 
 
@@ -26,14 +29,43 @@ DOCUMENT_TYPE_TITLES: Dict[str, str] = {
     DocumentType.PRINCIPLE_APPROVAL_REQUEST.value: "เอกสารขออนุมัติหลักการ",
     DocumentType.PRINCIPLE_APPROVAL_GRANTED.value: "เอกสารอนุมัติหลักการ",
     DocumentType.DISBURSEMENT_APPROVAL_REQUEST.value: "ขออนุมัติเบิกจ่าย",
-    DocumentType.ADVANCE_PAYMENT_REQUEST_1.value: "แบบเบิกเงินทดรองจ่าย (สัญญายืมเงิน/เบิก)",
-    DocumentType.ADVANCE_PAYMENT_REQUEST_2.value: "แบบเบิกเงินทดรองจ่าย (ขอรับเงิน/เคลียร์เงิน)",
+    DocumentType.ADVANCE_PAYMENT_REQUEST_1.value: "แบบที่ 1 - เงินทดรองจ่าย",
+    DocumentType.ADVANCE_PAYMENT_REQUEST_2.value: "แบบที่ 2 - เงินสดย่อย",
     DocumentType.RECEIPT_SUBSTITUTE.value: "ใบแทนใบเสร็จ / ใบสำคัญรับเงิน",
     DocumentType.PARCEL_INSPECTION.value: "ใบตรวจรับพัสดุ",
+    DocumentType.PARCEL_INSPECTION_PAGE_2.value: "ใบตรวจรับพัสดุ หน้าที่ 2",
     DocumentType.PROCUREMENT_APPROVAL_REQUEST.value: "ขออนุมัติจัดหาพัสดุ",
     DocumentType.PROCUREMENT_ATTACHMENT.value: "เอกสารประกอบการขออนุมัติจัดหา",
+    DocumentType.APPROVED_MATERIALS.value: "เอกสารอนุมัติจัดหาวัสดุ",
+    DocumentType.ADDITIONAL_DOCUMENTS.value: "เอกสารแนบเพิ่มเติม (ไม่สกัดข้อมูล)",
     DocumentType.GENERAL_RECEIPT.value: "ใบเสร็จรับเงิน / ใบกำกับภาษีทั่วไป (ร้านค้า/บริษัท)"
 }
+
+
+# Exact output labels of the latest 11-class ResNet model plus the open-set
+# Additional decision.  Keep this mapping in one place so API, LLM and
+# PP-ChatOCR routes cannot silently disagree about class 04/05 again.
+RESNET_CLASS_TO_DOCUMENT_TYPE: Dict[str, str] = {
+    "01Request": DocumentType.PRINCIPLE_APPROVAL_REQUEST.value,
+    "02Approved": DocumentType.PRINCIPLE_APPROVAL_GRANTED.value,
+    "03RequestReim": DocumentType.DISBURSEMENT_APPROVAL_REQUEST.value,
+    "04PettyCash": DocumentType.ADVANCE_PAYMENT_REQUEST_2.value,
+    "05AdvancePayment": DocumentType.ADVANCE_PAYMENT_REQUEST_1.value,
+    "06CertificateInsteadofReceipt": DocumentType.RECEIPT_SUBSTITUTE.value,
+    "07Inspectionform": DocumentType.PARCEL_INSPECTION.value,
+    "07_02Inspectionform": DocumentType.PARCEL_INSPECTION_PAGE_2.value,
+    "08RequestMaterial": DocumentType.PROCUREMENT_APPROVAL_REQUEST.value,
+    "09Attchedmaterial": DocumentType.PROCUREMENT_ATTACHMENT.value,
+    "10Approved_materials": DocumentType.APPROVED_MATERIALS.value,
+    "10Additional_documents": DocumentType.ADDITIONAL_DOCUMENTS.value,
+}
+
+NO_EXTRACTION_DOCUMENT_TYPES = {DocumentType.ADDITIONAL_DOCUMENTS.value}
+
+
+def resolve_document_type(document_type: str) -> str:
+    """Resolve a ResNet class label or return an existing canonical type."""
+    return RESNET_CLASS_TO_DOCUMENT_TYPE.get(document_type, document_type)
 
 
 class ExpenseItem(BaseModel):
@@ -115,6 +147,12 @@ class ParcelInspectionData(BaseModel):
     ref_doc_no: Optional[str] = Field(default=None, description="ตามใบสั่งซื้อ/สัญญาเลขที่")
 
 
+class ParcelInspectionPage2Data(BaseModel):
+    """07_02. ใบตรวจรับพัสดุหน้าที่ 2"""
+    doc_no: Optional[str] = Field(default=None, description="เลขที่เอกสาร")
+    signer_names: List[str] = Field(default_factory=list, description="ชื่อผู้ลงนามทั้งหมดที่ปรากฏชัดเจน")
+
+
 class ProcurementApprovalRequestData(BaseModel):
     """8. ขออนุมัติจัดหาพัสดุ"""
     doc_no: Optional[str] = Field(default=None, description="8.1 เลขที่เอกสาร")
@@ -131,6 +169,16 @@ class ProcurementAttachmentData(BaseModel):
     ref_memo_no: Optional[str] = Field(default=None, description="9.1 แนบท้ายบันทึกเอกสารเลขอะไร")
     expense_items: List[ExpenseItem] = Field(default_factory=list, description="รายละเอียดพัสดุ/รายการ")
     total_amount: Optional[float] = Field(default=None, description="9.2 ยอดรวม")
+
+
+class ApprovedMaterialsData(BaseModel):
+    """10. เอกสารอนุมัติจัดหาวัสดุ"""
+    procurement_request_code: Optional[str] = Field(default=None, description="รหัสใบขอจัดหา")
+    approved_total_amount: Optional[float] = Field(default=None, description="ยอดรวมที่อนุมัติ")
+    approved_items: List[ExpenseItem] = Field(default_factory=list, description="รายละเอียดรายการที่อนุมัติ")
+    document_date: Optional[str] = Field(default=None, description="วันที่จัดทำเอกสาร")
+    title: Optional[str] = Field(default=None, description="เรื่อง")
+    parcel_inspectors: List[str] = Field(default_factory=list, description="ผู้ตรวจรับพัสดุ")
 
 
 class GeneralReceiptData(BaseModel):
@@ -212,6 +260,8 @@ class TypeDirectedExtractionResult(BaseModel):
     
     # Generic dictionary of all key-value fields for flexible UI rendering
     fields: Dict[str, Any] = Field(default_factory=dict, description="พจนานุกรมฟิลด์ทั้งหมดที่สกัดได้")
+    should_extract: bool = Field(default=True, description="อนุญาตให้สกัดข้อมูลสำหรับประเภทนี้หรือไม่")
+    skip_reason: Optional[str] = Field(default=None, description="เหตุผลที่ไม่สกัดข้อมูล")
     
     # Common structured lists/totals for consistent rendering
     expense_items: List[ExpenseItem] = Field(default_factory=list, description="รายการค่าใช้จ่าย/สินค้า")

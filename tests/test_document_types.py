@@ -1,5 +1,5 @@
 """
-Test suite verifying Type-Directed Extraction for all 9 university document types.
+Test suite verifying Type-Directed Extraction for the latest taxonomy.
 """
 
 from pathlib import Path
@@ -56,12 +56,23 @@ def test_all_document_types():
         print(f"  ✓ Items count: {len(res.expense_items)}")
 
         assert res.document_type == type_code
+        if type_code == DocumentType.ADDITIONAL_DOCUMENTS.value:
+            assert res.should_extract is False
+            assert res.fields == {}
+            assert res.total_amount is None
+            continue
+
+        assert res.should_extract is True
         assert len(res.fields) > 0
-        if type_code != DocumentType.PARCEL_INSPECTION.value:
+        no_total_types = {
+            DocumentType.PARCEL_INSPECTION.value,
+            DocumentType.PARCEL_INSPECTION_PAGE_2.value,
+        }
+        if type_code not in no_total_types:
             assert res.total_amount is not None, f"Total amount should not be None for {type_code}"
 
     print("\n" + "=" * 70)
-    print("✅ All 10 Document Types passed schema and extraction verification!")
+    print("✅ All document types passed schema and extraction verification!")
     print("=" * 70)
 
 

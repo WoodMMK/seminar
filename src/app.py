@@ -16,6 +16,7 @@ import uvicorn
 from PIL import Image
 
 import os
+import threading
 os.environ["PADDLE_PDX_DISABLE_MODEL_SOURCE_CHECK"] = "True"
 
 from src.ingestion import DocumentIngestion
@@ -26,13 +27,16 @@ from src.pipeline import DocumentProcessingPipeline
 from src.benchmark import ModelBenchmarker
 from src.schemas import (
     DOCUMENT_TYPE_TITLES,
+    RESNET_CLASS_TO_DOCUMENT_TYPE,
     DocumentType,
     FullPipelineResult,
     DocumentValidationResult,
     BenchmarkRequest,
     BenchmarkReport,
     HealthCheckResponse,
+    RESNET_CLASS_TO_DOCUMENT_TYPE,
     TypeDirectedExtractionResult,
+    resolve_document_type,
 )
 
 tags_metadata = [
@@ -111,6 +115,9 @@ benchmarker = ModelBenchmarker(
 from src.pp_chatocr_engine import PPChatOCREngine
 chat_ocr_engine = PPChatOCREngine()
 
+_full_pipeline = None
+_full_pipeline_lock = threading.Lock()
+
 ROOT_DIR = Path(__file__).resolve().parent.parent
 
 
@@ -118,6 +125,43 @@ def pil_to_base64(img: Image.Image) -> str:
     buffered = io.BytesIO()
     img.save(buffered, format="PNG")
     return base64.b64encode(buffered.getvalue()).decode("utf-8")
+
+
+def get_full_document_pipeline():
+    """Lazily load the ResNet checkpoint and combined pipeline once."""
+    global _full_pipeline
+    if _full_pipeline is None:
+        with _full_pipeline_lock:
+            if _full_pipeline is None:
+                from src.full_pipeline import (
+                    CombinedValidationExtractionLLM,
+                    DEFAULT_CHECKPOINT,
+                    DEFAULT_REFERENCE_OCR_DIR,
+                    FullDocumentPipeline,
+                )
+
+                checkpoint = Path(
+                    os.getenv("RESNET_CHECKPOINT", str(DEFAULT_CHECKPOINT))
+                )
+                combined_llm = CombinedValidationExtractionLLM(
+                    base_url=os.getenv("OLLAMA_BASE_URL", "http://127.0.0.1:11434"),
+                    model=os.getenv(
+                        "COMBINED_LLM_MODEL", "qwen3:4b-instruct-2507-q4_K_M"
+                    ),
+                    timeout_seconds=int(os.getenv("COMBINED_LLM_TIMEOUT", "300")),
+                )
+                _full_pipeline = FullDocumentPipeline(
+                    checkpoint_path=checkpoint,
+                    device=os.getenv("RESNET_DEVICE", "auto"),
+                    combined_llm=combined_llm,
+                    reference_ocr_dir=Path(
+                        os.getenv(
+                            "REFERENCE_OCR_DIR",
+                            str(DEFAULT_REFERENCE_OCR_DIR),
+                        )
+                    ),
+                )
+    return _full_pipeline
 
 
 def stitch_pages_vertically(pages: list) -> Image.Image:
@@ -320,6 +364,36 @@ async def validate_document_data(data: dict):
 # =============================================================================
 
 @app.post(
+    "/api/v1/classify-validate-extract",
+    tags=["End-to-End Extraction Pipeline"],
+    summary="ResNet classification plus one-request LLM validation and extraction",
+    description=(
+        "Accepts a PDF or image. Runs the latest 11-class ResNet, Thai OCR, then "
+        "one class-specific LLM request that both validates the ResNet prediction "
+        "and conditionally extracts information. Additional documents are not "
+        "extracted; users can correct results later in the UI."
+    ),
+)
+async def api_v1_classify_validate_extract(
+    file: UploadFile = File(..., description="Document file (PDF or image)"),
+):
+    try:
+        file_bytes = await file.read()
+        if not file_bytes:
+            return JSONResponse({"error": "Uploaded document is empty"}, status_code=400)
+        service = await run_in_threadpool(get_full_document_pipeline)
+        return await run_in_threadpool(
+            service.process,
+            file_bytes=file_bytes,
+            filename=file.filename or "document.pdf",
+        )
+    except ValueError as e:
+        return JSONResponse({"error": str(e)}, status_code=400)
+    except Exception as e:
+        return JSONResponse({"error": str(e)}, status_code=500)
+
+
+@app.post(
     "/api/v1/extract",
     response_model=FullPipelineResult,
     tags=["End-to-End Extraction Pipeline"],
@@ -403,12 +477,32 @@ async def api_v1_health():
 
 
 @app.get(
+    "/api/v1/document-types",
+    tags=["System & Health"],
+    summary="Latest ResNet classes and extraction routing"
+)
+async def api_v1_document_types():
+    """Expose the authoritative ResNet-to-extraction mapping to API clients."""
+    return {
+        "known_classes": [
+            {
+                "resnet_class": resnet_class,
+                "document_type": document_type,
+                "title_th": DOCUMENT_TYPE_TITLES[document_type],
+                "should_extract": document_type != DocumentType.ADDITIONAL_DOCUMENTS.value,
+            }
+            for resnet_class, document_type in RESNET_CLASS_TO_DOCUMENT_TYPE.items()
+        ]
+    }
+
+
+@app.get(
     "/api/chatocr/templates",
     tags=["PP-ChatOCRv4 (Component 6)"],
-    summary="Get Predefined Extraction Templates for 10 Document Types"
+    summary="Get extraction templates for the latest document taxonomy"
 )
 async def api_chatocr_templates():
-    """Returns metadata and target keys for all 10 automated document templates."""
+    """Returns metadata and target keys for all automated document templates."""
     return chat_ocr_engine.get_supported_templates()
 
 
@@ -432,6 +526,23 @@ async def api_chatocr_chat(
     """
     import time
     try:
+        canonical_document_type = resolve_document_type(document_type)
+        if canonical_document_type == DocumentType.ADDITIONAL_DOCUMENTS.value:
+            return {
+                "status": "skipped",
+                "source_file": file.filename if file else None,
+                "document_type": canonical_document_type,
+                "document_type_name": DOCUMENT_TYPE_TITLES[canonical_document_type],
+                "should_extract": False,
+                "skip_reason": "Additional document: extraction is intentionally disabled.",
+                "questions": [],
+                "chat_answers": {},
+                "knowledge_payload": None,
+                "ocr_text_snippet": "",
+                "ocr_full_text": "",
+                "latency_ms": 0,
+            }
+
         target_path: Optional[Path] = None
 
         if use_sample or (file is None):

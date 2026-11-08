@@ -27,9 +27,19 @@ paddle.set_flags({'FLAGS_use_mkldnn': False})
 
 from paddlex import create_pipeline
 from paddlex.inference.pipelines import load_pipeline_config
-from paddlex.inference.models.runners.paddle_static.config.pp_option import PaddlePredictorOption
+try:
+    # PaddleX >= 3.7 layout used by the original branch.
+    from paddlex.inference.models.runners.paddle_static.config.pp_option import PaddlePredictorOption
+except ModuleNotFoundError:
+    # PaddleX 3.3.x exposes the same public option through inference.utils.
+    from paddlex.inference.utils.pp_option import PaddlePredictorOption
 
 from src.validator import FinancialDocumentValidator
+from src.schemas import (
+    DOCUMENT_TYPE_TITLES,
+    NO_EXTRACTION_DOCUMENT_TYPES,
+    resolve_document_type,
+)
 
 
 # =========================================================================
@@ -97,7 +107,7 @@ PP_CHATOCR_TEMPLATES: Dict[str, Dict[str, Any]] = {
         )
     },
     "advance_payment_request_1": {
-        "title": "แบบเบิกเงินทดรองจ่าย (แบบที่ 1 - สัญญายืมเงิน/เบิก)",
+        "title": "แบบที่ 1 - เงินทดรองจ่าย",
         "group": "official_reimbursement",
         "group_title": "เอกสารเบิกจ่ายราชการ (9 ประเภทหลัก)",
         "keys": [
@@ -116,7 +126,7 @@ PP_CHATOCR_TEMPLATES: Dict[str, Dict[str, Any]] = {
         )
     },
     "advance_payment_request_2": {
-        "title": "แบบเบิกเงินทดรองจ่าย (แบบที่ 2 - รับเงิน/เคลียร์เงิน)",
+        "title": "แบบที่ 2 - เงินสดย่อย",
         "group": "official_reimbursement",
         "group_title": "เอกสารเบิกจ่ายราชการ (9 ประเภทหลัก)",
         "keys": [
@@ -130,7 +140,7 @@ PP_CHATOCR_TEMPLATES: Dict[str, Dict[str, Any]] = {
             "โอนเงินไปที่ใด"
         ],
         "system_prompt": (
-            "สกัดข้อมูลจากแบบเบิกเงินทดรองจ่าย (แบบที่ 2 - รับเงิน/เคลียร์เงิน) ระบุ: "
+            "สกัดข้อมูลจากแบบที่ 2 - เงินสดย่อย ระบุ: "
             "1. เลขที่เอกสาร 2. วันที่ส่งเอกสาร 3. วันที่ขอรับเงิน 4. ใครเป็นคนเบิก 5. ยอดรวม "
             "6. ตามหนังสืออนุมัติหลักการ เลขที่อะไร 7. รายละเอียดค่าใช้จ่าย 8. โอนเงินไปที่ใด "
             "หากไม่มีระบุให้ตอบว่า 'ไม่มีระบุ'"
@@ -168,6 +178,20 @@ PP_CHATOCR_TEMPLATES: Dict[str, Dict[str, Any]] = {
             "หากไม่มีระบุให้ตอบว่า 'ไม่มีระบุ'"
         )
     },
+    "parcel_inspection_page_2": {
+        "title": "ใบตรวจรับพัสดุ หน้าที่ 2",
+        "group": "official_reimbursement",
+        "group_title": "เอกสารเบิกจ่ายราชการ",
+        "keys": [
+            "เลขที่เอกสาร",
+            "ชื่อผู้ลงนาม"
+        ],
+        "system_prompt": (
+            "สกัดข้อมูลจากหน้าที่ 2 หรือหน้าลงนามของใบตรวจรับพัสดุ ระบุเฉพาะ: "
+            "1. เลขที่เอกสาร 2. ชื่อผู้ลงนามทั้งหมดที่อ่านได้ชัดเจน "
+            "ห้ามเดาชื่อจากลายมือชื่อที่อ่านไม่ได้ และห้ามใช้ชื่อตำแหน่งแทนชื่อบุคคล"
+        )
+    },
     "procurement_approval_request": {
         "title": "ขออนุมัติหาพัสดุ (ขออนุมัติจัดหาพัสดุ)",
         "group": "official_reimbursement",
@@ -202,6 +226,32 @@ PP_CHATOCR_TEMPLATES: Dict[str, Dict[str, Any]] = {
             "1. แนบท้ายบันทึกเอกสารเลขอะไร 2. รายละเอียดพัสดุหรือเปรียบเทียบราคา 3. ยอดรวม "
             "หากไม่มีระบุให้ตอบว่า 'ไม่มีระบุ'"
         )
+    },
+    "approved_materials": {
+        "title": "เอกสารอนุมัติจัดหาวัสดุ",
+        "group": "official_reimbursement",
+        "group_title": "เอกสารเบิกจ่ายราชการ",
+        "keys": [
+            "รหัสใบขอจัดหา",
+            "ยอดรวมที่อนุมัติ",
+            "รายละเอียดรายการที่อนุมัติ",
+            "วันที่จัดทำเอกสาร",
+            "เรื่อง",
+            "ผู้ตรวจรับพัสดุ"
+        ],
+        "system_prompt": (
+            "สกัดข้อมูลจากเอกสารอนุมัติจัดหาวัสดุที่ได้รับการอนุมัติแล้ว ระบุ: "
+            "1. รหัสใบขอจัดหา 2. ยอดรวมที่อนุมัติ 3. รายละเอียดรายการที่อนุมัติ "
+            "4. วันที่จัดทำเอกสาร 5. เรื่อง 6. ผู้ตรวจรับพัสดุ "
+            "สกัดเฉพาะค่าที่ปรากฏชัดเจน และห้ามตีความเอกสารที่เพียงเสนอขออนุมัติว่าอนุมัติแล้ว"
+        )
+    },
+    "additional_documents": {
+        "title": "เอกสารแนบเพิ่มเติม (ไม่สกัดข้อมูล)",
+        "group": "additional",
+        "group_title": "เอกสารแนบเพิ่มเติม",
+        "keys": [],
+        "system_prompt": "เอกสารประเภทนี้ไม่อนุญาตให้สกัดข้อมูล"
     },
     "general_receipt": {
         "title": "ใบเสร็จรับเงิน / ใบกำกับภาษีทั่วไป (ร้านค้า/บริษัท)",
@@ -452,11 +502,28 @@ class PPChatOCREngine:
         img_path = Path(image_path).resolve()
 
         # Resolve document type and retrieve template
-        canonical_doc_type = DOCUMENT_TYPE_ALIASES.get(document_type, document_type)
-        template = PP_CHATOCR_TEMPLATES.get(
-            canonical_doc_type,
-            PP_CHATOCR_TEMPLATES["general_receipt"]
-        )
+        canonical_doc_type = resolve_document_type(document_type)
+        canonical_doc_type = DOCUMENT_TYPE_ALIASES.get(canonical_doc_type, canonical_doc_type)
+        if canonical_doc_type not in PP_CHATOCR_TEMPLATES:
+            raise ValueError(f"Unsupported document type: {document_type}")
+        template = PP_CHATOCR_TEMPLATES[canonical_doc_type]
+
+        if canonical_doc_type in NO_EXTRACTION_DOCUMENT_TYPES:
+            return {
+                "status": "skipped",
+                "source_file": img_path.name,
+                "document_type": canonical_doc_type,
+                "document_title": img_path.name,
+                "document_type_name": DOCUMENT_TYPE_TITLES[canonical_doc_type],
+                "should_extract": False,
+                "skip_reason": "Additional document: extraction is intentionally disabled.",
+                "questions": [],
+                "chat_answers": {},
+                "knowledge_payload": None,
+                "ocr_text_snippet": "",
+                "ocr_full_text": "",
+                "latency_ms": int((time.time() - start_time) * 1000),
+            }
 
         # 100% Automated fallback: Use template's predefined keys and prompt
         effective_questions = questions if (questions and len(questions) > 0) else template["keys"]

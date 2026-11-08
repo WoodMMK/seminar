@@ -1,7 +1,7 @@
 """
 Component 3: Reasoning & Extraction Engine (Local LLM via Ollama)
-Extracts structured financial data for 9 specific university document types
-as well as general commercial receipts.
+Extracts structured financial data for the latest university document taxonomy,
+including 07_02 and approved-material documents.
 """
 
 import json
@@ -15,11 +15,13 @@ from typing import Any, Dict, List, Optional, Tuple
 
 from src.schemas import (
     DOCUMENT_TYPE_TITLES,
+    NO_EXTRACTION_DOCUMENT_TYPES,
     DocumentType,
     ExpenseItem,
     FinancialExtractionResult,
     LineItem,
     TypeDirectedExtractionResult,
+    resolve_document_type,
 )
 from src.validator import FinancialDocumentValidator
 
@@ -93,7 +95,7 @@ PROMPT_CONFIGS: Dict[str, Dict[str, Any]] = {
         }
     },
     DocumentType.ADVANCE_PAYMENT_REQUEST_1.value: {
-        "title": "4. แบบเบิกเงินทดรองจ่าย (แบบที่ 1)",
+        "title": "05. แบบที่ 1 - เงินทดรองจ่าย",
         "instructions": (
             "คุณกำลังวิเคราะห์เนื้อหา OCR ของ 'แบบเบิกเงินทดรองจ่าย (แบบที่ 1)'\n"
             "กรุณาสกัดข้อมูลเฉพาะเจาะจงดังต่อไปนี้:\n"
@@ -116,9 +118,9 @@ PROMPT_CONFIGS: Dict[str, Dict[str, Any]] = {
         }
     },
     DocumentType.ADVANCE_PAYMENT_REQUEST_2.value: {
-        "title": "5. แบบเบิกเงินทดรองจ่าย (แบบที่ 2 - รับเงิน/เคลียร์เงิน)",
+        "title": "04. แบบที่ 2 - เงินสดย่อย",
         "instructions": (
-            "คุณกำลังวิเคราะห์เนื้อหา OCR ของ 'แบบเบิกเงินทดรองจ่าย (แบบที่ 2)'\n"
+            "คุณกำลังวิเคราะห์เนื้อหา OCR ของ 'แบบที่ 2 - เงินสดย่อย'\n"
             "กรุณาสกัดข้อมูลเฉพาะเจาะจงดังต่อไปนี้:\n"
             "1. doc_no: เลขที่เอกสาร\n"
             "2. submission_date: วันที่ส่งเอกสาร\n"
@@ -178,6 +180,20 @@ PROMPT_CONFIGS: Dict[str, Dict[str, Any]] = {
             "ref_doc_no": "เลขที่ใบสั่งซื้อหรือสัญญา"
         }
     },
+    DocumentType.PARCEL_INSPECTION_PAGE_2.value: {
+        "title": "07_02. ใบตรวจรับพัสดุ หน้าที่ 2",
+        "instructions": (
+            "คุณกำลังวิเคราะห์เนื้อหา OCR ของหน้าที่ 2 หรือหน้าลงนามของใบตรวจรับพัสดุ\n"
+            "กรุณาสกัดเฉพาะข้อมูลต่อไปนี้:\n"
+            "1. doc_no: เลขที่เอกสาร โดยคงอักขระตามต้นฉบับ\n"
+            "2. signer_names: รายชื่อผู้ลงนามทั้งหมดที่ปรากฏชัดเจน เป็น List ของข้อความ\n"
+            "ห้ามเดาชื่อจากลายมือชื่อที่อ่านไม่ได้ และห้ามใช้คำว่า ผู้ลงนาม/กรรมการ/ประธานเป็นชื่อบุคคล"
+        ),
+        "json_schema": {
+            "doc_no": "เลขที่เอกสาร",
+            "signer_names": ["ชื่อผู้ลงนามคนที่ 1", "ชื่อผู้ลงนามคนที่ 2"]
+        }
+    },
     DocumentType.PROCUREMENT_APPROVAL_REQUEST.value: {
         "title": "8. ขออนุมัติจัดหาพัสดุ",
         "instructions": (
@@ -220,6 +236,35 @@ PROMPT_CONFIGS: Dict[str, Dict[str, Any]] = {
             "total_amount": 4500.0
         }
     },
+    DocumentType.APPROVED_MATERIALS.value: {
+        "title": "10. เอกสารอนุมัติจัดหาวัสดุ",
+        "instructions": (
+            "คุณกำลังวิเคราะห์เนื้อหา OCR ของเอกสารอนุมัติจัดหาวัสดุที่ได้รับการอนุมัติแล้ว\n"
+            "กรุณาสกัดเฉพาะข้อมูลต่อไปนี้:\n"
+            "1. procurement_request_code: รหัสใบขอจัดหา\n"
+            "2. approved_total_amount: ยอดรวมที่อนุมัติ เป็นตัวเลข Float\n"
+            "3. approved_items: รายละเอียดรายการที่อนุมัติ เป็น List ของ {item_no, description, quantity, unit, unit_price, total_price}\n"
+            "4. document_date: วันที่จัดทำเอกสาร\n"
+            "5. title: เรื่อง\n"
+            "6. parcel_inspectors: รายชื่อผู้ตรวจรับพัสดุ เป็น List ของข้อความ\n"
+            "สกัดเฉพาะค่าที่ปรากฏชัดเจน ห้ามถือว่าข้อความเสนอขออนุมัติคือผลการอนุมัติ"
+        ),
+        "json_schema": {
+            "procurement_request_code": "รหัสใบขอจัดหา",
+            "approved_total_amount": 1000.0,
+            "approved_items": [
+                {"item_no": 1, "description": "รายการที่อนุมัติ", "quantity": 1.0, "unit": "รายการ", "unit_price": 1000.0, "total_price": 1000.0}
+            ],
+            "document_date": "วันที่จัดทำเอกสาร",
+            "title": "เรื่อง",
+            "parcel_inspectors": ["ชื่อผู้ตรวจรับพัสดุ"]
+        }
+    },
+    DocumentType.ADDITIONAL_DOCUMENTS.value: {
+        "title": "เอกสารแนบเพิ่มเติม (ไม่สกัดข้อมูล)",
+        "instructions": "เอกสารประเภทนี้ไม่อนุญาตให้สกัดข้อมูล ให้คืน JSON ว่างเท่านั้น",
+        "json_schema": {}
+    },
     DocumentType.GENERAL_RECEIPT.value: {
         "title": "10. ใบเสร็จรับเงิน / ใบกำกับภาษีทั่วไป",
         "instructions": (
@@ -260,7 +305,10 @@ PROMPT_CONFIGS: Dict[str, Dict[str, Any]] = {
 
 def build_system_prompt_for_type(doc_type: str) -> str:
     """Construct a targeted system prompt for the specified document type."""
-    config = PROMPT_CONFIGS.get(doc_type, PROMPT_CONFIGS[DocumentType.GENERAL_RECEIPT.value])
+    doc_type = resolve_document_type(doc_type)
+    if doc_type not in PROMPT_CONFIGS:
+        raise ValueError(f"Unsupported document type: {doc_type}")
+    config = PROMPT_CONFIGS[doc_type]
     schema_example = json.dumps(config["json_schema"], ensure_ascii=False, indent=2)
 
     return f"""คุณคือผู้เชี่ยวชาญด้านการสกัดข้อมูลเอกสารการเงินและเอกสารราชการ (Document Information Extraction AI)
@@ -367,8 +415,24 @@ class LLMExtractor:
         """
         Extract structured data according to the targeted document type.
         """
+        document_type = resolve_document_type(document_type)
         target_model = model_name or self.default_model
         start_time = time.time()
+
+        if document_type in NO_EXTRACTION_DOCUMENT_TYPES:
+            return TypeDirectedExtractionResult(
+                document_type=document_type,
+                document_type_name_th=DOCUMENT_TYPE_TITLES[document_type],
+                fields={},
+                should_extract=False,
+                skip_reason="Additional document: extraction is intentionally disabled.",
+                model_used=None,
+                latency_ms=round((time.time() - start_time) * 1000, 2),
+                is_mock=False,
+            )
+
+        if document_type not in PROMPT_CONFIGS:
+            raise ValueError(f"Unsupported document type: {document_type}")
 
         if not force_mock and self.is_ollama_running():
             try:
@@ -465,6 +529,7 @@ class LLMExtractor:
             data.get("expense_items")
             or data.get("line_items")
             or data.get("approval_items")
+            or data.get("approved_items")
             or data.get("item_details")
             or []
         )
@@ -484,6 +549,7 @@ class LLMExtractor:
         total_amount = (
             data.get("total_amount")
             or data.get("total_approved_amount")
+            or data.get("approved_total_amount")
             or data.get("total_budget")
         )
         if total_amount is not None:
@@ -522,6 +588,31 @@ class LLMExtractor:
             self.validator.validate(res_obj)
 
         return res_obj
+
+    def build_result_from_fields(
+        self,
+        document_type: str,
+        fields: Dict[str, Any],
+        model_used: str,
+        latency_ms: float,
+        raw_llm_response: str,
+    ) -> TypeDirectedExtractionResult:
+        """Normalize fields produced by a combined validation/extraction request.
+
+        This method performs no LLM call. It exists so the full pipeline can make
+        exactly one request that validates the ResNet prediction and extracts the
+        class-specific fields, then reuse the standard result/validation logic.
+        """
+        document_type = resolve_document_type(document_type)
+        return self._build_result_object(
+            document_type=document_type,
+            data=fields,
+            thinking_process=None,
+            model_used=model_used,
+            latency_ms=latency_ms,
+            is_mock=False,
+            raw_llm_response=raw_llm_response,
+        )
 
     @staticmethod
     def _extract_thinking_and_json(content: str) -> Tuple[Optional[str], str]:
@@ -642,14 +733,14 @@ class LLMExtractor:
                 "transfer_destination": "ธนาคารไทยพาณิชย์ เลขที่บัญชี 333-2-12345-6 นายสมชาย ใจดี"
             },
             DocumentType.ADVANCE_PAYMENT_REQUEST_2.value: {
-                "doc_no": "ยง. 12/2567-ค",
+                "doc_no": "สดย. 12/2567",
                 "submission_date": "30 สิงหาคม 2567",
                 "claim_date": "31 สิงหาคม 2567",
                 "requester": "ผศ.ดร.สมชาย ใจดี",
-                "total_amount": 12000.0,
+                "total_amount": 3500.0,
                 "ref_doc_no": "อว 78.03/ว.0425",
                 "expense_items": [
-                    {"item_no": 1, "description": "เคลียร์เงินยืมทดรองจ่ายโครงการสัมมนา AI (ตามหลักฐานใบเสร็จ)", "quantity": 1.0, "unit": "ชุด", "unit_price": 12000.0, "total_price": 12000.0}
+                    {"item_no": 1, "description": "เบิกเงินสดย่อยค่าวัสดุสำนักงาน", "quantity": 1.0, "unit": "ชุด", "unit_price": 3500.0, "total_price": 3500.0}
                 ],
                 "transfer_destination": "พร้อมเพย์ 081-999-xxxx"
             },
@@ -666,6 +757,10 @@ class LLMExtractor:
                 "inspectors": "รศ.ดร.สมบัติ ประธานกรรมการ, ผศ.ดร.วิชัย กรรมการ, นางสาวมณีรัตน์ กรรมการและเลขานุการ",
                 "inspection_date": "18 กันยายน 2567",
                 "ref_doc_no": "ใบสั่งซื้อเลขที่ PO-EG-2567-089"
+            },
+            DocumentType.PARCEL_INSPECTION_PAGE_2.value: {
+                "doc_no": "บพ. 88/2567",
+                "signer_names": ["รศ.ดร.สมบัติ ใจดี", "ผศ.ดร.วิชัย มั่นคง"]
             },
             DocumentType.PROCUREMENT_APPROVAL_REQUEST.value: {
                 "doc_no": "อว 78.03/พสด.0112",
@@ -686,6 +781,17 @@ class LLMExtractor:
                     {"item_no": 2, "description": "แป้นพิมพ์และเมาส์", "quantity": 5.0, "unit": "ชุด", "unit_price": 1200.0, "total_price": 6000.0}
                 ],
                 "total_amount": 53500.0
+            },
+            DocumentType.APPROVED_MATERIALS.value: {
+                "procurement_request_code": "PR-2567-0012",
+                "approved_total_amount": 53500.0,
+                "approved_items": [
+                    {"item_no": 1, "description": "จอภาพมอนิเตอร์ 27 นิ้ว", "quantity": 5.0, "unit": "จอ", "unit_price": 9500.0, "total_price": 47500.0},
+                    {"item_no": 2, "description": "แป้นพิมพ์และเมาส์ไร้สาย", "quantity": 5.0, "unit": "ชุด", "unit_price": 1200.0, "total_price": 6000.0}
+                ],
+                "document_date": "10 กันยายน 2567",
+                "title": "อนุมัติจัดหาวัสดุและอุปกรณ์คอมพิวเตอร์",
+                "parcel_inspectors": ["รศ.ดร.สมบัติ ใจดี", "ผศ.ดร.วิชัย มั่นคง"]
             }
         }
 
