@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import io
 from pathlib import Path
 from typing import Any, Union
 
@@ -118,6 +119,39 @@ class ResNetDocumentClassifier:
         self.model.fc = nn.Linear(self.model.fc.in_features, len(self.class_names))
         self.model.load_state_dict(checkpoint["model_state_dict"])
         self.model.to(self.device).eval()
+
+    @staticmethod
+    def render_document_image(file_bytes: bytes) -> Image.Image:
+        """Render input exactly like the classifier training/evaluation pipeline.
+
+        OCR intentionally uses a higher-resolution 150-DPI render. The ResNet
+        pad-only transform was trained from PDF pages rendered at scale 1.5, so
+        feeding the OCR bitmap can exceed its fixed 928x512 top-crop canvas.
+        """
+        if file_bytes.startswith(b"%PDF"):
+            try:
+                import pypdfium2 as pdfium
+            except ImportError as exc:
+                raise RuntimeError(
+                    "pypdfium2 is required for ResNet PDF inference"
+                ) from exc
+            document = pdfium.PdfDocument(file_bytes)
+            if len(document) < 1:
+                document.close()
+                raise ValueError("The PDF contains no pages")
+            page = document[0]
+            try:
+                return page.render(scale=1.5).to_pil().convert("RGB")
+            finally:
+                page.close()
+                document.close()
+
+        with Image.open(io.BytesIO(file_bytes)) as image:
+            return image.convert("RGB").copy()
+
+    def predict_document(self, file_bytes: bytes) -> dict[str, Any]:
+        """Render a PDF/image with classifier preprocessing and predict it."""
+        return self.predict_image(self.render_document_image(file_bytes))
 
     def predict_image(self, image: Image.Image) -> dict[str, Any]:
         tensor = self.transform(image.convert("RGB")).unsqueeze(0).to(self.device)

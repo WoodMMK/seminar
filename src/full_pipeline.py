@@ -313,7 +313,12 @@ class FullDocumentPipeline:
             raise ValueError(f"Could not load document pages from {filename!r}")
 
         resnet_started = time.perf_counter()
-        resnet = self.classifier.predict_image(pages[0].image)
+        if hasattr(self.classifier, "predict_document"):
+            resnet = self.classifier.predict_document(file_bytes)
+        else:
+            # Test doubles and compatible legacy classifiers may only expose
+            # predict_image().
+            resnet = self.classifier.predict_image(pages[0].image)
         resnet_ms = round((time.perf_counter() - resnet_started) * 1000, 2)
 
         ocr_started = time.perf_counter()

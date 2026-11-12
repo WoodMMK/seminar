@@ -37,6 +37,16 @@ class FakeClassifier:
         }
 
 
+class FakeDocumentClassifier(FakeClassifier):
+    def __init__(self):
+        self.document_call_count = 0
+
+    def predict_document(self, file_bytes):
+        assert file_bytes == b"document"
+        self.document_call_count += 1
+        return self.predict_image(None)
+
+
 class FakePerception:
     text_blocks = [SimpleNamespace(confidence=0.95)]
 
@@ -145,9 +155,24 @@ def test_combined_schema_caps_extraction_arrays_and_strings():
     assert fields["requester"]["anyOf"][0]["maxLength"] == 500
 
 
+def test_pipeline_prefers_classifier_document_preprocessing():
+    classifier = FakeDocumentClassifier()
+    pipeline = FullDocumentPipeline(
+        classifier=classifier,
+        ingestor=FakeIngestor(),
+        ocr_engine=FakeOcrEngine(),
+        combined_llm=FakeCombinedLlm("MATCH"),
+        reference_store=FakeReferenceStore(),
+    )
+    result = pipeline.process(b"document", "test.pdf")
+    assert result["final_document_type"] == "07_02Inspectionform"
+    assert classifier.document_call_count == 1
+
+
 if __name__ == "__main__":
     test_match_uses_one_llm_request_and_extracts()
     test_additional_uses_one_llm_request_and_does_not_extract()
     test_prompt_policy_does_not_force_poor_ocr_to_additional()
     test_combined_schema_caps_extraction_arrays_and_strings()
+    test_pipeline_prefers_classifier_document_preprocessing()
     print("Full pipeline tests passed.")
