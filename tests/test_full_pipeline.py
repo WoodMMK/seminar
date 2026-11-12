@@ -10,6 +10,7 @@ ROOT_DIR = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT_DIR))
 
 from src.full_pipeline import (
+    CLASS_BOUNDARY_RULES,
     CombinedValidationExtractionLLM,
     FullDocumentPipeline,
     combined_output_schema,
@@ -137,8 +138,30 @@ def test_prompt_policy_does_not_force_poor_ocr_to_additional():
     source = inspect.getsource(
         CombinedValidationExtractionLLM.validate_and_extract
     )
-    assert "ไม่ได้หมายความว่าเป็น ADDITIONAL โดยอัตโนมัติ" in source
-    assert "ห้ามสร้างสถานะ UNCERTAIN" in source
+    assert "low-quality OCR is not automatically ADDITIONAL" in source
+    assert "Do not return UNCERTAIN" in source
+
+
+def test_validation_prompt_restores_receipt_and_primary_purpose_rules():
+    import inspect
+
+    source = inspect.getsource(
+        CombinedValidationExtractionLLM.validate_and_extract
+    )
+    assert "RECEIPT, TAX INVOICE" in source
+    assert "is always ADDITIONAL" in source
+    assert "primary purpose" in source
+    assert "not one generic keyword" in source
+    assert "06CertificateInsteadofReceipt" in source
+    boundary = CLASS_BOUNDARY_RULES["06CertificateInsteadofReceipt"]
+    assert "not a real receipt" in boundary
+    assert "ใบรับรองแทนใบเสร็จรับเงิน" in boundary
+    assert "character-level OCR errors" in boundary
+    assert "ADDITIONAL" in boundary
+
+    approved_boundary = CLASS_BOUNDARY_RULES["02Approved"]
+    assert "what was approved" in approved_boundary
+    assert "approved monetary amount" in approved_boundary
 
 
 def test_combined_schema_caps_extraction_arrays_and_strings():
@@ -173,6 +196,7 @@ if __name__ == "__main__":
     test_match_uses_one_llm_request_and_extracts()
     test_additional_uses_one_llm_request_and_does_not_extract()
     test_prompt_policy_does_not_force_poor_ocr_to_additional()
+    test_validation_prompt_restores_receipt_and_primary_purpose_rules()
     test_combined_schema_caps_extraction_arrays_and_strings()
     test_pipeline_prefers_classifier_document_preprocessing()
     print("Full pipeline tests passed.")
